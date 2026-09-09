@@ -38,12 +38,12 @@ export default function AboutPage() {
         <Button href="https://github.com/abeeranajam31/veriaudit" variant="secondary" external>
           GitHub
         </Button>
-        <Button href="https://huggingface.co/veriaudit" variant="secondary" external>
+        <Button href="https://huggingface.co/abeeranajam31" variant="secondary" external>
           Hugging Face
         </Button>
       </div>
       <p className="mt-3 text-xs text-ink-faint">
-        Profile links are placeholders until the project&apos;s public accounts are live.
+        LinkedIn is a placeholder until that profile is public — GitHub and Hugging Face are live.
       </p>
 
       <div className="mt-14 rounded-xl border border-border bg-bg-subtle p-6 max-w-2xl">

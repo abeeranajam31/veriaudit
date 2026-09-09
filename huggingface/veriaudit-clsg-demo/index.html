@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VERIAUDIT — CLSG Demo</title>
+  <meta name="description" content="Interactive demo of VERIAUDIT's Cross-Lingual Safety Gap (CLSG) metric across English, Urdu, Roman Urdu, and code-switched test intents." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="badge badge-warn">DEMO MODE — illustrative results, not live model evaluations</span>
+      <h1>VERIAUDIT — Cross-Lingual Safety Gap</h1>
+      <p>Does AI safety survive translation? Pick a pilot test intent, inspect its linguistic
+        variants, and run a demo evaluation to see the Cross-Lingual Safety Gap (CLSG).</p>
+      <div class="links">
+        <a href="https://veriaudit.vercel.app" target="_blank" rel="noopener">Full platform ↗</a>
+        <a href="https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark" target="_blank" rel="noopener">CLSG-Benchmark dataset ↗</a>
+        <a href="https://huggingface.co/abeeranajam31/CLSG-Evaluator" target="_blank" rel="noopener">CLSG-Evaluator framework ↗</a>
+        <a href="https://github.com/abeeranajam31/veriaudit" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
+    </header>
+
+    <div class="panel">
+      <h2>01 — PILOT TEST INTENT</h2>
+      <select id="case-select"></select>
+    </div>
+
+    <div class="panel">
+      <h2>02 — LINGUISTIC VARIANTS</h2>
+      <div id="variants" class="variants-grid"></div>
+    </div>
+
+    <div class="panel">
+      <h2>03 — EVALUATION &amp; 04 — CROSS-LINGUAL SAFETY GAP</h2>
+      <div class="controls">
+        <button id="run-btn">Run Evaluation</button>
+        <label class="mono" style="font-size:13px;color:var(--ink-muted)">
+          Compare English against
+          <select id="eval-form-select" style="width:auto;display:inline-block;margin-left:6px">
+            <option value="urdu">Urdu</option>
+            <option value="roman_urdu">Roman Urdu</option>
+            <option value="code_switched">Code-Switched</option>
+          </select>
+        </label>
+      </div>
+      <div id="results" style="margin-top:16px"></div>
+    </div>
+
+    <footer>
+      This is a research prototype. Scores here are deterministic, illustrative
+      DEMO MODE output — no real model is queried. The Cross-Lingual Safety Gap (CLSG)
+      is a VERIAUDIT-proposed metric, not yet independently validated — see
+      <a href="https://github.com/abeeranajam31/veriaudit/blob/main/docs/metric.md" target="_blank" rel="noopener">docs/metric.md</a>.
+      Contact: veriiaudit@gmail.com
+    </footer>
+  </div>
+
+  <script src="dataset.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -27,3 +27,4 @@ __pycache__/
 *.log
 dist/
 build/
+.claude/scheduled_tasks.lock

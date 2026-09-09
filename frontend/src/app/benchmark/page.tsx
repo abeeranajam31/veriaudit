@@ -117,9 +117,17 @@ export default function BenchmarkPage() {
               href="https://github.com/abeeranajam31/veriaudit"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-block text-sm font-medium text-accent hover:underline underline-offset-4"
+              className="mt-3 block text-sm font-medium text-accent hover:underline underline-offset-4"
             >
               View on GitHub →
+            </a>
+            <a
+              href="https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block text-sm font-medium text-accent hover:underline underline-offset-4"
+            >
+              Load via 🤗 datasets →
             </a>
           </div>
         </aside>

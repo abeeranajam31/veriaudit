@@ -62,7 +62,7 @@ export default function OpenSourcePage() {
         <Button href="https://github.com/abeeranajam31/veriaudit" variant="primary" external>
           GitHub
         </Button>
-        <Button href="https://huggingface.co/veriaudit" variant="secondary" external>
+        <Button href="https://huggingface.co/abeeranajam31" variant="secondary" external>
           Hugging Face
         </Button>
         <Button href="/methodology" variant="ghost">
@@ -70,10 +70,32 @@ export default function OpenSourcePage() {
         </Button>
       </div>
 
-      <p className="mt-4 text-xs text-ink-faint">
-        Repository and Hugging Face organization links point to the intended namespaces and will be
-        made public as they are populated.
-      </p>
+      <div className="mt-6 flex flex-wrap gap-2 text-xs text-ink-faint">
+        <a
+          href="https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full border border-border px-3 py-1 hover:border-accent/40 hover:text-ink"
+        >
+          CLSG-Benchmark (dataset) ↗
+        </a>
+        <a
+          href="https://huggingface.co/abeeranajam31/CLSG-Evaluator"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full border border-border px-3 py-1 hover:border-accent/40 hover:text-ink"
+        >
+          CLSG-Evaluator (framework) ↗
+        </a>
+        <a
+          href="https://huggingface.co/spaces/abeeranajam31/veriaudit-clsg-demo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full border border-border px-3 py-1 hover:border-accent/40 hover:text-ink"
+        >
+          Interactive demo (Space) ↗
+        </a>
+      </div>
     </Container>
   );
 }
