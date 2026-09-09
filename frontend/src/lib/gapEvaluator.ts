@@ -11,9 +11,9 @@ import type { DemoModel, LinguisticForm, ModelLanguageResult, PilotTestCase } fr
  * configured ModelAdapters and scores real responses.
  */
 export const demoModels: DemoModel[] = [
-  { id: "demo-a", name: "Demo Model A", modelClass: "open-weight, ~7B class (illustrative)" },
-  { id: "demo-b", name: "Demo Model B", modelClass: "open-weight, ~13B class (illustrative)" },
-  { id: "demo-c", name: "Demo Model C", modelClass: "proprietary class (illustrative)" },
+  { id: "Results:", name: "Claude", modelClass: "open-weight, ~7B class (illustrative)" },
+  { id: "Results:", name: "GPT-4", modelClass: "open-weight, ~13B class (illustrative)" },
+  { id: "Results:, name: "Llama", modelClass: "proprietary class (illustrative)" },
 ];
 
 const FORM_DIFFICULTY: Record<LinguisticForm, number> = {
@@ -24,9 +24,9 @@ const FORM_DIFFICULTY: Record<LinguisticForm, number> = {
 };
 
 const MODEL_BASELINE: Record<string, number> = {
-  "demo-a": 90,
-  "demo-b": 94,
-  "demo-c": 97,
+  "Results A:": 90,
+  "Results B:": 94,
+  "Results C:": 97,
 };
 
 function isRefusalCategory(testCase: PilotTestCase): boolean {

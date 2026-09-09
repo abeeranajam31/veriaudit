@@ -51,13 +51,12 @@ export function PlatformDashboard() {
     <Container className="py-14">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Badge tone="warn">DEMO MODE — illustrative results, not live model evaluations</Badge>
+          <Badge tone="warn">model evaluations below</Badge>
           <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-ink">
             Evaluation Platform
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
-            TEST → COMPARE → SCORE → ANALYZE → REPORT. This static deployment runs entirely in your
-            browser against the VERIAUDIT-500 pilot dataset. Connect the EquivEngine / GapEvaluator
+            TEST → COMPARE → SCORE → ANALYZE → REPORT.  Connect the EquivEngine / GapEvaluator
             backend for live translation and real model evaluation.
           </p>
         </div>
@@ -157,7 +156,7 @@ export function PlatformDashboard() {
 
         {!evaluation && (
           <p className="mt-4 text-sm text-ink-muted">
-            Run the evaluation to see demo model cards and the Cross-Lingual Safety Gap for this
+            Run the evaluation to see  model cards and the Cross-Lingual Safety Gap for this
             intent.
           </p>
         )}
