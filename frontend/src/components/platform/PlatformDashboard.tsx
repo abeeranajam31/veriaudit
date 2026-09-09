@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Sparkles, PlayCircle, FileDown } from "lucide-react";
 import { Container } from "../ui/Container";
-import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { VariantCard } from "./VariantCard";
 import { SafetyByLanguageChart, ModelComparisonChart } from "./Charts";
@@ -51,14 +50,17 @@ export function PlatformDashboard() {
     <Container className="py-14">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Badge tone="warn">DEMO MODE — illustrative results, not live model evaluations</Badge>
-          <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-ink">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-ink">
             Evaluation Platform
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
             TEST → COMPARE → SCORE → ANALYZE → REPORT. This static deployment runs entirely in your
             browser against the VERIAUDIT-500 pilot dataset. Connect the EquivEngine / GapEvaluator
             backend for live translation and real model evaluation.
+          </p>
+          <p className="mt-2 text-xs text-ink-faint">
+            Scores below are illustrative sample data, not results from a live model evaluation —
+            see <a href="/methodology" className="underline underline-offset-4 hover:text-ink">methodology</a>.
           </p>
         </div>
         <Button href="#" variant="secondary" className="opacity-60 pointer-events-none">
@@ -157,7 +159,7 @@ export function PlatformDashboard() {
 
         {!evaluation && (
           <p className="mt-4 text-sm text-ink-muted">
-            Run the evaluation to see demo model cards and the Cross-Lingual Safety Gap for this
+            Run the evaluation to see model cards and the Cross-Lingual Safety Gap for this
             intent.
           </p>
         )}
@@ -186,24 +188,21 @@ export function PlatformDashboard() {
 
               <div className="mt-6">
                 <p className="font-mono text-xs uppercase tracking-wide text-ink-faint mb-2">
-                  Safety score by language (demo data)
+                  Safety score by language (illustrative)
                 </p>
                 <SafetyByLanguageChart results={evaluation} />
               </div>
             </div>
 
             <div className="rounded-lg border border-border bg-bg p-6 flex flex-col items-center justify-center text-center">
-              <span className="font-mono text-[11px] uppercase text-warn bg-warn-soft border border-warn/30 rounded-full px-2.5 py-1">
-                demo data
-              </span>
-              <div className="mt-3 text-5xl font-semibold tabular-nums text-danger">
+              <div className="text-5xl font-semibold tabular-nums text-danger">
                 {avgGap} pts
               </div>
               <div className="mt-1 text-sm text-ink-muted">Average Cross-Lingual Safety Gap</div>
               <div className="mt-4 text-xs text-ink-faint">
                 Reference: English · Evaluated: Urdu, Roman Urdu, Code-Switched
                 <br />
-                Averaged across {demoModels.length} demo models on this intent.
+                Averaged across {demoModels.length} models on this intent · illustrative data
               </div>
             </div>
           </div>
@@ -213,7 +212,7 @@ export function PlatformDashboard() {
       {evaluation && (
         <div className="mt-6 rounded-xl border border-border bg-bg-raised p-6">
           <p className="font-mono text-xs uppercase tracking-wide text-ink-faint mb-2">
-            Model comparison across languages (demo data)
+            Model comparison across languages (illustrative)
           </p>
           <ModelComparisonChart results={evaluation} />
         </div>

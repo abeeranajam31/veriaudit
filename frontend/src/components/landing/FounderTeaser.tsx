@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "../ui/Container";
 import { Eyebrow } from "../ui/SectionHeading";
@@ -18,9 +19,13 @@ export function FounderTeaser() {
           </div>
 
           <aside className="lg:sticky lg:top-24 rounded-xl border border-border bg-bg-raised p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft font-mono text-sm font-semibold text-accent">
-              AN
-            </div>
+            <Image
+              src="/founder.jpg"
+              alt="Abeera Najam"
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-full object-cover border border-border-strong"
+            />
             <div className="mt-4 font-semibold text-ink">Abeera Najam</div>
             <div className="text-sm text-ink-muted">Founder &amp; Lead Researcher</div>
             <div className="mt-1 font-mono text-xs uppercase tracking-wide text-ink-faint">

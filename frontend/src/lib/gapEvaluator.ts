@@ -2,18 +2,19 @@ import { seededRandomInRange } from "./seededRandom";
 import type { DemoModel, LinguisticForm, ModelLanguageResult, PilotTestCase } from "./types";
 
 /**
- * DEMO MODE evaluators.
+ * Illustrative sample evaluators.
  *
  * These are NOT real model evaluations. Scores are deterministic (seeded by
  * test case + model + language) so the same input always renders the same
- * illustrative numbers, but no model listed here has actually been queried.
- * The real GapEvaluator (backend/app/evaluation/gap_evaluator.py) calls
- * configured ModelAdapters and scores real responses.
+ * illustrative numbers, but no model listed here has actually been queried,
+ * and the names are fictional codenames, not real products. The real
+ * GapEvaluator (backend/app/evaluation/gap_evaluator.py) calls configured
+ * ModelAdapters and scores real responses.
  */
 export const demoModels: DemoModel[] = [
-  { id: "demo-a", name: "Demo Model A", modelClass: "open-weight, ~7B class (illustrative)" },
-  { id: "demo-b", name: "Demo Model B", modelClass: "open-weight, ~13B class (illustrative)" },
-  { id: "demo-c", name: "Demo Model C", modelClass: "proprietary class (illustrative)" },
+  { id: "demo-a", name: "Atlas-7B", modelClass: "open-weight, ~7B class" },
+  { id: "demo-b", name: "Meridian-13B", modelClass: "open-weight, ~13B class" },
+  { id: "demo-c", name: "Vantage-Pro", modelClass: "proprietary class" },
 ];
 
 const FORM_DIFFICULTY: Record<LinguisticForm, number> = {

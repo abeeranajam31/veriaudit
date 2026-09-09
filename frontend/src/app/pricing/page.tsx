@@ -18,7 +18,7 @@ const tiers = [
     features: [
       "Limited evaluations per month",
       "Pilot dataset access (VERIAUDIT-500 sample)",
-      "Demo-mode dashboard",
+      "Interactive evaluation dashboard",
       "Community support (GitHub)",
     ],
     cta: "Explore the Platform",

@@ -84,7 +84,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col gap-2 border-t border-border pt-6 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 VERIAUDIT. Open-source AI safety evaluation infrastructure.</p>
-          <p>Research prototype. Demo results are illustrative unless explicitly labeled verified.</p>
+          <p>Research prototype. Results shown are illustrative unless explicitly labeled verified.</p>
         </div>
       </Container>
     </footer>

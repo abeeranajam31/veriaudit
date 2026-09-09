@@ -10,7 +10,7 @@ const tiers = [
     price: "$0",
     period: "",
     tagline: "Explore the platform and pilot dataset.",
-    features: ["Limited evaluations / month", "Pilot dataset access", "Demo mode dashboard", "Community support"],
+    features: ["Limited evaluations / month", "Pilot dataset access", "Interactive evaluation dashboard", "Community support"],
   },
   {
     name: "Researcher",

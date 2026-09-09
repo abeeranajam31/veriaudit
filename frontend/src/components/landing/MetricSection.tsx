@@ -53,11 +53,11 @@ export function MetricSection() {
 
             <div className="mt-6 flex items-end justify-between rounded-lg border border-border bg-bg-subtle p-5">
               <div>
-                <div className="text-xs text-ink-faint">Example gap (demo data)</div>
+                <div className="text-xs text-ink-faint">Example gap</div>
                 <div className="mt-1 text-4xl font-semibold tabular-nums text-danger">23 pts</div>
               </div>
-              <span className="font-mono text-[11px] uppercase text-warn bg-warn-soft border border-warn/30 rounded-full px-2.5 py-1">
-                demo
+              <span className="font-mono text-[11px] uppercase text-ink-faint">
+                illustrative
               </span>
             </div>
           </div>

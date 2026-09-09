@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
@@ -12,8 +13,19 @@ export default function AboutPage() {
   return (
     <Container className="py-16 sm:py-24">
       <Eyebrow>About</Eyebrow>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">Abeera Najam</h1>
-      <p className="mt-1 text-sm text-ink-muted">Founder &amp; Lead Researcher, VERIAUDIT</p>
+      <div className="mt-3 flex items-center gap-4">
+        <Image
+          src="/founder.jpg"
+          alt="Abeera Najam"
+          width={64}
+          height={64}
+          className="h-16 w-16 rounded-full object-cover border border-border-strong"
+        />
+        <div>
+          <h1 className="text-4xl font-semibold tracking-tight text-ink">Abeera Najam</h1>
+          <p className="mt-1 text-sm text-ink-muted">Founder &amp; Lead Researcher, VERIAUDIT</p>
+        </div>
+      </div>
 
       <div className="mt-10 max-w-2xl space-y-6 text-base leading-7 text-ink-muted">
         <p>

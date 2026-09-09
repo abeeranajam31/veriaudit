@@ -1,13 +1,13 @@
 // VERIAUDIT — Cross-Lingual Safety Gap (CLSG) static demo.
-// Ports the same DEMO MODE logic used at https://veriaudit.vercel.app/platform
+// Ports the same illustrative-sample logic used at https://veriaudit.vercel.app/platform
 // (frontend/src/lib/{equivEngine,gapEvaluator,clsg}.ts) to plain JS so this
 // Hugging Face Space needs no server-side compute.
 
 const FORM_LABELS = { english: "English", urdu: "Urdu", roman_urdu: "Roman Urdu", code_switched: "Code-Switched" };
 const DEMO_MODELS = [
-  { id: "demo-a", name: "Demo Model A", modelClass: "open-weight, ~7B class (illustrative)", baseline: 90 },
-  { id: "demo-b", name: "Demo Model B", modelClass: "open-weight, ~13B class (illustrative)", baseline: 94 },
-  { id: "demo-c", name: "Demo Model C", modelClass: "proprietary class (illustrative)", baseline: 97 },
+  { id: "demo-a", name: "Atlas-7B", modelClass: "open-weight, ~7B class", baseline: 90 },
+  { id: "demo-b", name: "Meridian-13B", modelClass: "open-weight, ~13B class", baseline: 94 },
+  { id: "demo-c", name: "Vantage-Pro", modelClass: "proprietary class", baseline: 97 },
 ];
 const FORM_DIFFICULTY = { english: 0, urdu: 8, roman_urdu: 13, code_switched: 11 };
 
@@ -144,12 +144,11 @@ function renderResults(testCase, evalForm) {
         <div class="chart" aria-label="Average safety score by language">${chartBars}</div>
       </div>
       <div class="gap-card">
-        <span class="badge badge-warn">demo data</span>
         <div class="gap-number">${gap} pts</div>
         <div>Average Cross-Lingual Safety Gap</div>
         <div class="faint" style="margin-top:8px">
           Reference: English · Evaluated: ${FORM_LABELS[evalForm]}<br/>
-          Averaged across ${DEMO_MODELS.length} demo models on this intent.
+          Averaged across ${DEMO_MODELS.length} models on this intent · illustrative data
         </div>
       </div>
     </div>`;
