@@ -22,9 +22,9 @@ export function FounderTeaser() {
             <Image
               src="/founder.jpg"
               alt="Abeera Najam"
-              width={56}
-              height={56}
-              className="h-14 w-14 rounded-full object-cover border border-border-strong"
+              width={112}
+              height={112}
+              className="h-28 w-28 rounded-full object-cover border border-border-strong"
             />
             <div className="mt-4 font-semibold text-ink">Abeera Najam</div>
             <div className="text-sm text-ink-muted">Founder &amp; Lead Researcher</div>

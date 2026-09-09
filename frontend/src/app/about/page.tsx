@@ -13,13 +13,13 @@ export default function AboutPage() {
   return (
     <Container className="py-16 sm:py-24">
       <Eyebrow>About</Eyebrow>
-      <div className="mt-3 flex items-center gap-4">
+      <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-5">
         <Image
           src="/founder.jpg"
           alt="Abeera Najam"
-          width={64}
-          height={64}
-          className="h-16 w-16 rounded-full object-cover border border-border-strong"
+          width={128}
+          height={128}
+          className="h-32 w-32 rounded-full object-cover border border-border-strong"
         />
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-ink">Abeera Najam</h1>
