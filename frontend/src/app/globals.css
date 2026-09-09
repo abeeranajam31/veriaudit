@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fbfaf8;
+  --bg-raised: #ffffff;
+  --bg-subtle: #f2f0ec;
+  --ink: #14140f;
+  --ink-muted: #5b5a52;
+  --ink-faint: #8c8a80;
+  --border: #e4e1d9;
+  --border-strong: #cdc9bd;
+  --accent: #0f6b52;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4f0ea;
+  --warn: #9a5a12;
+  --warn-soft: #f5ead6;
+  --danger: #a3311c;
+  --danger-soft: #f6e4df;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0c0a;
+  --bg-raised: #131410;
+  --bg-subtle: #171813;
+  --ink: #f2f1ea;
+  --ink-muted: #a5a397;
+  --ink-faint: #706e63;
+  --border: #26271f;
+  --border-strong: #34352b;
+  --accent: #35c497;
+  --accent-ink: #04140e;
+  --accent-soft: #10241c;
+  --warn: #e0a84e;
+  --warn-soft: #2a2213;
+  --danger: #e2705a;
+  --danger-soft: #2a1712;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0c0a;
+    --bg-raised: #131410;
+    --bg-subtle: #171813;
+    --ink: #f2f1ea;
+    --ink-muted: #a5a397;
+    --ink-faint: #706e63;
+    --border: #26271f;
+    --border-strong: #34352b;
+    --accent: #35c497;
+    --accent-ink: #04140e;
+    --accent-soft: #10241c;
+    --warn: #e0a84e;
+    --warn-soft: #2a2213;
+    --danger: #e2705a;
+    --danger-soft: #2a1712;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+.grid-overlay {
+  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
