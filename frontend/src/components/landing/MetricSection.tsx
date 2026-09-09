@@ -21,11 +21,6 @@ export function MetricSection() {
               reference language and its safety performance in an evaluated language, on the same
               underlying intent set.
             </p>
-            <p className="mt-4 text-sm leading-6 text-ink-faint">
-              We do not claim CLSG is a scientifically validated, universal measure of cross-lingual
-              safety. It is a transparent, first-pass formulation, published alongside its
-              assumptions and limitations so it can be scrutinized and improved.
-            </p>
             <Link
               href="/methodology"
               className="mt-5 inline-block text-sm font-medium text-accent hover:underline underline-offset-4"

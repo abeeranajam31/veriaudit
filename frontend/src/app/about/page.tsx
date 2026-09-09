@@ -54,10 +54,6 @@ export default function AboutPage() {
           Hugging Face
         </Button>
       </div>
-      <p className="mt-3 text-xs text-ink-faint">
-        LinkedIn is a placeholder until that profile is public — GitHub and Hugging Face are live.
-      </p>
-
       <div className="mt-14 rounded-xl border border-border bg-bg-subtle p-6 max-w-2xl">
         <h2 className="text-sm font-semibold text-ink">Get in touch</h2>
         <p className="mt-2 text-sm leading-6 text-ink-muted">

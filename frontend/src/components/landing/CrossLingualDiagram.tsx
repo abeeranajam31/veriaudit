@@ -12,8 +12,8 @@ export function CrossLingualDiagram() {
         <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">
           Same intent, four linguistic forms
         </p>
-        <span className="font-mono text-[11px] uppercase tracking-wide text-warn bg-warn-soft border border-warn/30 rounded-full px-2.5 py-1">
-          Illustrative example — not a measured result
+        <span className="font-mono text-[10px] uppercase tracking-wide text-ink-faint">
+          illustrative example
         </span>
       </div>
 

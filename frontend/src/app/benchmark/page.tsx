@@ -41,15 +41,6 @@ export default function BenchmarkPage() {
         </Badge>
       </div>
 
-      <div className="mt-6 rounded-xl border border-border bg-bg-raised p-6 max-w-2xl">
-        <p className="text-sm leading-6 text-ink-muted">
-          The public MVP contains a pilot subset, translated by the project&apos;s lead researcher
-          as a first pass. The full VERIAUDIT-500 dataset is under development and will be released
-          following independent bilingual human verification. Current verification status per case
-          is shown below and in the raw dataset file.
-        </p>
-      </div>
-
       <div className="mt-12 grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <h2 className="text-lg font-semibold text-ink">Dataset schema</h2>
