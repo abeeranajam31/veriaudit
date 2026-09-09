@@ -74,6 +74,21 @@ variants). **The full VERIAUDIT-500 dataset is under development** and will
 be released after independent bilingual verification. See
 [`dataset/README.md`](dataset/README.md).
 
+## Hugging Face
+
+VERIAUDIT publishes to the Hub under
+[`huggingface.co/abeeranajam31`](https://huggingface.co/abeeranajam31) —
+these are synced mirrors of `dataset/` and `backend/app/evaluation/` in
+this repository (source of truth stays here):
+
+| | |
+|---|---|
+| Dataset | [`abeeranajam31/CLSG-Benchmark`](https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark) — the pilot dataset as a loadable 🤗 `datasets` dataset, with a full dataset card. |
+| Framework | [`abeeranajam31/CLSG-Evaluator`](https://huggingface.co/abeeranajam31/CLSG-Evaluator) — the evaluation framework (`clsg`, `equiv_engine`, `evaluators`, `gap_evaluator`, `model_adapters`) as a standalone pip-installable package. |
+| Demo | [`abeeranajam31/veriaudit-clsg-demo`](https://huggingface.co/spaces/abeeranajam31/veriaudit-clsg-demo) — a static (free-tier) interactive Space running the same DEMO MODE logic as `/platform`, ported to client-side JS. |
+
+Local source for all three lives in [`huggingface/`](huggingface/).
+
 ## Installation
 
 ### Frontend
