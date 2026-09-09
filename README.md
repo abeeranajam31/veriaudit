@@ -11,9 +11,7 @@ quantitative difference in safety performance between a model's behavior
 in its training-dominant language and its behavior in low-resource
 linguistic settings.
 
-> **Research integrity note.** This is an early-stage research prototype.
-> Numbers shown in the platform's demo mode are illustrative unless
-> explicitly labeled otherwise — see [Limitations](#limitations) and
+> **Research integrity note.** This is an early-stage research 
 > [`docs/research.md`](docs/research.md).
 
 ## Architecture
@@ -29,10 +27,7 @@ veriaudit/
 └── .env.example
 ```
 
-The frontend runs standalone (static DEMO MODE, no backend required) — this
-is what's deployed to Vercel. The backend is a separate FastAPI service you
-can run locally or deploy to any Python host for live translation, model
-evaluation, and PDF report generation.
+
 
 ## Research question
 
@@ -103,7 +98,7 @@ API docs at `http://localhost:8000/docs`.
 ## Usage
 
 - Visit `/platform` for the interactive dashboard: pick a pilot intent (or
-  enter free text), generate linguistic variants, run a demo evaluation,
+  enter free text), generate linguistic variants, run a evaluation,
   and inspect the Cross-Lingual Safety Gap.
 - `POST /api/variants` — generate + screen linguistic variants (requires a
   configured `TranslationProvider`; raises a clear `501` otherwise).
