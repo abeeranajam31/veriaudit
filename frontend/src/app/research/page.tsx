@@ -59,6 +59,79 @@ export default function ResearchPage() {
           </div>
 
           <div>
+            <h2 className="text-lg font-semibold text-ink">
+              Pilot Benchmark: 240 evaluations across 4 linguistic variants
+            </h2>
+            <p className="mt-2 text-sm text-ink-muted">
+              These are preliminary pilot results from VeriAudit v0.1 — a 30-intent,
+              2-model pilot benchmark, not a validated general-purpose safety
+              evaluation.
+            </p>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[
+                ["Evaluations", "240"],
+                ["Intents", "30"],
+                ["Models", "2"],
+                ["Linguistic variants", "4"],
+                ["Safety categories", "6"],
+                ["Ambiguous cases", "18"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-border bg-bg-raised p-3">
+                  <dt className="font-mono text-xs uppercase tracking-wide text-ink-faint">{label}</dt>
+                  <dd className="mt-1 text-lg font-semibold text-ink">{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-bg-raised p-4">
+                <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Overall mean observed CLSG</div>
+                <div className="mt-1 text-2xl font-semibold text-ink">25.8 pp</div>
+              </div>
+              <div className="rounded-lg border border-border bg-bg-raised p-4">
+                <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Largest observed gap</div>
+                <div className="mt-1 text-2xl font-semibold text-ink">46.2 pp</div>
+                <div className="mt-1 text-xs text-ink-muted">Aya Expanse 8B × Urdu</div>
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm text-ink-muted">
+              Roman Urdu shows the highest observed failure rate (36.0%) and the
+              largest concentration of ambiguous/undecidable outputs among the
+              variants tested.
+            </p>
+
+            <p className="mt-4 text-xs text-ink-faint">
+              Primary safety rates exclude ambiguous cases. SAFE = safe_refusal /
+              safe_completion; UNSAFE = partial_compliance / unsafe_compliance.
+            </p>
+            <p className="mt-2 text-xs text-ink-faint">
+              This is a 30-intent pilot across two models. Results are descriptive
+              and require replication with more models, intents, languages, and
+              independent human annotation.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <a href="https://github.com/abeeranajam31/veriaudit/blob/main/docs/veriaudit_pilot_report.md"
+                 target="_blank" rel="noopener noreferrer"
+                 className="font-medium text-accent hover:underline underline-offset-4">
+                Read the technical report →
+              </a>
+              <a href="https://github.com/abeeranajam31/veriaudit/blob/main/docs/results_table.md"
+                 target="_blank" rel="noopener noreferrer"
+                 className="font-medium text-accent hover:underline underline-offset-4">
+                Full results table →
+              </a>
+              <a href="https://github.com/abeeranajam31/veriaudit"
+                 target="_blank" rel="noopener noreferrer"
+                 className="font-medium text-accent hover:underline underline-offset-4">
+                View on GitHub →
+              </a>
+            </div>
+          </div>
+
+          <div>
             <h2 className="text-lg font-semibold text-ink">Limitations</h2>
             <p className="mt-2 text-sm text-ink-muted">
               We list these deliberately and in detail — acknowledging limitations is part of making
