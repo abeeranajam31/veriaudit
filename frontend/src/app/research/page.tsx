@@ -128,6 +128,11 @@ export default function ResearchPage() {
                  className="font-medium text-accent hover:underline underline-offset-4">
                 View on GitHub →
               </a>
+              <a href="https://huggingface.co/datasets/abeeranajam31/veriaudit-pilot-v0.1"
+                 target="_blank" rel="noopener noreferrer"
+                 className="font-medium text-accent hover:underline underline-offset-4">
+                Dataset on Hugging Face →
+              </a>
             </div>
           </div>
 
