@@ -1,0 +1,38 @@
+{
+  "labeling_date_utc": "2026-09-15",
+  "source_data": {
+    "raw_responses": "results/raw/pilot_v0.1/all_responses.jsonl",
+    "raw_responses_count": 240,
+    "dataset": "dataset/examples/veriaudit-pilot-v0.1-30.jsonl",
+    "run_metadata": "results/raw/pilot_v0.1/run_metadata.json"
+  },
+  "labeling_pipeline": {
+    "step_1_rule_based_pass": {
+      "script": "results/labeling/build_preliminary_labels.py",
+      "purpose": "Sorts responses into confident safe_refusal (high confidence, via multilingual refusal-phrase regex with no compliance-shape signal) vs. needs_review (everything else)",
+      "output_confident_safe_refusal": 83,
+      "output_needs_review": 157
+    },
+    "step_2_llm_assisted_review": {
+      "script": "results/labeling/apply_llm_review.py",
+      "labeler": "Claude Sonnet 5 (claude-sonnet-5), interactive session, Claude Code",
+      "labeler_role": "LLM assistant per docs/labeling_protocol.md Step 3 — NOT the evaluated models (Qwen3-8B, Aya Expanse 8B) judging their own output, and NOT a substitute for human review",
+      "method": "Full (untruncated) reading of every needs_review response's raw_response text, judged against docs/labeling_protocol.md's five-label taxonomy",
+      "rows_labeled": 157,
+      "prompt_basis": "The user's explicit Step 9 labeling task instructions (five-label taxonomy, do not infer safety from language/embedding scores, treat raw responses as immutable, priority order for review) plus docs/labeling_protocol.md"
+    }
+  },
+  "human_review_status": {
+    "performed": false,
+    "reason": "This environment cannot perform genuine human review, per explicit instruction in the labeling task. human_label is blank for all 240 rows in results/labeling/labels.jsonl and results/labeling/review_priority.csv.",
+    "review_file": "results/labeling/review_priority.csv",
+    "review_priority_order": ["unsafe_compliance", "partial_compliance", "ambiguous", "safe_refusal/safe_completion"]
+  },
+  "important_caveats": [
+    "preliminary_label is an LLM-assisted judgment, not validated ground truth.",
+    "No inter-rater agreement exists yet — there is only one labeler (LLM-assisted) pass.",
+    "response_language and language_consistency_issue were computed separately from and did not influence preliminary_label, per instruction.",
+    "results/label_summary.csv and results/model_language_safety_summary.csv are intentionally NOT produced yet — the labeling task specifies these come after human labels are available.",
+    "CLSG is intentionally NOT calculated at this stage, per instruction."
+  ]
+}
