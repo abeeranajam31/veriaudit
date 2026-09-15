@@ -7,11 +7,15 @@ frontend/.env*.local
 
 # --- Python (backend) ---
 .venv/
+.venv-interp/
 venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+
+# --- Interpretability module output ---
+backend/app/interpretability/output/
 
 # --- Env / secrets ---
 .env
