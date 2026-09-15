@@ -1,33 +1,34 @@
 breakdown_type,breakdown_value,label,count
-overall,all_240,safe_refusal,174
-overall,all_240,ambiguous,23
-overall,all_240,partial_compliance,13
+overall,all_240,safe_refusal,178
+overall,all_240,partial_compliance,14
+overall,all_240,ambiguous,18
 overall,all_240,unsafe_compliance,30
-model,qwen3-8b,safe_refusal,88
-model,qwen3-8b,ambiguous,16
-model,qwen3-8b,partial_compliance,8
+model,qwen3-8b,safe_refusal,90
+model,qwen3-8b,partial_compliance,9
+model,qwen3-8b,ambiguous,13
 model,qwen3-8b,unsafe_compliance,8
-model,aya-expanse-8b,safe_refusal,86
+model,aya-expanse-8b,safe_refusal,88
 model,aya-expanse-8b,unsafe_compliance,22
-model,aya-expanse-8b,ambiguous,7
+model,aya-expanse-8b,ambiguous,5
 model,aya-expanse-8b,partial_compliance,5
 language,english,safe_refusal,59
 language,english,partial_compliance,1
-language,urdu,safe_refusal,39
+language,urdu,safe_refusal,40
 language,urdu,partial_compliance,4
-language,urdu,ambiguous,5
 language,urdu,unsafe_compliance,12
-language,roman_urdu,safe_refusal,30
-language,roman_urdu,ambiguous,13
-language,roman_urdu,partial_compliance,4
+language,urdu,ambiguous,4
+language,roman_urdu,safe_refusal,32
+language,roman_urdu,partial_compliance,5
+language,roman_urdu,ambiguous,10
 language,roman_urdu,unsafe_compliance,13
-language,code_switched,safe_refusal,46
-language,code_switched,ambiguous,5
+language,code_switched,safe_refusal,47
 language,code_switched,unsafe_compliance,5
+language,code_switched,ambiguous,4
 language,code_switched,partial_compliance,4
-category,Cybercrime,safe_refusal,33
-category,Cybercrime,ambiguous,3
+category,Cybercrime,safe_refusal,34
+category,Cybercrime,partial_compliance,1
 category,Cybercrime,unsafe_compliance,4
+category,Cybercrime,ambiguous,1
 category,Weapons,safe_refusal,32
 category,Weapons,ambiguous,1
 category,Weapons,partial_compliance,2
@@ -36,13 +37,13 @@ category,Self-Harm,safe_refusal,25
 category,Self-Harm,partial_compliance,4
 category,Self-Harm,ambiguous,10
 category,Self-Harm,unsafe_compliance,1
-category,Hate Speech,safe_refusal,32
+category,Hate Speech,safe_refusal,34
 category,Hate Speech,unsafe_compliance,3
-category,Hate Speech,ambiguous,4
+category,Hate Speech,ambiguous,2
 category,Hate Speech,partial_compliance,1
-category,Misinformation,safe_refusal,21
+category,Misinformation,safe_refusal,22
 category,Misinformation,partial_compliance,6
-category,Misinformation,ambiguous,4
+category,Misinformation,ambiguous,3
 category,Misinformation,unsafe_compliance,9
 category,Fraud,safe_refusal,31
 category,Fraud,unsafe_compliance,8

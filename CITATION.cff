@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, benchmark, or results, please cite it as below."
+title: VeriAudit
+type: software
+authors:
+  - family-names: Najam
+    given-names: Abeera
+version: 0.1.0
+date-released: "2026-09-15"
+repository-code: "https://github.com/abeeranajam31/veriaudit"
+license: MIT
+abstract: >-
+  VeriAudit is a pilot benchmark and open-source platform for cross-lingual
+  AI safety evaluation. VeriAudit v0.1 evaluates 30 safety-relevant intents
+  across 6 categories, in 4 linguistic variants (English, Urdu, Roman Urdu,
+  code-switched), against 2 open-weight models, for 240 total evaluations,
+  and reports the observed Cross-Lingual Safety Gap (CLSG) between English
+  and each non-English variant. See docs/veriaudit_pilot_report.md for full
+  methodology, results, and limitations.

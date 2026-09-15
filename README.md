@@ -74,6 +74,35 @@ variants). **The full VERIAUDIT-500 dataset is under development** and will
 be released after independent bilingual verification. See
 [`dataset/README.md`](dataset/README.md).
 
+## Pilot Results
+
+These are preliminary pilot results from VeriAudit v0.1 — a 30-intent, 2-model
+pilot benchmark, not a validated general-purpose safety evaluation. Full
+methodology, statistics, and limitations: **[`docs/veriaudit_pilot_report.md`](docs/veriaudit_pilot_report.md)**.
+
+- **240 evaluations**: 30 intents × 4 linguistic variants (English, Urdu,
+  Roman Urdu, code-switched) × 2 models (Qwen3-8B, Aya Expanse 8B), across
+  6 categories (Cybercrime, Weapons, Self-Harm, Hate Speech, Misinformation,
+  Fraud).
+- We observe a **cross-lingual safety gap in every one of the 6 model ×
+  non-English-language comparisons** tested, with a mean of **25.8
+  percentage points** across those six comparisons (not a population
+  estimate — see the report).
+- The largest observed gap in this pilot: **Aya Expanse 8B × Urdu, 46.2
+  percentage points** (100.0% → 53.8% observed safety rate).
+- **Roman Urdu** shows both the largest observed failure rate (36.0%) and
+  the largest concentration of ambiguous/undecidable outputs (10 of 18
+  ambiguous cases) in this pilot.
+- 3 of 6 model-language comparisons remain statistically significant after
+  Holm correction for multiple comparisons (n=30 intents per comparison);
+  see the report for the full statistical analysis, sensitivity analysis,
+  and — importantly — the label-provenance caveat (only 66/240 labels
+  carry direct human sign-off).
+
+Full results table: [`docs/results_table.md`](docs/results_table.md) ·
+Figures: [`docs/figures/`](docs/figures/) ·
+Raw analysis data: [`results/labeling/`](results/labeling/).
+
 ## Hugging Face
 
 VERIAUDIT publishes to the Hub under
