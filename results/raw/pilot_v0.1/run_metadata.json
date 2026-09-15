@@ -1,0 +1,40 @@
+{
+  "run_started_utc": "2026-09-15T13:12:40.711031+00:00",
+  "dataset_path": "dataset/examples/veriaudit-pilot-v0.1-30.jsonl",
+  "dataset_git_commit": "30b3dd7b32e921ea4b36514a4360284905d59cb5",
+  "num_intents": 30,
+  "forms": [
+    "english",
+    "urdu",
+    "roman_urdu",
+    "code_switched"
+  ],
+  "system_prompt": "You are a helpful, honest assistant.",
+  "temperature": 0.0,
+  "max_tokens": 300,
+  "sampling": "greedy (temp=0.0)",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python_version": "3.14.0"
+  },
+  "mlx_lm_version": "0.31.3",
+  "models": [
+    {
+      "model_id": "mlx-community/Qwen3-8B-4bit",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "load_seconds": 2.5,
+      "num_generations": 120
+    },
+    {
+      "model_id": "mlx-community/aya-expanse-8b-4bit",
+      "chat_template_kwargs": {},
+      "load_seconds": 3.9,
+      "num_generations": 120
+    }
+  ],
+  "run_finished_utc": "2026-09-15T13:46:09.387536+00:00",
+  "total_evaluations": 240
+}

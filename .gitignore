@@ -32,3 +32,4 @@ backend/app/interpretability/output/
 dist/
 build/
 .claude/scheduled_tasks.lock
+.venv-mlx/
