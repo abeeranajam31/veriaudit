@@ -48,8 +48,8 @@ with open("results/labeling/review_priority.csv", "w", newline="", encoding="utf
                 r["response_language"],
                 r["language_consistency_issue"],
                 r["reviewer_notes"],
-                "",  # human_label — intentionally blank
-                "",  # human_reviewer_notes — intentionally blank
+                r["human_label"],
+                r.get("human_reviewer_notes", ""),
             ]
         )
 

@@ -20,19 +20,39 @@
       "method": "Full (untruncated) reading of every needs_review response's raw_response text, judged against docs/labeling_protocol.md's five-label taxonomy",
       "rows_labeled": 157,
       "prompt_basis": "The user's explicit Step 9 labeling task instructions (five-label taxonomy, do not infer safety from language/embedding scores, treat raw responses as immutable, priority order for review) plus docs/labeling_protocol.md"
+    },
+    "step_3_genuine_human_review_batch1": {
+      "worksheet": "results/labeling/review_worksheet_top30.md",
+      "reviewer": "The user (genuine human review, not LLM-assisted)",
+      "scope": "All 30 preliminary unsafe_compliance cases (top of review_priority.csv)",
+      "result": "30/30 confirmed unsafe_compliance — 100% agreement with the LLM-assisted preliminary label",
+      "applied_by": "results/labeling/apply_human_review_batch1.py, results/labeling/fix_human_notes_field.py",
+      "human_label_and_human_reviewer_notes": "Set on these 30 rows only in labels.jsonl. Not modified since."
+    },
+    "step_4_independent_second_pass_review": {
+      "script": "results/labeling/apply_second_pass.py",
+      "labeler": "Claude Sonnet 5 (claude-sonnet-5), interactive session, Claude Code — same labeler identity as step 2, but a fresh, independent re-read of each response against docs/labeling_protocol.md, not anchored on the step-2 preliminary_label",
+      "scope": "The 210 rows not in the step-3 human-reviewed batch (163 preliminary safe_refusal + 34 ambiguous + 13 partial_compliance)",
+      "method": "All 83 rule-based-only rows (never individually read before) read in full for the first time; all 34 ambiguous and 13 partial_compliance rows re-read fresh; all 80 LLM-reviewed safe_refusal rows re-scanned for verification",
+      "outputs": ["results/labeling/second_pass_labels.jsonl", "results/labeling/disagreements.csv", "results/labeling/second_pass_summary.csv"],
+      "disagreements_with_step2_preliminary_label": 11,
+      "disagreement_direction": "All 11 were ambiguous -> safe_refusal (garbled/negation-dropping/off-topic responses re-read as refusal-shaped with no actionable harmful content) — zero shifts toward a more severe label",
+      "note": "This is still NOT human review. It is a second LLM-assisted pass, explicitly distinguished from step 2 by being independently re-derived rather than copied forward."
     }
   },
   "human_review_status": {
-    "performed": false,
-    "reason": "This environment cannot perform genuine human review, per explicit instruction in the labeling task. human_label is blank for all 240 rows in results/labeling/labels.jsonl and results/labeling/review_priority.csv.",
+    "performed": "partial — 30/240 rows",
+    "reason": "Only the 30 highest-priority (preliminary unsafe_compliance) cases have genuine human_label values, entered by the user via results/labeling/review_worksheet_top30.md. The remaining 210 rows have only LLM-assisted labels (preliminary_label from step 2, second_pass_label recorded separately in second_pass_labels.jsonl) — human_label is still blank for those 210.",
     "review_file": "results/labeling/review_priority.csv",
-    "review_priority_order": ["unsafe_compliance", "partial_compliance", "ambiguous", "safe_refusal/safe_completion"]
+    "review_priority_order": ["unsafe_compliance", "partial_compliance", "ambiguous", "safe_refusal/safe_completion"],
+    "cases_still_needing_human_adjudication": "The 23 second-pass ambiguous cases and 13 partial_compliance cases are the highest-value remaining targets for human review; the 174 second-pass safe_refusal cases are lower priority but still not human-verified."
   },
   "important_caveats": [
-    "preliminary_label is an LLM-assisted judgment, not validated ground truth.",
-    "No inter-rater agreement exists yet — there is only one labeler (LLM-assisted) pass.",
-    "response_language and language_consistency_issue were computed separately from and did not influence preliminary_label, per instruction.",
-    "results/label_summary.csv and results/model_language_safety_summary.csv are intentionally NOT produced yet — the labeling task specifies these come after human labels are available.",
-    "CLSG is intentionally NOT calculated at this stage, per instruction."
+    "preliminary_label and second_pass_label are both LLM-assisted judgments, not validated ground truth, for 210 of 240 rows.",
+    "Only 30/240 rows have genuine human_label values. No inter-rater agreement between a human and the LLM labeler exists for the other 210.",
+    "response_language and language_consistency_issue were computed separately from and did not influence either the preliminary or second-pass safety label, per instruction.",
+    "results/label_summary.csv and results/model_language_safety_summary.csv are intentionally NOT produced yet — the labeling task specifies these come after human labels are available, and only 30/240 rows are human-labeled.",
+    "CLSG is intentionally NOT calculated at this stage, per instruction.",
+    "Protocol observation: garbled/repetitive generation (a real failure mode of this 4-bit-quantized 8B model at these decoding settings) and off-topic/non-responsive generation both got folded into 'ambiguous' during labeling, but they are meaningfully different phenomena — a future protocol revision could split 'ambiguous' into e.g. 'incoherent/degenerate' vs 'off-topic' vs 'genuinely unclear polarity' subcategories if that distinction matters for analysis."
   ]
 }
