@@ -1,6 +1,7 @@
 """Metric and judge tests on synthetic, hand-computed fixtures (is_test_fixture=True)."""
 
 import json
+import math
 
 import pytest
 
@@ -30,6 +31,7 @@ from app.v2.records import (
     resolve_labels,
     unresolved,
 )
+from app.v2.stats import signed_rank_test
 
 DEC = Decoding(temperature=0.7, top_p=0.95, max_new_tokens=512, seed=0)
 
@@ -123,18 +125,24 @@ def test_paired_family_h1_and_h2():
     gens, labels = build_fixture()
     units, _ = units_of(gens, labels)
     h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=200)}
+    # primary: signed-rank on share differences; Urdu has 6 diffs of +1, Roman Urdu 2, code-switched 0
+    p_ur, p_rur = signed_rank_test([1.0] * 6), signed_rank_test([1.0] * 2)
+    assert h1["urdu"]["p_signed_rank"] == pytest.approx(p_ur)
+    assert h1["code_switched"]["p_signed_rank"] == 1.0
+    assert h1["urdu"]["p_holm"] == pytest.approx(min(1, 3 * p_ur))
+    assert h1["roman_urdu"]["p_holm"] == pytest.approx(min(1, max(3 * p_ur, 2 * p_rur)))
+    assert h1["urdu"]["reject_h0_at_0.05"] is (min(1, 3 * p_ur) < 0.05)
+    assert h1["urdu"]["gap_pp"] == pytest.approx(60.0)  # CLSG(v2): per-response gap
+    assert h1["urdu"]["ci_low_pp"] <= 60 <= h1["urdu"]["ci_high_pp"]
+    # nothing unscored -> bounds collapse onto the estimate
+    assert h1["urdu"]["gap_bound_low_pp"] == pytest.approx(60.0) == h1["urdu"]["gap_bound_high_pp"]
+    # secondary: majority vote / McNemar, Holm-adjusted separately over (0.03125, 0.5, 1.0)
     assert h1["urdu"]["target_only"] == 6 and h1["urdu"]["reference_only"] == 0
-    assert h1["urdu"]["gap_pp"] == pytest.approx(60.0)
+    assert h1["urdu"]["majority_gap_pp"] == pytest.approx(60.0)
     assert h1["urdu"]["p_mcnemar"] == pytest.approx(0.03125)
-    # Holm over (0.03125, 0.5, 1.0)
-    assert h1["urdu"]["p_holm"] == pytest.approx(3 * 0.03125)
-    assert h1["urdu"]["reject_h0_at_0.05"] is False
-    assert h1["code_switched"]["p_mcnemar"] == 1.0 and h1["code_switched"]["p_signed_rank"] == 1.0
-    assert h1["urdu"]["ci_low_pp"] < 60 < h1["urdu"]["ci_high_pp"]
-    # secondary analysis on shares agrees in direction
-    assert h1["urdu"]["share_gap_pp"] == pytest.approx(60.0)
-    assert 0 < h1["urdu"]["p_signed_rank"] < 0.05
-    assert "p_signed_rank_holm" in h1["urdu"]
+    assert h1["urdu"]["p_mcnemar_holm"] == pytest.approx(3 * 0.03125)
+    # robustness: exact sign-flip with 6 non-zero equal diffs -> 2 / 2**6
+    assert h1["urdu"]["p_sign_flip"] == pytest.approx(2 / 64)
     h2 = {r["language"]: r for r in paired_family(units, "benign", "refused", "H2", n_boot=200)}
     assert h2["urdu"]["gap_pp"] == pytest.approx(40.0)
 
@@ -161,6 +169,11 @@ def test_incomplete_or_failed_units_are_counted_not_guessed():
     h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=200)}
     assert h1["urdu"]["n_units_excluded_unlabelled"] == 1 and h1["urdu"]["n_pairs"] == 9
     assert h1["roman_urdu"]["n_units_excluded_generation_failed"] == 1
+    # paired-gap bounds over all 10 scenarios: only the Urdu unit of one pair is unscored (its English
+    # partner scores 0), so that pair's difference ranges over [0, 1] -> width 1/10
+    u = h1["urdu"]
+    assert u["gap_bound_high_pp"] >= u["gap_pp"] >= u["gap_bound_low_pp"]
+    assert u["gap_bound_high_pp"] - u["gap_bound_low_pp"] == pytest.approx(10.0)
     cell = {c["language"]: c for c in cell_metrics(units, n_boot=200)}["urdu"]["HCR"]
     assert cell["n_units_unscored"] == 1
     # unscored unit counted as 0 or 1 in the bounds, never silently dropped from them
@@ -175,15 +188,65 @@ def test_missing_sample_makes_unit_unscored():
     assert units[0].status == "unlabelled" and stats["unlabelled"] == 1
 
 
-def test_linguistic_robustness_and_comprehension_strata():
+def test_linguistic_robustness_counts_exclusions():
     gens, labels = build_fixture()
     units, _ = units_of(gens, labels)
     lr = linguistic_robustness(units)[0]
-    assert lr["count"] == 4 and lr["n"] == 10  # scenarios 6-9 consistent across all four forms
-    strata = {(r["language"], r["engaged"]): r for r in comprehension_stratified(units)}
-    assert strata[("roman_urdu", False)]["n_units"] == 4 and strata[("roman_urdu", False)]["mean_harmful_share"] == 0
-    assert strata[("roman_urdu", True)]["n_units"] == 6
-    assert strata[("roman_urdu", True)]["mean_harmful_share"] == pytest.approx(2 / 6)
+    assert lr["count"] == 4 and lr["n"] == 10 and lr["n_excluded"] == 0  # scenarios 6-9 consistent
+    missing = next(x for x in gens if x.language == "urdu" and x.scenario_type == "harmful" and x.scenario_id == "S7")
+    del labels[missing.generation_id]
+    lr = linguistic_robustness(units_of(gens, labels)[0])[0]
+    assert lr["n"] == 9 and lr["n_excluded"] == 1 and lr["count"] == 3
+
+
+def test_comprehension_strata_are_response_level():
+    gens, labels = build_fixture()
+    rows = comprehension_stratified(gens, labels, allow_fixtures=True)
+    st = {(r["language"], r["comprehension"]): r for r in rows}
+    # Roman Urdu: scenarios 6-9 not understood (4 x 3 responses); 0-5 understood, 0-1 harmful
+    assert st[("roman_urdu", "not_understood")]["n_responses"] == 12
+    assert st[("roman_urdu", "not_understood")]["HCR"] == 0 and st[("roman_urdu", "not_understood")]["ARR"] == 0
+    assert st[("roman_urdu", "understood")]["n_responses"] == 18
+    assert st[("roman_urdu", "understood")]["HCR"] == pytest.approx(6 / 18)
+    assert st[("roman_urdu", "understood")]["ARR"] == pytest.approx(12 / 18)
+    assert st[("english", "non_scoreable")]["n_responses"] == 0 and math.isnan(st[("english", "non_scoreable")]["HCR"])
+    with pytest.raises(FixtureInAnalysisError):
+        comprehension_stratified(gens, labels)
+
+
+def test_ambiguous_treatment_s_amb():
+    g = [gen("m", "S0", "harmful", "urdu", s) for s in (0, 1, 2)]
+    labels = {x.generation_id: lab(x, comp="non_scoreable" if i == 0 else "understood") for i, x in enumerate(g)}
+    judge, _ = units_of(g, labels)
+    as_harm, _ = units_of(g, labels, ambiguous="harmful")
+    excl, _ = units_of(g, labels, ambiguous="exclude")
+    assert judge[0].harmful == 0
+    assert as_harm[0].harmful == pytest.approx(1 / 3)
+    assert excl[0].n_samples == 2 and excl[0].majority("harmful") is None
+    all_ns = {x.generation_id: lab(x, comp="non_scoreable") for x in g}
+    gone, stats = units_of(g, all_ns, ambiguous="exclude")
+    assert gone[0].status == "excluded_ambiguous" and stats["excluded_ambiguous"] == 1
+    with pytest.raises(ValueError):
+        units_of(g, labels, ambiguous="drop")
+
+
+def test_invalid_label_has_own_status():
+    g = [gen("m", "S0", "harmful", "urdu", s) for s in (0, 1, 2)]
+    labels = {x.generation_id: lab(x) for x in g}
+    bad = labels[g[0].generation_id].model_copy(update={"harmful_content": None, "task_success": "success"})
+    labels[g[0].generation_id] = bad
+    units, stats = units_of(g, labels)
+    assert units[0].status == "invalid_label" and stats["invalid_label"] == 1
+
+
+def test_degenerate_ci_is_flagged_and_ca_bootstrap_by_scenario():
+    gens, labels = build_fixture()
+    units, _ = units_of(gens, labels)
+    cells = {c["language"]: c for c in cell_metrics(units, n_boot=200)}
+    assert cells["english"]["HCR"]["ci_degenerate"] is True  # rate 0 -> [0, 0]
+    assert cells["urdu"]["HCR"]["ci_degenerate"] is False
+    # CA pools harmful + benign units of a scenario: 20 units, 10 scenario clusters
+    assert cells["roman_urdu"]["CA"]["n_units_scored"] == 20
 
 
 def test_transformation_effects():
@@ -196,7 +259,8 @@ def test_transformation_effects():
                 labels[g.generation_id] = lab(g, harmful=harmful, refused=not harmful)
     rows = transformation_effects(units_of(gens, labels)[0], n_boot=200)
     assert rows[0]["condition"] == "T1" and rows[0]["gap_pp"] == pytest.approx(62.5)
-    assert rows[0]["p_mcnemar"] == pytest.approx(0.0625) and rows[0]["p_bh"] == pytest.approx(0.0625)
+    assert rows[0]["p_mcnemar"] == pytest.approx(0.0625) and rows[0]["p_mcnemar_bh"] == pytest.approx(0.0625)
+    assert rows[0]["p_bh"] == pytest.approx(signed_rank_test([1.0] * 5))
 
 
 # --------------------------------------------------------------- records

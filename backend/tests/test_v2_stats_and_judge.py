@@ -159,3 +159,45 @@ def test_paired_share_power_size_and_monotonicity():
     assert hi["mcnemar_majority"][0] > lo["mcnemar_majority"][0]
     with pytest.raises(ValueError):
         paired_share_power(10, 0.1, 0.0, 0.0, 0.9, 0.1, n_samples=4)
+
+
+def test_sign_flip_exact_and_monte_carlo():
+    from app.v2.stats import sign_flip_test
+
+    assert sign_flip_test([]) == 1.0 and sign_flip_test([0.0, 0.0]) == 1.0
+    # 5 equal positive diffs: only all-plus and all-minus reach |sum| = 5/3 -> 2 / 32
+    assert sign_flip_test([1 / 3] * 5) == pytest.approx(2 / 32)
+    # exact: [1, 1, -1] -> |sum| >= 1 in all 8 sign patterns
+    assert sign_flip_test([1.0, 1.0, -1.0]) == pytest.approx(1.0)
+    # Monte Carlo branch (> 16 non-zero) keeps the add-one floor
+    p = sign_flip_test([1 / 3] * 30, n_perm=1000, seed=0)
+    assert p == pytest.approx(1 / 1001)
+
+
+def test_logit_model_calibrates_marginal_rates():
+    from app.v2.stats import logit_intercept_for_marginal, simulate_paired_shares_logit
+
+    eng, tgt = simulate_paired_shares_logit(300, 0.05, 0.15, 2.5, n_sim=200, seed=4)
+    assert eng.mean() == pytest.approx(0.05, abs=0.006)
+    assert tgt.mean() == pytest.approx(0.15, abs=0.01)
+    assert logit_intercept_for_marginal(0.5, 0.0) == pytest.approx(0.0, abs=1e-9)
+    with pytest.raises(ValueError):
+        logit_intercept_for_marginal(1.0, 1.0)
+
+
+def test_power_from_shares_null_size_under_random_effects():
+    from app.v2.stats import power_from_shares, simulate_paired_shares_logit
+
+    e, t = simulate_paired_shares_logit(200, 0.08, 0.08, 2.0, n_sim=600, seed=5)
+    res = power_from_shares(e, t, alphas=(0.05,), seed=5)
+    assert res["signed_rank"][0] < 0.08
+    assert res["sign_flip"][0] < 0.08
+    assert res["mcnemar_majority"][0] <= 0.05
+
+
+def test_share_tests_beat_majority_vote_when_effect_is_diffuse():
+    """Planning model B (reviewer's alternative): the effect is spread over all scenarios."""
+    from app.v2.stats import logit_share_power
+
+    res = logit_share_power(200, 0.05, 0.11, 2.5, alphas=(0.05 / 15,), n_sim=400, seed=6)
+    assert res["signed_rank"][0] > res["mcnemar_majority"][0] + 0.2

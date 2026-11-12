@@ -10,13 +10,19 @@ Holm p-value must clear, so it is conservative for every test in the family.
 Two analyses:
 
 1. power_mcnemar.csv - McNemar on noise-free scenario-level outcomes (original sizing, v1.0).
-2. power_with_sampling_noise.csv - amendment 2026-11-12. Each unit has 3 sampled responses that
-   need not agree. A scenario's latent state in each form is drawn as in (1) (plus P(harmful in
-   both) = P11); each response is then harmful with probability q_harm in a harmful state and
-   q_safe otherwise. On the same simulated data we compute power of the primary test (exact
-   McNemar on majority-vote outcomes) and the secondary test (Wilcoxon signed-rank on
-   per-scenario differences of sample shares). The q values are assumptions, to be replaced by
-   estimates from the calibration pilot.
+2. power_with_sampling_noise.csv - planning model A ("two-state", amendment 2026-11-12). Each unit
+   has 3 sampled responses that need not agree. A scenario's latent state in each form is drawn as
+   in (1) (plus P(harmful in both) = P11); each response is harmful with probability q_harm in a
+   harmful state and q_safe otherwise. The effect sits in a few discordant scenarios, which
+   favours majority voting.
+3. power_random_effects.csv - planning model B ("logit random effects", amendment 2026-11-12b,
+   from the independent statistical review). Per-response probability
+   expit(a_form + u_scenario + v_scenario,form); the effect is spread over all scenarios.
+
+Both report, on the same simulated data, the primary test (Wilcoxon signed-rank on per-scenario
+share differences), the secondary test (exact McNemar on majority-vote outcomes) and a robustness
+test (sign-flip permutation on the mean difference), plus the Monte-Carlo SE. All parameter values
+are assumptions to be replaced by calibration-pilot estimates.
 
 Run: PYTHONPATH=backend python research/power/power_analysis.py
 """
@@ -28,7 +34,7 @@ import json
 import math
 from pathlib import Path
 
-from app.v2.stats import mcnemar_power, paired_share_power, wilson_interval
+from app.v2.stats import logit_share_power, mcnemar_power, paired_share_power, wilson_interval
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "results" / "power"
@@ -59,6 +65,21 @@ CONSISTENCY = [
 ]
 NOISE_N_GRID = [120, 150, 200, 240, 300]
 NOISE_SIMS = 1500
+# planning model B: (label, English per-response rate, target rate)
+RE_EFFECTS = [
+    ("10 pp (5% vs 15%)", 0.05, 0.15),
+    ("6 pp (5% vs 11%)", 0.05, 0.11),
+    ("4 pp (5% vs 9%)", 0.05, 0.09),
+    ("pilot-like small (3% vs 13%)", 0.03, 0.13),
+]
+RE_SIGMAS = [1.0, 2.5]  # SD of the scenario random intercept (logit scale); form-specific SD 0.5
+
+
+def write_csv(path: Path, rows: list[dict]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
 
 
 def half_width(p: float, n: int) -> float:
@@ -100,6 +121,16 @@ def main() -> None:
         cost[n] = {"prompts": prompts, "generations_5_models_3_samples": prompts * 5 * 3}
     (OUT / "cost_model.json").write_text(json.dumps(cost, indent=2) + "\n", encoding="utf-8")
 
+    def power_cols(res: dict) -> dict:
+        return {
+            "power_signed_rank_bonferroni_15": round(res["signed_rank"][0], 3),
+            "power_mcnemar_majority_bonferroni_15": round(res["mcnemar_majority"][0], 3),
+            "power_sign_flip_bonferroni_15": round(res["sign_flip"][0], 3),
+            "power_signed_rank_unadjusted": round(res["signed_rank"][1], 3),
+            "power_mcnemar_majority_unadjusted": round(res["mcnemar_majority"][1], 3),
+            "monte_carlo_se_at_0.8": round(res["mc_se"][0], 3),
+        }
+
     noise_rows = []
     for label, p10, p01 in SCENARIOS:
         for c_label, q_h, q_s in CONSISTENCY:
@@ -112,22 +143,33 @@ def main() -> None:
                         "consistency": c_label,
                         "expected_response_level_gap_pp": round(100 * (p10 - p01) * (q_h - q_s), 1),
                         "n_scenarios": n,
-                        "power_mcnemar_majority_bonferroni_15": round(res["mcnemar_majority"][0], 3),
-                        "power_signed_rank_bonferroni_15": round(res["signed_rank"][0], 3),
-                        "power_mcnemar_majority_unadjusted": round(res["mcnemar_majority"][1], 3),
-                        "power_signed_rank_unadjusted": round(res["signed_rank"][1], 3),
+                        **power_cols(res),
                     }
                 )
-    with (OUT / "power_with_sampling_noise.csv").open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(noise_rows[0]))
-        w.writeheader()
-        w.writerows(noise_rows)
+    write_csv(OUT / "power_with_sampling_noise.csv", noise_rows)
+
+    re_rows = []
+    for label, r_e, r_t in RE_EFFECTS:
+        for sigma in RE_SIGMAS:
+            for n in NOISE_N_GRID:
+                res = logit_share_power(n, r_e, r_t, sigma, 0.5, alphas=(ALPHA / FAMILY, ALPHA), n_sim=NOISE_SIMS, seed=7)
+                re_rows.append(
+                    {
+                        "effect": label,
+                        "response_level_gap_pp": round(100 * (r_t - r_e), 1),
+                        "sigma_scenario": sigma,
+                        "sigma_form": 0.5,
+                        "n_scenarios": n,
+                        **power_cols(res),
+                    }
+                )
+    write_csv(OUT / "power_random_effects.csv", re_rows)
 
     for r in rows:
         if r["n_scenarios"] in (120, 150, 200):
             print(r)
-    for r in noise_rows:
-        if r["n_scenarios"] == 200 and "smallest effect" in r["scenario"]:
+    for r in noise_rows + re_rows:
+        if r["n_scenarios"] == 200 and ("smallest effect" in r.get("scenario", "") or "effect" in r):
             print(r)
 
 

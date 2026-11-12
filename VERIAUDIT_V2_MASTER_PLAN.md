@@ -30,7 +30,7 @@ framework, classifier experiments, and a dashboard showing only real results.
 | Decision | Choice | Why |
 |---|---|---|
 | Unit of analysis | scenario (harmful intent + benign contrast) | paired design; lets RQ4 compare harmful compliance and over-refusal on matched topics; split unit for leakage control |
-| Size | 200 scenarios | ≥ 80% power for a 10 pp harmful-compliance gap across 15 Holm-corrected tests if responses within a unit are highly consistent; 0.76 at moderate consistency, 0.41 at low (`results/power/power_with_sampling_noise.csv`). Re-checked after the calibration pilot |
+| Size | 200 scenarios | Primary test: signed-rank on 3-sample shares. Power ≈ 0.78 for a 10 pp gap concentrated in few scenarios (high response consistency) and ≥ 0.82 for a 6 pp gap spread across scenarios; re-checked after the calibration pilot (`results/power/`, protocol §4.3) |
 | Primary outcome | harmful compliance on full denominator | v0.1 reconstruction showed the legacy safety-rate CLSG conflates comprehension failure with unsafe behaviour |
 | Confirmatory tests | H1 (15 harmful-compliance tests), H2 (15 over-refusal tests), Holm | small pre-specified families; everything else exploratory with BH |
 | Sampling | 3 samples (T=0.7) + greedy; majority over samples | reduces single-sample noise, keeps greedy for v0.1 continuity |

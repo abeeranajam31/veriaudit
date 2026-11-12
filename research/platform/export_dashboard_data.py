@@ -103,7 +103,7 @@ def build() -> dict:
         "power": {
             "provenance": (
                 "Monte-Carlo power of exact McNemar on noise-free scenario outcomes, alpha .05/15 (protocol §4.3). "
-                "With 3-sample response noise power is lower; see results/power/power_with_sampling_noise.csv."
+                "With 3-sample response noise see results/power/power_with_sampling_noise.csv and power_random_effects.csv."
             ),
             "rows": power,
         },

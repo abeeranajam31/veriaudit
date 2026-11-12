@@ -171,6 +171,27 @@ def mcnemar_power(n_pairs: int, p10: float, p01: float, alpha: float = 0.05, n_s
     return float(np.mean(pvals < alpha))
 
 
+def sign_flip_test(differences: Sequence[float], n_perm: int = 20000, seed: int = 0) -> float:
+    """Two-sided paired permutation (sign-flip) test of mean difference = 0.
+
+    Statistic |sum of differences|; under H0 each difference's sign is exchangeable. Zeros do not
+    affect the statistic. Exact enumeration for <= 16 non-zero differences, otherwise Monte Carlo
+    with the add-one correction p = (1 + #{|T*| >= |T|}) / (1 + n_perm), which is valid at any n_perm.
+    Returns 1.0 when every difference is zero.
+    """
+    d = np.array([x for x in differences if x != 0], dtype=float)
+    k = len(d)
+    if k == 0:
+        return 1.0
+    t_obs = abs(d.sum()) - 1e-12  # tolerance for float ties
+    if k <= 16:
+        signs = ((np.arange(2**k)[:, None] >> np.arange(k)) & 1) * 2 - 1
+        return float(np.mean(np.abs(signs @ d) >= t_obs))
+    rng = np.random.default_rng(seed)
+    signs = rng.choice((-1.0, 1.0), size=(n_perm, k))
+    return float((1 + np.sum(np.abs(signs @ d) >= t_obs)) / (1 + n_perm))
+
+
 def simulate_paired_shares(
     n_pairs: int,
     p10: float,
@@ -182,12 +203,14 @@ def simulate_paired_shares(
     n_sim: int = 2000,
     seed: int = 0,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Simulate per-scenario harmful-sample shares for (English, target) pairs.
+    """Planning model A ("two-state"). Simulate per-scenario harmful-sample shares for
+    (English, target) pairs.
 
     Each scenario has a latent state in each form, drawn jointly: harmful in target only (p10),
     English only (p01), both (p11), neither (rest). Each of `n_samples` responses is then harmful
-    with probability q_harm in a harmful state and q_safe otherwise. Returns arrays
-    (english_shares, target_shares) of shape (n_sim, n_pairs).
+    with probability q_harm in a harmful state and q_safe otherwise. The effect is concentrated in
+    the few discordant scenarios, a structure under which majority voting is near-optimal.
+    Returns arrays (english_shares, target_shares) of shape (n_sim, n_pairs).
     """
     probs = [p10, p01, p11, 1 - p10 - p01 - p11]
     if probs[3] < 0 or min(probs) < 0:
@@ -203,6 +226,92 @@ def simulate_paired_shares(
     return eng, tgt
 
 
+def _logit(p: float) -> float:
+    return math.log(p / (1 - p))
+
+
+def logit_intercept_for_marginal(rate: float, sd: float) -> float:
+    """Intercept a with E[expit(a + sd*Z)] = rate, Z ~ N(0,1) (Gauss-Hermite quadrature)."""
+    if not 0 < rate < 1:
+        raise ValueError("rate must be in (0, 1)")
+    return _brentq(lambda a: _gh_mean(a, sd) - rate)
+
+
+def _brentq(f) -> float:
+    from scipy.optimize import brentq
+
+    return float(brentq(f, -40, 40))
+
+
+def simulate_paired_shares_logit(
+    n_pairs: int,
+    rate_english: float,
+    rate_target: float,
+    sigma_scenario: float,
+    sigma_form: float = 0.5,
+    n_samples: int = 3,
+    n_sim: int = 2000,
+    seed: int = 0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Planning model B ("logit random effects"). Per-response harmful probability
+    expit(a_form + u_scenario + v_scenario,form), u ~ N(0, sigma_scenario), v ~ N(0, sigma_form);
+    intercepts are calibrated so the marginal per-response rates equal rate_english / rate_target.
+    The effect is spread across all scenarios. Returns (english_shares, target_shares)."""
+    sd = math.sqrt(sigma_scenario**2 + sigma_form**2)
+    a_e = logit_intercept_for_marginal(rate_english, sd)
+    a_t = logit_intercept_for_marginal(rate_target, sd)
+    rng = np.random.default_rng(seed)
+    u = rng.normal(0, sigma_scenario, size=(n_sim, n_pairs))
+    pe = 1 / (1 + np.exp(-(a_e + u + rng.normal(0, sigma_form, size=u.shape))))
+    pt = 1 / (1 + np.exp(-(a_t + u + rng.normal(0, sigma_form, size=u.shape))))
+    return rng.binomial(n_samples, pe) / n_samples, rng.binomial(n_samples, pt) / n_samples
+
+
+def _gh_mean(a: float, sd: float) -> float:
+    x, w = np.polynomial.hermite_e.hermegauss(80)
+    return float(np.sum((w / w.sum()) / (1 + np.exp(-(a + sd * x)))))
+
+
+def power_from_shares(
+    eng: np.ndarray,
+    tgt: np.ndarray,
+    alphas: Sequence[float] = (0.05,),
+    n_samples: int = 3,
+    n_perm: int = 2000,
+    seed: int = 0,
+) -> dict[str, list[float]]:
+    """Power, on the same simulated (n_sim, n_pairs) share arrays, of:
+    - "signed_rank": PRIMARY test (protocol §10) - Wilcoxon signed-rank on share differences;
+    - "mcnemar_majority": secondary - exact McNemar on majority-vote (> half of samples) outcomes;
+    - "sign_flip": robustness - sign-flip permutation test on the mean share difference
+      (exact but conservative here because the statistic is discrete).
+    Also "mean_gap": average simulated per-response gap (target - English), and
+    "mc_se": Monte-Carlo standard error of a power estimate at 0.8 for this n_sim.
+    The sign-flip p-values use one shared sign matrix (valid per simulated dataset)."""
+    if n_samples % 2 == 0:
+        raise ValueError("majority vote needs an odd number of samples")
+    n_sim, n = eng.shape
+    diffs = tgt - eng
+    rng = np.random.default_rng(seed)
+    signs = rng.choice((-1.0, 1.0), size=(n_perm, n))
+    t_obs = np.abs(diffs.sum(axis=1)) - 1e-12
+    t_perm = np.abs(signs @ diffs.T)  # (n_perm, n_sim)
+    p_sf = (1 + np.sum(t_perm >= t_obs[None, :], axis=0)) / (1 + n_perm)
+    p_sf = np.where(np.all(diffs == 0, axis=1), 1.0, p_sf)
+    p_sr = np.array([signed_rank_test(row) for row in diffs])
+    me, mt = eng > 0.5, tgt > 0.5
+    b = np.sum(mt & ~me, axis=1)
+    c = np.sum(me & ~mt, axis=1)
+    p_mc = np.array([mcnemar_exact(int(x), int(y)) for x, y in zip(b, c, strict=True)])
+    return {
+        "sign_flip": [float(np.mean(p_sf < a)) for a in alphas],
+        "mcnemar_majority": [float(np.mean(p_mc < a)) for a in alphas],
+        "signed_rank": [float(np.mean(p_sr < a)) for a in alphas],
+        "mean_gap": [float(diffs.mean())],
+        "mc_se": [math.sqrt(0.8 * 0.2 / n_sim)],
+    }
+
+
 def paired_share_power(
     n_pairs: int,
     p10: float,
@@ -215,24 +324,24 @@ def paired_share_power(
     n_sim: int = 2000,
     seed: int = 0,
 ) -> dict[str, list[float]]:
-    """Monte-Carlo power, on the same simulated data, of
-    (a) the primary test: Wilcoxon signed-rank on per-scenario share differences, and
-    (b) the secondary test: exact McNemar on majority-vote (> half of samples) outcomes.
-
-    Returns {"signed_rank": [power per alpha], "mcnemar_majority": [...], "mean_gap": [...]},
-    where mean_gap is the average simulated per-response gap (target - English).
-    """
+    """Power under planning model A (two-state); see `power_from_shares` for the tests."""
     if n_samples % 2 == 0:
         raise ValueError("majority vote needs an odd number of samples")
     eng, tgt = simulate_paired_shares(n_pairs, p10, p01, p11, q_harm, q_safe, n_samples, n_sim, seed)
-    diffs = tgt - eng
-    p_sr = np.array([signed_rank_test(row) for row in diffs])
-    me, mt = eng > 0.5, tgt > 0.5
-    b = np.sum(mt & ~me, axis=1)
-    c = np.sum(me & ~mt, axis=1)
-    p_mc = np.array([mcnemar_exact(int(x), int(y)) for x, y in zip(b, c, strict=True)])
-    return {
-        "signed_rank": [float(np.mean(p_sr < a)) for a in alphas],
-        "mcnemar_majority": [float(np.mean(p_mc < a)) for a in alphas],
-        "mean_gap": [float(diffs.mean())],
-    }
+    return power_from_shares(eng, tgt, alphas, n_samples, seed=seed)
+
+
+def logit_share_power(
+    n_pairs: int,
+    rate_english: float,
+    rate_target: float,
+    sigma_scenario: float,
+    sigma_form: float = 0.5,
+    alphas: Sequence[float] = (0.05,),
+    n_samples: int = 3,
+    n_sim: int = 2000,
+    seed: int = 0,
+) -> dict[str, list[float]]:
+    """Power under planning model B (logit random effects); see `power_from_shares`."""
+    eng, tgt = simulate_paired_shares_logit(n_pairs, rate_english, rate_target, sigma_scenario, sigma_form, n_samples, n_sim, seed)
+    return power_from_shares(eng, tgt, alphas, n_samples, seed=seed)
