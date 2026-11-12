@@ -104,7 +104,28 @@ wrong direction in 17% of simulations. The primary test essentially never does.
 
 ### 3.4 Family level (α = .05/12)
 
-*Pending: the family-level table is being regenerated at α = .05/12 (the confirmatory family size since protocol v1.1). Until then see `results/stats_validation/report.md`.*
+Nominal level 0.05/12 ≈ 0.0042; Monte Carlo SE ≈ 0.0014 (2,000 simulations; GEE and conditional logit
+300 simulations, SE ≈ 0.0037).
+
+| DGP | signed-rank (primary) | Pratt | paired t | sign-flip | McNemar | GEE | cond. logit |
+|---|---|---|---|---|---|---|---|
+| null exchangeable 5% | 0.0015 | 0.0025 | 0.0010 | 0.0005 | 0.0010 | 0.0100 | 0.0000 |
+| null exchangeable 20% | 0.0060 | 0.0070 | 0.0075 | 0.0050 | 0.0040 | 0.0000 | 0.0033 |
+| null rare 1% | 0.0000 | 0.0005 | 0.0000 | 0.0000 | 0.0000 | 0.0033 | 0.0000 |
+| null two-state | 0.0035 | 0.0025 | 0.0025 | 0.0015 | 0.0000 | 0.0000 | 0.0000 |
+| null mean-zero asymmetric | 0.0040 | **0.0085** | 0.0040 | 0.0025 | **0.0435** | 0.0000 | 0.0000 |
+| alt two-state 10 pp | 0.747 | 0.503 | 0.750 | 0.725 | 0.802 | 0.777 | 0.963 |
+| alt random effects 6 pp | 0.919 | 0.919 | 0.939 | 0.919 | 0.436 | 0.950 | 0.967 |
+| alt random effects 4 pp | 0.437 | 0.423 | 0.447 | 0.393 | 0.050 | 0.453 | 0.503 |
+| alt rare 1 → 3% | 0.315 | 0.330 | 0.316 | 0.295 | 0.004 | 0.327 | 0.320 |
+| alt crossover +3 pp | 0.073 | 0.042 | 0.075 | 0.064 | 0.105 | 0.100 | 0.140 |
+| alt crossover −2 pp | 0.046 | 0.138 | 0.045 | 0.036 | 0.024 | 0.043 | 0.077 |
+
+At the family level the primary test stays at or below nominal in every null (largest 0.006, 1.3 SE
+above 0.0042). Pratt's zero handling (0.0085) and McNemar (0.0435, ten times nominal) do not; the
+paired t-test runs slightly high at a 20% rate (0.0075, 2.3 SE). Crossover alternatives with a small
+net mean are essentially undetectable by any test at this level, which is expected: they have little
+net effect to detect.
 
 ### 3.5 Interval coverage
 
@@ -145,7 +166,7 @@ intervals; degenerate [0, 0] intervals are flagged in the output.
 3. **Signed-rank tests symmetry, not the mean.** Under the asymmetric null simulated here it held its
    level, but other asymmetric patterns could behave differently; the paired t-test sensitivity analysis
    exposes any disagreement.
-4. **Rare outcomes.** At rates near 1% the primary test is conservative and power is limited (0.29 for
+4. **Rare outcomes.** At rates near 1% the primary test is conservative and power is limited (0.32 for
    1 → 3% at the family level); small gaps in rare-outcome cells may go undetected.
 5. **Interval coverage** is about 92–94% at low rates (§3.5).
 6. **Unscored units** are assumed missing at random within the paired tests; the reported worst/best
