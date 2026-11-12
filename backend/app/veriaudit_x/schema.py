@@ -173,9 +173,7 @@ class AnnotationStatus(str, Enum):
 
 class Transformation(_Strict):
     type: TransformationType
-    source_record_id: str | None = Field(
-        default=None, description="record_id this variant was derived from; null for type=source"
-    )
+    source_record_id: str | None = Field(default=None, description="record_id this variant was derived from; null for type=source")
     method: TransformationMethod
     tool: str | None = Field(default=None, description="MT system / script / model used, if any")
     author_id: str | None = Field(default=None, description="Pseudonymous ID of the human author or post-editor")
@@ -194,17 +192,13 @@ class SimilarityScreen(_Strict):
 class EquivalenceRating(_Strict):
     annotator_id: str
     judgement: EquivalenceJudgement
-    harm_preserved: bool | None = Field(
-        default=None, description="Does the variant keep the same harmfulness/benignness as the source?"
-    )
+    harm_preserved: bool | None = Field(default=None, description="Does the variant keep the same harmfulness/benignness as the source?")
     notes: str | None = None
 
 
 class SemanticEquivalence(_Strict):
     status: EquivalenceStatus
-    reference_record_id: str | None = Field(
-        default=None, description="Record compared against; defaults to the intent's source record"
-    )
+    reference_record_id: str | None = Field(default=None, description="Record compared against; defaults to the intent's source record")
     automatic_screen: SimilarityScreen | None = None
     human_ratings: list[EquivalenceRating] = Field(default_factory=list)
     notes: str | None = None
@@ -276,9 +270,7 @@ class VeriAuditXRecord(_Strict):
     annotation: AnnotationBlock = Field(default_factory=AnnotationBlock)
     provenance: Provenance = Field(default_factory=Provenance)
 
-    split: str | None = Field(
-        default=None, description="Populated only in split output files; must be train, validation or test"
-    )
+    split: str | None = Field(default=None, description="Populated only in split output files; must be train, validation or test")
 
     @field_validator("text", "intent_description")
     @classmethod
@@ -303,9 +295,7 @@ class DatasetManifest(_Strict):
     schema_version: str
     description: str | None = None
     data_file: str
-    is_fixture: bool = Field(
-        default=False, description="True for test fixtures: never report results computed on these"
-    )
+    is_fixture: bool = Field(default=False, description="True for test fixtures: never report results computed on these")
 
 
 def json_schema() -> dict[str, Any]:

@@ -138,9 +138,7 @@ def validate_objects(objects: Iterable[dict], config: ValidationConfig | None = 
     return validate_rows([(i, o, None) for i, o in enumerate(objects, start=1)], config)
 
 
-def validate_rows(
-    rows: list[tuple[int, dict | None, str | None]], config: ValidationConfig | None = None
-) -> ValidationReport:
+def validate_rows(rows: list[tuple[int, dict | None, str | None]], config: ValidationConfig | None = None) -> ValidationReport:
     config = config or ValidationConfig()
     report = ValidationReport()
     line_of: dict[str, int] = {}
@@ -255,7 +253,14 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
         _err(report, "duplicate_annotator", "an annotator rated equivalence more than once", r, line, "equivalence.human_ratings")
     if eq.status == EquivalenceStatus.verified:
         if len(eq.human_ratings) < config.min_equivalence_raters:
-            _err(report, "unsupported_verification", f"status 'verified' requires >= {config.min_equivalence_raters} human ratings; similarity alone never verifies", r, line, "equivalence")
+            _err(
+                report,
+                "unsupported_verification",
+                f"status 'verified' requires >= {config.min_equivalence_raters} human ratings; similarity alone never verifies",
+                r,
+                line,
+                "equivalence",
+            )
         elif any(h.judgement != EquivalenceJudgement.equivalent for h in eq.human_ratings):
             _err(report, "unsupported_verification", "status 'verified' requires every human rating to be 'equivalent'", r, line, "equivalence")
         elif any(h.harm_preserved is False for h in eq.human_ratings):
@@ -264,7 +269,15 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
         _err(report, "unsupported_verification", "status 'rejected' requires at least one human rating", r, line, "equivalence")
     if eq.automatic_screen and eq.automatic_screen.threshold is not None:
         if eq.automatic_screen.score < eq.automatic_screen.threshold and eq.status == EquivalenceStatus.pending:
-            _err(report, "screen_below_threshold", "similarity below threshold but status is 'pending' (expected 'flagged' or human-reviewed)", r, line, "equivalence.status", "warning")
+            _err(
+                report,
+                "screen_below_threshold",
+                "similarity below threshold but status is 'pending' (expected 'flagged' or human-reviewed)",
+                r,
+                line,
+                "equivalence.status",
+                "warning",
+            )
 
     # annotation / adjudication
     ann = r.annotation
@@ -309,7 +322,14 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
         r.category,
         r.expected_behavior,
     ):
-        _err(report, "gold_label_mismatch", "record-level labels differ from the agreed/adjudicated human labels", r, line, "scenario_type/category/expected_behavior")
+        _err(
+            report,
+            "gold_label_mismatch",
+            "record-level labels differ from the agreed/adjudicated human labels",
+            r,
+            line,
+            "scenario_type/category/expected_behavior",
+        )
 
 
 # --------------------------------------------------------------------------
@@ -362,14 +382,28 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
             if parent is None:
                 _err(report, "dangling_reference", f"source_record_id {src!r} does not exist", r, line, "transformation.source_record_id")
             elif parent.intent_id != r.intent_id:
-                _err(report, "cross_intent_reference", f"derived from {src!r}, which belongs to intent {parent.intent_id}", r, line, "transformation.source_record_id")
+                _err(
+                    report,
+                    "cross_intent_reference",
+                    f"derived from {src!r}, which belongs to intent {parent.intent_id}",
+                    r,
+                    line,
+                    "transformation.source_record_id",
+                )
         ref = r.equivalence.reference_record_id
         if ref is not None:
             parent = by_id.get(ref)
             if parent is None:
                 _err(report, "dangling_reference", f"reference_record_id {ref!r} does not exist", r, line, "equivalence.reference_record_id")
             elif parent.intent_id != r.intent_id:
-                _err(report, "cross_intent_reference", f"equivalence reference {ref!r} belongs to intent {parent.intent_id}", r, line, "equivalence.reference_record_id")
+                _err(
+                    report,
+                    "cross_intent_reference",
+                    f"equivalence reference {ref!r} belongs to intent {parent.intent_id}",
+                    r,
+                    line,
+                    "equivalence.reference_record_id",
+                )
 
         c = r.contrast_intent_id
         if c is not None:
@@ -379,7 +413,14 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
                 _err(report, "dangling_reference", f"contrast_intent_id {c!r} does not exist", r, line, "contrast_intent_id")
             else:
                 if intent_scenario[c] != r.scenario_id:
-                    _err(report, "contrast_split_risk", f"contrast intent {c} is in scenario {intent_scenario[c]}, not {r.scenario_id}; pairs must share a scenario", r, line, "contrast_intent_id")
+                    _err(
+                        report,
+                        "contrast_split_risk",
+                        f"contrast intent {c} is in scenario {intent_scenario[c]}, not {r.scenario_id}; pairs must share a scenario",
+                        r,
+                        line,
+                        "contrast_intent_id",
+                    )
                 if intent_type[c] == r.scenario_type:
                     _err(report, "invalid_contrast", "contrast intent must have the opposite scenario_type", r, line, "contrast_intent_id")
 
@@ -390,4 +431,11 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
     for scenario_id, splits in split_by_scenario.items():
         if len(splits) > 1:
             rec = next(r for r in report.records if r.scenario_id == scenario_id)
-            _err(report, "split_leakage", f"scenario {scenario_id} has records in several splits: {sorted(map(str, splits))}", rec, line_of[rec.record_id], "split")
+            _err(
+                report,
+                "split_leakage",
+                f"scenario {scenario_id} has records in several splits: {sorted(map(str, splits))}",
+                rec,
+                line_of[rec.record_id],
+                "split",
+            )

@@ -1,10 +1,6 @@
 import json
 
 import pytest
-
-from app.veriaudit_x.normalize import normalize_text
-from app.veriaudit_x.schema import SCHEMA_VERSION, DatasetManifest, json_schema
-from app.veriaudit_x.validation import ValidationConfig, validate_file, validate_objects
 from veriaudit_x_helpers import (
     DELETE,
     FIXTURE_DIR,
@@ -15,6 +11,10 @@ from veriaudit_x_helpers import (
     make_intent,
     mutated,
 )
+
+from app.veriaudit_x.normalize import normalize_text
+from app.veriaudit_x.schema import SCHEMA_VERSION, DatasetManifest, json_schema
+from app.veriaudit_x.validation import ValidationConfig, validate_file, validate_objects
 
 SRC = "VX-S0001-H-en-01"  # English source of the harmful fraud intent
 UR = "VX-S0001-H-ur-01"
@@ -163,7 +163,15 @@ def test_conflicting_intent_metadata():
 
 
 def test_intent_must_have_exactly_one_source():
-    recs = mutated(load_fixture(), UR, transformation__type="source", transformation__source_record_id=None, equivalence__status="source", equivalence__human_ratings=[], equivalence__reference_record_id=None)
+    recs = mutated(
+        load_fixture(),
+        UR,
+        transformation__type="source",
+        transformation__source_record_id=None,
+        equivalence__status="source",
+        equivalence__human_ratings=[],
+        equivalence__reference_record_id=None,
+    )
     assert codes(recs)["source_count"] == 1
 
 

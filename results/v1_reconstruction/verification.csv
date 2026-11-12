@@ -1,0 +1,192 @@
+item,published,reconstructed,match,published_source
+raw responses: rows,240,240,True,README
+raw responses: unique evaluation ids,240,240,True,docs/pre_publication_audit.md §4
+labels.jsonl raw_response byte-identical to raw,0,0,True,docs/pre_publication_audit.md §1
+final labels with human sign-off,66,66,True,README / report
+final labels from LLM-assisted review,174,174,True,README / report
+label count overall=all_240 safe_refusal,178,178,True,results/labeling/final_label_summary.csv
+label count overall=all_240 partial_compliance,14,14,True,results/labeling/final_label_summary.csv
+label count overall=all_240 ambiguous,18,18,True,results/labeling/final_label_summary.csv
+label count overall=all_240 unsafe_compliance,30,30,True,results/labeling/final_label_summary.csv
+label count model=qwen3-8b safe_refusal,90,90,True,results/labeling/final_label_summary.csv
+label count model=qwen3-8b partial_compliance,9,9,True,results/labeling/final_label_summary.csv
+label count model=qwen3-8b ambiguous,13,13,True,results/labeling/final_label_summary.csv
+label count model=qwen3-8b unsafe_compliance,8,8,True,results/labeling/final_label_summary.csv
+label count model=aya-expanse-8b safe_refusal,88,88,True,results/labeling/final_label_summary.csv
+label count model=aya-expanse-8b unsafe_compliance,22,22,True,results/labeling/final_label_summary.csv
+label count model=aya-expanse-8b ambiguous,5,5,True,results/labeling/final_label_summary.csv
+label count model=aya-expanse-8b partial_compliance,5,5,True,results/labeling/final_label_summary.csv
+label count language=english safe_refusal,59,59,True,results/labeling/final_label_summary.csv
+label count language=english partial_compliance,1,1,True,results/labeling/final_label_summary.csv
+label count language=urdu safe_refusal,40,40,True,results/labeling/final_label_summary.csv
+label count language=urdu partial_compliance,4,4,True,results/labeling/final_label_summary.csv
+label count language=urdu unsafe_compliance,12,12,True,results/labeling/final_label_summary.csv
+label count language=urdu ambiguous,4,4,True,results/labeling/final_label_summary.csv
+label count language=roman_urdu safe_refusal,32,32,True,results/labeling/final_label_summary.csv
+label count language=roman_urdu partial_compliance,5,5,True,results/labeling/final_label_summary.csv
+label count language=roman_urdu ambiguous,10,10,True,results/labeling/final_label_summary.csv
+label count language=roman_urdu unsafe_compliance,13,13,True,results/labeling/final_label_summary.csv
+label count language=code_switched safe_refusal,47,47,True,results/labeling/final_label_summary.csv
+label count language=code_switched unsafe_compliance,5,5,True,results/labeling/final_label_summary.csv
+label count language=code_switched ambiguous,4,4,True,results/labeling/final_label_summary.csv
+label count language=code_switched partial_compliance,4,4,True,results/labeling/final_label_summary.csv
+label count category=Cybercrime safe_refusal,34,34,True,results/labeling/final_label_summary.csv
+label count category=Cybercrime partial_compliance,1,1,True,results/labeling/final_label_summary.csv
+label count category=Cybercrime unsafe_compliance,4,4,True,results/labeling/final_label_summary.csv
+label count category=Cybercrime ambiguous,1,1,True,results/labeling/final_label_summary.csv
+label count category=Weapons safe_refusal,32,32,True,results/labeling/final_label_summary.csv
+label count category=Weapons ambiguous,1,1,True,results/labeling/final_label_summary.csv
+label count category=Weapons partial_compliance,2,2,True,results/labeling/final_label_summary.csv
+label count category=Weapons unsafe_compliance,5,5,True,results/labeling/final_label_summary.csv
+label count category=Self-Harm safe_refusal,25,25,True,results/labeling/final_label_summary.csv
+label count category=Self-Harm partial_compliance,4,4,True,results/labeling/final_label_summary.csv
+label count category=Self-Harm ambiguous,10,10,True,results/labeling/final_label_summary.csv
+label count category=Self-Harm unsafe_compliance,1,1,True,results/labeling/final_label_summary.csv
+label count category=Hate Speech safe_refusal,34,34,True,results/labeling/final_label_summary.csv
+label count category=Hate Speech unsafe_compliance,3,3,True,results/labeling/final_label_summary.csv
+label count category=Hate Speech ambiguous,2,2,True,results/labeling/final_label_summary.csv
+label count category=Hate Speech partial_compliance,1,1,True,results/labeling/final_label_summary.csv
+label count category=Misinformation safe_refusal,22,22,True,results/labeling/final_label_summary.csv
+label count category=Misinformation partial_compliance,6,6,True,results/labeling/final_label_summary.csv
+label count category=Misinformation ambiguous,3,3,True,results/labeling/final_label_summary.csv
+label count category=Misinformation unsafe_compliance,9,9,True,results/labeling/final_label_summary.csv
+label count category=Fraud safe_refusal,31,31,True,results/labeling/final_label_summary.csv
+label count category=Fraud unsafe_compliance,8,8,True,results/labeling/final_label_summary.csv
+label count category=Fraud ambiguous,1,1,True,results/labeling/final_label_summary.csv
+S1 qwen3-8b/english safe,29,29,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/english unsafe,1,1,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/english ambiguous,0,0,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/english safety %,96.66666666666667,96.66666666666667,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/english Wilson low %,83.32960900398818,83.32960900859082,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/english Wilson high %,99.40914096203338,99.40914096183874,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu safe,26,26,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu unsafe,4,4,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu ambiguous,0,0,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu safety %,86.66666666666667,86.66666666666667,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu Wilson low %,70.31867331340118,70.3186733179637,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/urdu Wilson high %,94.69034451704432,94.69034451594526,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu safe,12,12,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu unsafe,9,9,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu ambiguous,9,9,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu safety %,57.14285714285714,57.14285714285714,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu Wilson low %,36.54655436498925,36.54655436930671,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/roman_urdu Wilson high %,75.53003107806501,75.53003107462403,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched safe,23,23,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched unsafe,3,3,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched ambiguous,4,4,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched safety %,88.46153846153845,88.46153846153845,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched Wilson low %,71.02409678330736,71.02409678828636,True,results/labeling/clsg_results.csv
+S1 qwen3-8b/code_switched Wilson high %,95.99675537731915,95.99675537638937,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english safe,30,30,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english unsafe,0,0,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english ambiguous,0,0,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english safety %,100.0,100.0,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english Wilson low %,88.64866067788026,88.64866068260312,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/english Wilson high %,100.0,99.99999999999999,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu safe,14,14,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu unsafe,12,12,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu ambiguous,4,4,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu safety %,53.84615384615385,53.84615384615385,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu Wilson low %,35.45793874299507,35.457938746858794,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/urdu Wilson high %,71.24414647306757,71.24414646960878,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu safe,20,20,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu unsafe,9,9,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu ambiguous,1,1,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu safety %,68.96551724137932,68.96551724137932,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu Wilson low %,50.769865762612795,50.769865766906854,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/roman_urdu Wilson high %,82.72438325797205,82.72438325551678,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched safe,24,24,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched unsafe,6,6,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched ambiguous,0,0,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched safety %,80.0,80.0,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched Wilson low %,62.69430358236961,62.69430358685175,True,results/labeling/clsg_results.csv
+S1 aya-expanse-8b/code_switched Wilson high %,90.49489282435853,90.49489282271013,True,results/labeling/clsg_results.csv
+CLSG S1 qwen3-8b/urdu (pp),9.999999999999998,9.999999999999998,True,results/labeling/clsg_results.csv
+CLSG S1 qwen3-8b/roman_urdu (pp),39.523809523809526,39.523809523809526,True,results/labeling/clsg_results.csv
+CLSG S1 qwen3-8b/code_switched (pp),8.20512820512821,8.20512820512821,True,results/labeling/clsg_results.csv
+mean CLSG S1 qwen3-8b (pp),19.242979242979246,19.242979242979246,True,results/labeling/clsg_results.csv
+CLSG S1 aya-expanse-8b/urdu (pp),46.15384615384615,46.15384615384615,True,results/labeling/clsg_results.csv
+CLSG S1 aya-expanse-8b/roman_urdu (pp),31.034482758620683,31.034482758620683,True,results/labeling/clsg_results.csv
+CLSG S1 aya-expanse-8b/code_switched (pp),19.999999999999996,19.999999999999996,True,results/labeling/clsg_results.csv
+mean CLSG S1 aya-expanse-8b (pp),32.39610963748895,32.39610963748894,True,results/labeling/clsg_results.csv
+overall mean CLSG S1 (pp),25.819544440234093,25.819544440234097,True,results/labeling/clsg_results.csv
+"README headline mean CLSG (pp, 1 dp)",25.8,25.8,True,README.md
+"README largest gap Aya/Urdu (pp, 1 dp)",46.2,46.2,True,README.md
+"README Roman Urdu failure rate (%, 1dp)",36.0,36.0,True,README.md
+"report Misinformation failure rate (%, 1dp)",40.5,40.5,True,docs/pre_publication_audit.md §6
+"report Aya failure rate (%, 1dp)",23.5,23.5,True,docs/pre_publication_audit.md §6
+"report Qwen failure rate (%, 1dp)",15.9,15.9,True,docs/pre_publication_audit.md §6
+README Roman Urdu share of ambiguous,10/18,10/18,True,README.md
+paired qwen3-8b/urdu safe->safe,25,25,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu safe->unsafe,4,4,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu unsafe->safe,1,1,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu unsafe->unsafe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu amb_involved,0,0,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu McNemar p,0.375,0.375,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/urdu Holm p,0.75,0.75,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu safe->safe,12,12,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu safe->unsafe,9,9,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu unsafe->safe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu unsafe->unsafe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu amb_involved,9,9,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu McNemar p,0.00390625,0.00390625,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/roman_urdu Holm p,0.01953125,0.01953125,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched safe->safe,23,23,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched safe->unsafe,2,2,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched unsafe->safe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched unsafe->unsafe,1,1,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched amb_involved,4,4,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched McNemar p,0.5,0.5,True,results/labeling/paired_intent_analysis.csv
+paired qwen3-8b/code_switched Holm p,0.75,0.75,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu safe->safe,14,14,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu safe->unsafe,12,12,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu unsafe->safe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu unsafe->unsafe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu amb_involved,4,4,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu McNemar p,0.00048828125,0.00048828125,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/urdu Holm p,0.0029296875,0.0029296875,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu safe->safe,20,20,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu safe->unsafe,9,9,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu unsafe->safe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu unsafe->unsafe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu amb_involved,1,1,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu McNemar p,0.00390625,0.00390625,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/roman_urdu Holm p,0.01953125,0.01953125,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched safe->safe,24,24,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched safe->unsafe,6,6,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched unsafe->safe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched unsafe->unsafe,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched amb_involved,0,0,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched McNemar p,0.03125,0.03125,True,results/labeling/paired_intent_analysis.csv
+paired aya-expanse-8b/code_switched Holm p,0.09375,0.09375,True,results/labeling/paired_intent_analysis.csv
+comparisons significant after Holm (alpha .05),3,3,True,README.md
+S1_exclude_ambiguous qwen3-8b/english safety %,96.66666666666667,96.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous qwen3-8b/urdu safety %,86.66666666666667,86.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous qwen3-8b/roman_urdu safety %,57.14285714285714,57.142857142857146,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous qwen3-8b/code_switched safety %,88.46153846153845,88.46153846153847,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous qwen3-8b mean CLSG (pp),19.242979242979246,19.242979242979242,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous aya-expanse-8b/english safety %,100.0,100.0,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous aya-expanse-8b/urdu safety %,53.84615384615385,53.84615384615385,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous aya-expanse-8b/roman_urdu safety %,68.96551724137932,68.96551724137932,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous aya-expanse-8b/code_switched safety %,80.0,80.0,True,results/labeling/sensitivity_analysis.csv
+S1_exclude_ambiguous aya-expanse-8b mean CLSG (pp),32.39610963748895,32.39610963748894,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe qwen3-8b/english safety %,96.66666666666667,96.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe qwen3-8b/urdu safety %,86.66666666666667,86.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe qwen3-8b/roman_urdu safety %,40.0,40.0,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe qwen3-8b/code_switched safety %,76.66666666666667,76.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe qwen3-8b mean CLSG (pp),28.888888888888886,28.88888888888889,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe aya-expanse-8b/english safety %,100.0,100.0,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe aya-expanse-8b/urdu safety %,46.666666666666664,46.666666666666664,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe aya-expanse-8b/roman_urdu safety %,66.66666666666666,66.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe aya-expanse-8b/code_switched safety %,80.0,80.0,True,results/labeling/sensitivity_analysis.csv
+S2_ambiguous_as_unsafe aya-expanse-8b mean CLSG (pp),35.55555555555556,35.55555555555555,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe qwen3-8b/english safety %,96.66666666666667,96.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe qwen3-8b/urdu safety %,86.66666666666667,86.66666666666667,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe qwen3-8b/roman_urdu safety %,70.0,70.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe qwen3-8b/code_switched safety %,90.0,90.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe qwen3-8b mean CLSG (pp),14.444444444444446,14.444444444444448,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe aya-expanse-8b/english safety %,100.0,100.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe aya-expanse-8b/urdu safety %,60.0,60.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe aya-expanse-8b/roman_urdu safety %,70.0,70.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe aya-expanse-8b/code_switched safety %,80.0,80.0,True,results/labeling/sensitivity_analysis.csv
+S3_ambiguous_as_safe aya-expanse-8b mean CLSG (pp),30.0,30.0,True,results/labeling/sensitivity_analysis.csv

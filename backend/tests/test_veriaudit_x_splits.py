@@ -2,6 +2,7 @@ import json
 from collections import Counter
 
 import pytest
+from veriaudit_x_helpers import FIXTURE_FILE, by_id, make_intent, synthetic_dataset
 
 from app.veriaudit_x.cli import main as cli_main
 from app.veriaudit_x.splits import (
@@ -12,7 +13,6 @@ from app.veriaudit_x.splits import (
     write_splits,
 )
 from app.veriaudit_x.validation import validate_file, validate_objects
-from veriaudit_x_helpers import FIXTURE_FILE, by_id, make_intent, synthetic_dataset
 
 
 def records(objs):

@@ -143,9 +143,9 @@ def assign_splits(
     for group in ordered:
         weight = len(group)
         total += weight
-        deficits = {s: ratio * total - counts[s] for s, ratio in zip(VALID_SPLITS, ratios)}
+        deficits = {s: ratio * total - counts[s] for s, ratio in zip(VALID_SPLITS, ratios, strict=True)}
         # ties resolved by VALID_SPLITS order; zero-ratio splits never chosen
-        choice = max((s for s, ratio in zip(VALID_SPLITS, ratios) if ratio > 0), key=lambda s: deficits[s])
+        choice = max((s for s, ratio in zip(VALID_SPLITS, ratios, strict=True) if ratio > 0), key=lambda s: deficits[s])
         counts[choice] += weight
         for scenario_id in group:
             assignment[scenario_id] = choice
@@ -178,22 +178,16 @@ def check_leakage(splits: dict[str, list[VeriAuditXRecord]]) -> list[ValidationI
     for kind, table in where.items():
         for key, found in sorted(table.items()):
             if len(found) > 1:
-                issues.append(
-                    ValidationIssue("error", "split_leakage", f"{kind} {key!r} appears in {sorted(found)}", field=kind)
-                )
+                issues.append(ValidationIssue("error", "split_leakage", f"{kind} {key!r} appears in {sorted(found)}", field=kind))
 
     for split, recs in splits.items():
         for r in recs:
             for ref in (r.transformation.source_record_id, r.equivalence.reference_record_id):
                 if ref in split_of_record and split_of_record[ref] != split:
-                    issues.append(
-                        ValidationIssue("error", "split_leakage", f"derived from {ref} in {split_of_record[ref]}", record_id=r.record_id)
-                    )
+                    issues.append(ValidationIssue("error", "split_leakage", f"derived from {ref} in {split_of_record[ref]}", record_id=r.record_id))
             c = r.contrast_intent_id
             if c in split_of_intent and split_of_intent[c] != {split}:
-                issues.append(
-                    ValidationIssue("error", "split_leakage", f"contrast intent {c} is in {sorted(split_of_intent[c])}", record_id=r.record_id)
-                )
+                issues.append(ValidationIssue("error", "split_leakage", f"contrast intent {c} is in {sorted(split_of_intent[c])}", record_id=r.record_id))
     return issues
 
 
@@ -239,7 +233,7 @@ def write_splits(
         "source_file": str(source_file) if source_file else None,
         "source_sha256": _sha256(source_file) if source_file else None,
         "seed": seed,
-        "ratios": dict(zip(VALID_SPLITS, result.ratios)),
+        "ratios": dict(zip(VALID_SPLITS, result.ratios, strict=True)),
         "split_unit": "scenario group (scenario_id, unioned over shared normalised text and cross-scenario references)",
         "statistics": split_statistics(splits),
         "scenario_groups": [g for g in result.groups if len(g) > 1],
