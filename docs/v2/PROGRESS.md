@@ -21,6 +21,7 @@ v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled a
 | Inference pipeline | `backend/app/v2/inference/`, `configs/`, Colab notebook | CPU tests with the fake backend: provenance, retries, completion status, pin and fixture gates |
 | Analysis pipeline | `backend/app/v2/analysis.py`, `research/analysis/run_analysis.py` | end-to-end test on a fake-backend run (watermarked); refusal of incomplete, tampered and fixture runs |
 | RQ5 classifier code | `research/classifiers/` | leakage gate, bootstrap CIs and example builder unit-tested; encoders not trained |
+| Independent data-integrity review (11 findings, all fixed) | `backend/tests/test_integrity_regressions.py` | each finding reproduced as a failing case, then fixed |
 | Platform | `/api/v2/*`, Next.js `/results`, `tools/review/` | API tests; `tsc` and eslint clean; local `next build` succeeds |
 
 ## Executed experiments

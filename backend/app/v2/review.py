@@ -55,7 +55,18 @@ def apply_equivalence_ratings(record: VeriAuditXRecord, ratings: list[Equivalenc
             raise ValueError(f"{author} authored {record.record_id}; an author's rating cannot count as review")
         if r.text_sha256 is not None and r.text_sha256 != text_hash:
             raise ValueError(f"rating by {r.annotator_id} for {record.record_id} refers to a different text version")
-    by_rater = {h.annotator_id: h for h in record.equivalence.human_ratings}
+    existing = {h.annotator_id: h for h in record.equivalence.human_ratings}
+    for r in ratings:
+        prev = existing.get(r.annotator_id)
+        if prev is not None and prev.rater_role != r.rater_role:
+            # e.g. a reviewer adjudicating their own row: would silently replace their own rating
+            raise ValueError(f"{r.annotator_id} already rated {record.record_id} as {prev.rater_role.value}; cannot also act as {r.rater_role.value}")
+    roles_in_batch: dict[str, set] = {}
+    for r in ratings:
+        roles_in_batch.setdefault(r.annotator_id, set()).add(r.rater_role)
+    if any(len(v) > 1 for v in roles_in_batch.values()):
+        raise ValueError(f"{record.record_id}: the same person appears as reviewer and adjudicator")
+    by_rater = dict(existing)
     for r in ratings:
         by_rater[r.annotator_id] = r
     all_r = sorted(by_rater.values(), key=lambda h: h.annotator_id)

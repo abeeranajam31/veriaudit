@@ -100,19 +100,21 @@ def build(selection: list[dict], subset: set[str], release: bool) -> tuple[list[
         validity[r["scenario_id"]].append(r)
     rows, _ = A.plan_rows(selection, subset, benign)
     plan = {r.row_id: r for r in rows}
-    variants = A.locked_variants(rows)
-    variants.update(A.load_variants(sorted(AUTH.glob("variants_*.jsonl"))))
+    imported = A.load_variants(sorted(AUTH.glob("variants_*.jsonl")))
+    variants = A.current_variants(rows, imported)
+    stale_variants = sorted(set(imported) - set(variants))
     registry = A.load_registry(REGISTRY)
     human_ids = {r["id"] for r in registry.get("raters", []) if r.get("human") is True}
 
     ratings = defaultdict(list)
     stats = Counter()
+    stats["stale_variants_source_changed"] = len(stale_variants)
     for p in sorted(AUTH.glob("ratings_*.jsonl")):
         for r in load_jsonl(p):
             if r["annotator_id"] not in human_ids:
                 raise SystemExit(f"{p.name}: rating by unregistered rater {r['annotator_id']!r}")
             v = variants.get(r["record_id"])
-            if v is None or r.get("text_sha256") != v["text_sha256"]:
+            if v is None or r.get("text_sha256") != v["text_sha256"] or r.get("english_sha256", v.get("english_sha256")) != v.get("english_sha256"):
                 stats["stale_or_orphan_ratings_ignored"] += 1
                 continue
             ratings[r["record_id"]].append(r)
@@ -186,7 +188,8 @@ def build(selection: list[dict], subset: set[str], release: bool) -> tuple[list[
                 if ratings.get(rid):
                     model = VeriAuditXRecord.model_validate(rec)
                     model = apply_equivalence_ratings(
-                        model, [EquivalenceRating.model_validate({k: x for k, x in r.items() if k != "record_id"}) for r in ratings[rid]]
+                        model,
+                        [EquivalenceRating.model_validate({k: x for k, x in r.items() if k not in ("record_id", "english_sha256")}) for r in ratings[rid]],
                     )
                     rec = model.model_dump(mode="json")
                     stats["variants_with_human_ratings"] += 1
@@ -268,7 +271,9 @@ def main(argv=None) -> int:
     selection = load_jsonl(CAND / "selection.jsonl")
     subset = set(json.loads((CAND / "transformation_subset.json").read_text(encoding="utf-8")))
     records, info = build(selection, subset, args.release)
-    report = validate_objects(records, ValidationConfig(release=args.release))
+    registry = A.load_registry(REGISTRY)
+    raters = frozenset(r["id"] for r in registry.get("raters", []) if r.get("human") is True)
+    report = validate_objects(records, ValidationConfig(release=args.release, registered_raters=raters))
     if args.release and not report.ok:
         print(report.summary()[:5000], file=sys.stderr)
         raise SystemExit("--release: validation failed; nothing written")

@@ -82,6 +82,9 @@ class ValidationConfig:
     # other as contrasts, every intent has all required base forms, and every authored benign
     # contrast has a passing benign-validity review by someone other than its author.
     release: bool = False
+    # IDs registered as human raters (data/annotators.json). When set, every rating, annotation,
+    # adjudication and benign-validity review must come from a registered ID.
+    registered_raters: frozenset[str] | None = None
 
 
 @dataclass
@@ -324,8 +327,16 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
         _err(
             report, "provenance_mismatch", "quality.human_reviewed must be true exactly when human ratings/annotations exist", r, line, "quality.human_reviewed"
         )
-    if q.human_adjudicated != (r.annotation.adjudication is not None):
+    adjudicated = r.annotation.adjudication is not None or any(h.rater_role == RaterRole.adjudicator for h in eq.human_ratings)
+    if q.human_adjudicated != adjudicated:
         _err(report, "provenance_mismatch", "quality.human_adjudicated must be true exactly when an adjudication exists", r, line, "quality.human_adjudicated")
+    if config.registered_raters is not None:
+        people = [h.annotator_id for h in eq.human_ratings] + [a.annotator_id for a in r.annotation.annotations]
+        people += [r.annotation.adjudication.adjudicator_id] if r.annotation.adjudication else []
+        people += [v.reviewer_id for v in q.benign_validity]
+        unknown = sorted({x for x in people if x not in config.registered_raters})
+        if unknown:
+            _err(report, "unregistered_rater", f"ratings/reviews by IDs not registered as human: {unknown}", r, line, "equivalence.human_ratings")
     if q.ai_generated and t.method == TransformationMethod.human:
         _err(report, "provenance_mismatch", "ai_generated text cannot have transformation.method='human'", r, line, "quality.ai_generated")
     if q.ai_generated and not q.generator_id:

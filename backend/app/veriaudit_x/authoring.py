@@ -24,6 +24,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -197,8 +198,21 @@ def write_csv(path: Path, columns: list[str], rows: list[dict]) -> Path:
     return path
 
 
+_CORRUPT = re.compile(r"\ufffd|\?{3,}")
+_ARABIC = re.compile(r"[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]")
+
+
+def corrupt_text(text: str) -> bool:
+    """Signs of a lossy save (e.g. Excel 'CSV' in a non-UTF-8 code page): replacement characters
+    or runs of '?' where Urdu letters were."""
+    return bool(_CORRUPT.search(text or ""))
+
+
 def read_csv(path: Path, required: list[str]) -> list[dict]:
-    text = Path(path).read_text(encoding="utf-8-sig")
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise WorkflowError([f"file is not UTF-8 ({exc.reason} at byte {exc.start}); in Excel use 'Save As > CSV UTF-8'"]) from exc
     reader = csv.DictReader(io.StringIO(text))
     missing = [c for c in required if c not in (reader.fieldnames or [])]
     if missing:
@@ -246,6 +260,9 @@ def import_benign_authoring(path: Path, author: str, selection: list[dict]) -> l
             problems.append(f"{where}: harmful_english or scenario_id was edited (source_check mismatch)")
         if not row["benign_english"]:
             continue  # not written yet
+        if corrupt_text(row["benign_english"]):
+            problems.append(f"{where}: text looks corrupted by a non-UTF-8 save (contains '???' or U+FFFD)")
+            continue
         if row["drafted_by_ai"] not in YES_NO:
             problems.append(f"{where}: drafted_by_ai must be yes or no")
             continue
@@ -364,7 +381,7 @@ class ImportResult:
     warnings: list[str]
 
 
-def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> ImportResult:
+def import_worksheet(path: Path, translator: str, rows: list[PlannedRow], previous: dict[str, dict] | None = None) -> ImportResult:
     """Validate a filled worksheet. Any problem refuses the whole import (fix and re-import);
     automated QC concerns are returned as warnings and recorded with the variant."""
     plan = {r.row_id: r for r in rows}
@@ -408,6 +425,12 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> Imp
         if not row["text"]:
             problems.append(f"{where}: status done but text is empty")
             continue
+        if corrupt_text(row["text"]):
+            problems.append(f"{where}: text looks corrupted by a non-UTF-8 save (contains '???' or U+FFFD); save as 'CSV UTF-8'")
+            continue
+        if p.target_script == "perso_arabic" and not _ARABIC.search(row["text"]):
+            problems.append(f"{where}: an Urdu-script row contains no Urdu letters (wrong form, or the file lost its encoding)")
+            continue
         if row["drafting_aid"] not in DRAFTING_AIDS:
             problems.append(f"{where}: drafting_aid must be one of {DRAFTING_AIDS} (say if a tool drafted this)")
         if row["self_equivalence"] not in JUDGEMENTS:
@@ -426,14 +449,21 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> Imp
         failed = [q.name for q in qc if not q.passed]
         if failed:
             warnings.append(f"{where}: automated checks flagged {failed} - the variant will enter review as 'flagged'")
+        # a revision never loses an earlier tool-drafting disclosure (protocol §6 step 2)
+        aid, inherited = row["drafting_aid"], None
+        prev = (previous or {}).get(rid)
+        if prev and prev.get("drafting_aid") not in (None, "none") and aid == "none":
+            aid, inherited = prev["drafting_aid"], prev.get("author_id")
         out.append(
             {
                 "row_id": rid,
                 "status": "done",
                 "text": row["text"],
                 "text_sha256": sha(row["text"]),
+                "english_sha256": sha(p.english_source),
                 "author_id": translator,
-                "drafting_aid": row["drafting_aid"],
+                "drafting_aid": aid,
+                "drafting_aid_inherited_from": inherited,
                 "derive_from": p.derive_from,
                 "self_assessment": {
                     "equivalence": row["self_equivalence"] or None,
@@ -465,7 +495,31 @@ def load_variants(paths: list[Path]) -> dict[str, dict]:
 
 
 def locked_variants(rows: list[PlannedRow]) -> dict[str, dict]:
-    return {r.row_id: {"row_id": r.row_id, "text": r.locked_text, "text_sha256": sha(r.locked_text), "author_id": V01_AUTHOR} for r in rows if r.locked_text}
+    return {
+        r.row_id: {
+            "row_id": r.row_id,
+            "text": r.locked_text,
+            "text_sha256": sha(r.locked_text),
+            "english_sha256": sha(r.english_source),
+            "author_id": V01_AUTHOR,
+            "drafting_aid": "none",
+        }
+        for r in rows
+        if r.locked_text
+    }
+
+
+def current_variants(rows: list[PlannedRow], imported: dict[str, dict]) -> dict[str, dict]:
+    """Imported variants that still match their row's English source, with the locked v0.1 rows
+    always winning over any imported file. Variants of an edited source are stale and dropped."""
+    plan = {r.row_id: r for r in rows}
+    out = {
+        rid: v
+        for rid, v in imported.items()
+        if rid in plan and not plan[rid].locked_text and v.get("english_sha256", sha(plan[rid].english_source)) == sha(plan[rid].english_source)
+    }
+    out.update(locked_variants(rows))
+    return out
 
 
 def export_review(rows: list[PlannedRow], variants: dict[str, dict], reviewer: str, already_rated: set[str] = frozenset()) -> list[dict]:
@@ -531,6 +585,7 @@ def import_review(path: Path, reviewer: str, rows: list[PlannedRow], variants: d
                 "annotator_id": reviewer,
                 "rater_role": "independent_reviewer",
                 "text_sha256": v["text_sha256"],
+                "english_sha256": sha(p.english_source),
                 "judgement": row["judgement"],
                 "harm_preserved": YES_NO_UNSURE[row["harm_preserved"]],
                 "naturalness": int(row["naturalness"]) if row["naturalness"] else None,
@@ -580,8 +635,15 @@ def export_adjudication(rows: list[PlannedRow], variants: dict[str, dict], ratin
     return out
 
 
-def import_adjudication(path: Path, adjudicator: str, rows: list[PlannedRow], variants: dict[str, dict], registry: dict) -> list[dict]:
+def import_adjudication(
+    path: Path, adjudicator: str, rows: list[PlannedRow], variants: dict[str, dict], registry: dict, ratings: list[dict] | None = None
+) -> list[dict]:
     _check_registered(adjudicator, registry)
+    rated_by_adjudicator = {
+        r["record_id"]
+        for r in (ratings or [])
+        if r["annotator_id"] == adjudicator and r.get("text_sha256") == variants.get(r["record_id"], {}).get("text_sha256")
+    }
     plan = {r.row_id: r for r in rows}
     problems, out = [], []
     for i, row in enumerate(read_csv(path, ADJUDICATION_COLUMNS), start=2):
@@ -593,6 +655,9 @@ def import_adjudication(path: Path, adjudicator: str, rows: list[PlannedRow], va
             continue
         if v["author_id"] == adjudicator:
             problems.append(f"{where}: {adjudicator} wrote this variant and cannot adjudicate it")
+            continue
+        if rid in rated_by_adjudicator:
+            problems.append(f"{where}: {adjudicator} already reviewed this variant; the adjudicator must be a third person")
             continue
         current = check(rid, p.english_source, v["text"])
         if row["source_check"] != current or check(rid, row["english_source"], row["text"]) != current:
@@ -615,6 +680,7 @@ def import_adjudication(path: Path, adjudicator: str, rows: list[PlannedRow], va
                 "annotator_id": adjudicator,
                 "rater_role": "adjudicator",
                 "text_sha256": v["text_sha256"],
+                "english_sha256": sha(p.english_source),
                 "judgement": DECISIONS[row["decision"]],
                 "harm_preserved": YES_NO_UNSURE[row["harm_preserved"]],
                 "notes": f"{row['decision']}: {row['rationale']}",

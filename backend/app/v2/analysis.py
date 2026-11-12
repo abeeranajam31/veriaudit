@@ -56,6 +56,8 @@ class Options:
     calibration: bool = False
     allow_incomplete: bool = False
     allow_fixtures: bool = False
+    allow_candidate_dataset: bool = False
+    registry: Path | None = None
     n_boot: int = 5000
     seed: int = 20261113
     overrides_used: list[str] = field(default_factory=list)
@@ -77,6 +79,10 @@ def load_inputs(o: Options):
     problems = []
     if manifest.get("status") != "complete":
         problems.append(("incomplete", f"run status is {manifest.get('status')!r}"))
+    if manifest.get("limit"):
+        problems.append(("incomplete", f"run used --limit {manifest['limit']}"))
+    if not manifest.get("generations_sha256"):
+        problems.append(("integrity", "run manifest has no generations hash (run never finished); resume it to completion"))
     if manifest.get("unpinned_models"):
         problems.append(("incomplete", f"unpinned models: {manifest['unpinned_models']}"))
     if manifest.get("generations_sha256") and sha256(gen_file) != manifest["generations_sha256"]:
@@ -88,8 +94,19 @@ def load_inputs(o: Options):
         problems.append(("integrity", f"dataset {ds_path} missing or changed since the run"))
     if manifest.get("is_fixture_run") and not o.allow_fixtures:
         problems.append(("fixture", "run used the fake test backend"))
+    ds_info = manifest["dataset"]
+    if not manifest.get("is_fixture_run"):
+        if o.calibration and not ds_info.get("is_calibration"):
+            problems.append(("candidate", "--calibration given but the dataset is not the calibration set"))
+        if not o.calibration and not ds_info.get("is_release"):
+            problems.append(("candidate", f"dataset {ds_info.get('dataset_version')!r} is not a frozen release (assemble --release)"))
     for kind, msg in problems:
-        if kind == "integrity" or (kind == "incomplete" and not o.allow_incomplete) or (kind == "fixture" and not o.allow_fixtures):
+        if (
+            kind == "integrity"
+            or (kind == "incomplete" and not o.allow_incomplete)
+            or (kind == "fixture" and not o.allow_fixtures)
+            or (kind == "candidate" and not o.allow_candidate_dataset)
+        ):
             raise AnalysisRefused(msg)
         o.overrides_used.append(msg)
     if manifest.get("is_fixture_run"):
@@ -100,16 +117,45 @@ def load_inputs(o: Options):
         for line in Path(p).read_text(encoding="utf-8").splitlines():
             if line.strip():
                 labels.append(ResponseLabel.model_validate_json(line))
-    dataset = validate_file(ds_path, ValidationConfig(require_all_languages=False))
+    registered = None
+    if o.registry is not None and o.registry.exists():
+        reg = json.loads(o.registry.read_text(encoding="utf-8"))
+        registered = frozenset(r["id"] for r in reg.get("raters", []) if r.get("human") is True)
+    fixture_run = bool(manifest.get("is_fixture_run"))
+    dataset = validate_file(ds_path, ValidationConfig(require_all_languages=False, registered_raters=None if fixture_run else registered))
     if dataset.errors:
-        raise AnalysisRefused(f"dataset has {len(dataset.errors)} validation errors")
+        raise AnalysisRefused(f"dataset has {len(dataset.errors)} validation errors, e.g. {dataset.errors[0].format()}")
+    known = {r.record_id for r in dataset.records}
+    orphans = {g.record_id for g in generations} - known
+    if orphans:
+        raise AnalysisRefused(f"{len(orphans)} generations refer to records not in the dataset, e.g. {sorted(orphans)[0]}")
+    excluded = set(manifest["config"].get("exclude_equivalence_status") or [])
+    expected = len([r for r in dataset.records if r.equivalence.status.value not in excluded])
+    if manifest.get("n_records") != expected:
+        msg = f"run covered {manifest.get('n_records')} records but the dataset has {expected} eligible"
+        if not o.allow_incomplete:
+            raise AnalysisRefused(msg)
+        o.overrides_used.append(msg)
+    if not fixture_run and registered is not None:
+        bad = sorted(
+            {lab.labeler_id for lab in labels if lab.label_source in (LabelSource.human, LabelSource.human_adjudicated) and lab.labeler_id not in registered}
+        )
+        if bad:
+            raise AnalysisRefused(f"human labels from IDs not registered as human raters: {bad[:5]}")
     return manifest, generations, labels, dataset.records, ds_path
 
 
+CONFIRMATORY_FAMILY_MODELS = 4  # protocol §7: fixed before data collection
+
+
 def confirmatory_models(model_manifest: Path, present: set[str], fixture: bool) -> list[str]:
+    if fixture:
+        return sorted(present)
     models = yaml.safe_load(model_manifest.read_text(encoding="utf-8"))["models"]
-    conf = [m["key"] for m in models if m.get("confirmatory")]
-    return sorted(present) if fixture else conf
+    conf = sorted(m["key"] for m in models if m.get("confirmatory"))
+    if len(conf) != CONFIRMATORY_FAMILY_MODELS:
+        raise AnalysisRefused(f"model manifest lists {len(conf)} confirmatory models; the protocol fixes {CONFIRMATORY_FAMILY_MODELS}")
+    return conf
 
 
 # --------------------------------------------------------------------------- reports
@@ -274,7 +320,10 @@ def main_analysis(units, gens, resolved, records, manifest, o: Options, fixture:
     greedy_units, _ = M.build_units(gens, resolved, aggregation="greedy", allow_fixtures=fixture)
     cells_greedy = M.cell_metrics(greedy_units, n_boot=o.n_boot, seed=o.seed)
     write_csv(o.out_dir / "cell_metrics.csv", flatten_cells(cells, "samples") + flatten_cells(cells_greedy, "greedy"))
-    h1, h2 = _families(units, models, o.n_boot, o.seed)
+    try:
+        h1, h2 = _families(units, models, o.n_boot, o.seed)
+    except M.FamilyIncompleteError as exc:
+        raise AnalysisRefused(f"confirmatory family incomplete: {exc}") from exc
     write_csv(o.out_dir / "confirmatory_H1.csv", h1)
     write_csv(o.out_dir / "confirmatory_H2.csv", h2)
     out["H1"], out["H2"] = h1, h2
@@ -449,6 +498,8 @@ def reproducibility(manifest, o: Options, ds_path: Path, unit_stats, labels, res
         "mode": "calibration" if o.calibration else "main",
         "overrides_used": o.overrides_used,
         "run_id": manifest["run_id"],
+        "model_manifest": {"path": str(o.model_manifest), "sha256": sha256(o.model_manifest)},
+        "rater_registry": {"path": str(o.registry), "sha256": sha256(o.registry)} if o.registry and o.registry.exists() else None,
         "run_status": manifest.get("status"),
         "run_manifest_sha256": sha256(o.run_dir / RUN_MANIFEST),
         "generations_sha256": sha256(o.run_dir / "generations.jsonl"),

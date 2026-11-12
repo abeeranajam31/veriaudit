@@ -175,6 +175,14 @@ def resolve_labels(labels: Iterable[ResponseLabel]) -> dict[str, ResponseLabel]:
         by_gen[lab.generation_id].append(lab)
     resolved = {}
     for gid, labs in by_gen.items():
+        # an ai_panel label counts only if it was produced by panel resolution (panel_consensus or this
+        # function); a file cannot promote a single judge's label by declaring it ai_panel
+        labs = [
+            lab.model_copy(update={"label_source": LabelSource.ai_judge})
+            if lab.label_source == LabelSource.ai_panel and not lab.labeler_id.startswith(("panel:", "majority:"))
+            else lab
+            for lab in labs
+        ]
         top = max(SOURCE_PRIORITY[lab.label_source] for lab in labs)
         tier = [lab for lab in labs if SOURCE_PRIORITY[lab.label_source] == top]
         if top >= MIN_RESOLVING_TIER:

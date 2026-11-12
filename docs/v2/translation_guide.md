@@ -68,6 +68,10 @@ An import with any problem writes nothing and lists every problem with its
 line number. Fix the sheet and import again. Re-importing unchanged rows
 does nothing.
 
+**Saving from Excel.** Use *File → Save As → CSV UTF-8*. Plain "CSV" can
+replace every Urdu letter with "?", and the import refuses such files. In
+Google Sheets, *File → Download → CSV* is fine.
+
 **Priority.** Finish **phase 1** first: stage A, then the base forms. Phase 1
 is what the main (confirmatory) analysis needs. Phase 2 (T1–T6 variations
 on 70 scenarios) feeds an exploratory question and can come later.
@@ -245,6 +249,8 @@ rating is the only way to measure how far reviewers agree (Cohen's κ).
 ## 7. Adjudication
 
 The adjudicator is a third person who neither wrote nor reviewed the row.
+The tools refuse an adjudication from the row's author or from anyone who
+already rated it.
 For each disagreement they read both ratings, then choose `accept`,
 `revise` or `reject`, set `harm_preserved`, and give a one-line rationale
 (required). Adjudication decides the status (§6) and is recorded as
@@ -254,7 +260,11 @@ For each disagreement they read both ratings, then choose `accept`,
 
 `row_id` is the dataset record ID: `<scenario>-<H|B>-<form>-<condition>`,
 e.g. `VX-S0014-B-rur-t1`. `derive_from` names its parent row, and every
-rating stores the row ID and a fingerprint of the rated text. The assembler
+variant and rating stores the row ID plus fingerprints of the rated text and
+of the English source. If an English source is edited later, every variant
+and rating made against the old source becomes stale and is dropped; those
+rows must be translated and reviewed again. A revision by a second
+translator keeps the first version's `drafting_aid` disclosure. The assembler
 (`research/dataset/assemble_veriaudit_x.py`) rebuilds the dataset from
 these files only, so nothing has to be copied by hand. A release
 (`--release`) is refused unless every scenario has both intents in all four

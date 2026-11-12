@@ -27,7 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections import Counter
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -74,9 +74,7 @@ def plan() -> tuple[list[A.PlannedRow], list[str]]:
 
 
 def variants(rows: list[A.PlannedRow]) -> dict[str, dict]:
-    v = A.locked_variants(rows)
-    v.update(A.load_variants(sorted(AUTH.glob("variants_*.jsonl"))))
-    return v
+    return A.current_variants(rows, A.load_variants(sorted(AUTH.glob("variants_*.jsonl"))))
 
 
 def ratings() -> list[dict]:
@@ -98,11 +96,11 @@ def status() -> Path:
     ab = authored_benign()
     need_benign = [c["scenario_id"] for c in selection() if not c.get("benign_en")]
     reviewed_ok = {r["scenario_id"] for r in validity if r["benign"] and r["topically_matched"]}
-    by_row = Counter()
+    by_row: dict[str, set] = defaultdict(set)
     for r in rs:
         vv = v.get(r["record_id"])
         if vv and r.get("text_sha256") == vv["text_sha256"] and r["rater_role"] == "independent_reviewer":
-            by_row[r["record_id"]] += 1
+            by_row[r["record_id"]].add(r["annotator_id"])  # unique raters, not rating rows
     lines = [
         "# Authoring status",
         "",
@@ -116,7 +114,7 @@ def status() -> Path:
     for phase in (1, 2):
         pr = [r for r in rows if r.phase == phase]
         lines.append(f"| B. phase {phase} variants written | {sum(r.row_id in v for r in pr)} | {len(pr)} (planned so far) |")
-        lines.append(f"| C. phase {phase} variants with >= 2 current independent ratings | {sum(by_row[r.row_id] >= 2 for r in pr)} | {len(pr)} |")
+        lines.append(f"| C. phase {phase} variants with >= 2 current independent ratings | {sum(len(by_row[r.row_id]) >= 2 for r in pr)} | {len(pr)} |")
     lines += ["", f"Scenarios whose benign rows cannot be planned until stage A is done: {len(waiting)}"]
     out = AUTH / "STATUS.md"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -169,15 +167,16 @@ def main(argv=None) -> int:
             done = variants(rows)
             for r in sheet:  # show already-imported work so translators do not redo it
                 if r["locked"] == "no" and r["row_id"] in done:
-                    r.update(text=done[r["row_id"]]["text"], status="done", comments=f"imported from {done[r['row_id']]['author_id']}")
+                    d = done[r["row_id"]]
+                    r.update(text=d["text"], status="done", drafting_aid=d.get("drafting_aid") or "", comments=f"imported from {d['author_id']}")
             out = A.write_csv(CAND / "translation_worksheet.csv", A.WORKSHEET_COLUMNS, sheet)
             if waiting:
                 print(f"note: benign rows for {len(waiting)} scenarios appear after their benign contrast is written (stage A)", file=sys.stderr)
         elif args.cmd == "import":
             registered(args.person)
             rows, _ = plan()
-            res = A.import_worksheet(args.path, args.person, rows)
             prev = variants(rows)
+            res = A.import_worksheet(args.path, args.person, rows, previous=prev)
             new = [x for x in res.variants if not (x["status"] == "done" and prev.get(x["row_id"], {}).get("text") == x["text"])]
             for x in new:
                 x["imported_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -207,7 +206,7 @@ def main(argv=None) -> int:
             )
         elif args.cmd == "import-adjudication":
             rows, _ = plan()
-            rs = A.import_adjudication(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY))
+            rs = A.import_adjudication(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY), ratings())
             append_jsonl(AUTH / f"ratings_{stamp()}_{args.person}.jsonl", rs)
             out = f"{len(rs)} adjudications imported"
         else:

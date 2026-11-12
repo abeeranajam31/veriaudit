@@ -102,6 +102,8 @@ def dataset_identity(dataset: Path) -> dict:
         "sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
         "dataset_version": info.get("dataset_version"),
         "is_fixture": bool(info.get("is_fixture", False)),
+        "is_release": bool(info.get("is_release", False)),
+        "is_calibration": bool(info.get("is_calibration", False)),
     }
 
 
@@ -182,6 +184,12 @@ def run(
     run_id = config["run_id"]
     out_dir = (out_root or ROOT / "results" / "v2" / "runs") / run_id
     out_file = out_dir / "generations.jsonl"
+    config_sha = hashlib.sha256(config_path.read_bytes()).hexdigest()
+    old_manifest = out_dir / RUN_MANIFEST
+    if old_manifest.exists():
+        prev = json.loads(old_manifest.read_text(encoding="utf-8"))
+        if prev.get("dataset", {}).get("sha256") != ds["sha256"] or prev.get("config_sha256") != config_sha:
+            raise RunConfigError(f"run {run_id} already exists with a different dataset or config; resuming would mix generations. Use a new run_id.")
     max_attempts = int(config.get("max_attempts", 3))
     succeeded: set[str] = set()
     attempts: dict[str, int] = defaultdict(int)
@@ -199,7 +207,9 @@ def run(
         "is_fixture_run": is_fixture_run,
         "unpinned_models": unpinned,
         "config_path": str(config_path),
-        "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        "config_sha256": config_sha,
+        "limit": limit,
+        "model_keys_requested": model_keys,
         "config": config,
         "dataset": ds,
         "n_records": len(records),

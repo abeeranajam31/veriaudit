@@ -26,10 +26,23 @@ def main(argv=None) -> int:
     ap.add_argument("--calibration", action="store_true")
     ap.add_argument("--allow-incomplete", action="store_true", help="analyse an incomplete run (recorded in every output)")
     ap.add_argument("--allow-fixtures", action="store_true", help="analyse a fake-backend run (outputs watermarked)")
+    ap.add_argument("--allow-candidate-dataset", action="store_true", help="analyse a run on a non-release dataset build (recorded)")
+    ap.add_argument("--registry", type=Path, default=ROOT / "data" / "annotators.json")
     ap.add_argument("--n-boot", type=int, default=5000)
     args = ap.parse_args(argv)
     out = args.out or ROOT / "results" / "v2" / "analysis" / args.run.name
-    o = Options(args.run, args.labels, out, args.models, args.calibration, args.allow_incomplete, args.allow_fixtures, args.n_boot)
+    o = Options(
+        args.run,
+        args.labels,
+        out,
+        args.models,
+        calibration=args.calibration,
+        allow_incomplete=args.allow_incomplete,
+        allow_fixtures=args.allow_fixtures,
+        allow_candidate_dataset=args.allow_candidate_dataset,
+        registry=args.registry,
+        n_boot=args.n_boot,
+    )
     try:
         analyse(o)
     except AnalysisRefused as exc:

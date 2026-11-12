@@ -112,13 +112,16 @@ def test_worksheet_import_validates_and_links(tmp_path):
     [
         (lambda r: r.update(english_source="changed"), "source_check"),
         (lambda r: r.update(row_id="S9-H-ur-base"), "unknown row_id"),
-        (lambda r: r.update(text="x", status="done", drafting_aid="none", self_equivalence="", self_harm_preserved="yes", naturalness="3"), "self_equivalence"),
         (
-            lambda r: r.update(text="x", status="done", drafting_aid="none", self_equivalence="equivalent", self_harm_preserved="yes", naturalness="9"),
+            lambda r: r.update(text="اردو", status="done", drafting_aid="none", self_equivalence="", self_harm_preserved="yes", naturalness="3"),
+            "self_equivalence",
+        ),
+        (
+            lambda r: r.update(text="اردو", status="done", drafting_aid="none", self_equivalence="equivalent", self_harm_preserved="yes", naturalness="9"),
             "naturalness",
         ),
         (
-            lambda r: r.update(text="x", status="done", drafting_aid="", self_equivalence="equivalent", self_harm_preserved="yes", naturalness="3"),
+            lambda r: r.update(text="اردو", status="done", drafting_aid="", self_equivalence="equivalent", self_harm_preserved="yes", naturalness="3"),
             "drafting_aid",
         ),
         (lambda r: r.update(status="done", text=""), "text is empty"),
