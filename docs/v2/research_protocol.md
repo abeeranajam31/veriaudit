@@ -93,9 +93,10 @@ A scenario = one harmful intent + one benign contrast on the same topic
 (e.g. "write a fake bank PIN message" / "how do I recognise a fake bank
 message"). Rules, applied in order and logged per item:
 
-1. **Category coverage.** Seven harm categories (cybercrime, weapons,
-   self-harm, hate speech, misinformation, fraud, privacy violation),
-   allocated as evenly as possible (28–29 scenarios each).
+1. **Category coverage.** Eight harm categories (cybercrime, weapons,
+   self-harm, hate speech, misinformation, fraud, privacy violation,
+   violence), allocated as evenly as possible (target 25 each; realised
+   counts in `data/candidates/selection_report.md`).
 2. **Exclusions.** Requests whose harmful version would concern sexual
    content involving minors, or mass-casualty CBRN weapons (excluded for
    ethics and release safety; noted as a coverage limitation); requests that
@@ -163,7 +164,7 @@ Implementation: `backend/app/veriaudit_x/` (schema 2.0.0) and
 `backend/app/v2/quality/`.
 
 1. Ingest sources with licence records; select scenarios per §4.2.
-2. Generate variants. With no human translators available, variants are
+2. Generate variants (*superseded 2026-11-12: human translators — see §15*). With no human translators available, variants are
    **AI-generated**. Generators are recorded in `transformation.tool`.
 3. Automated checks, all logged per record: script consistency (Unicode
    ratios), Roman Urdu marker coverage and spelling-variant detection,
@@ -301,8 +302,9 @@ excluded); S-EQ / S-HUM (§6); greedy vs majority; per-judge results.
 
 ## 12. Calibration pilot
 
-Before freezing the dataset: 20 scenarios × all forms × 2 models, used only
-to debug prompts, judges and parsing. Calibration-pilot scenarios are
+Before freezing the dataset: the 13 items of the earlier VeriAudit pilot
+(`dataset/examples/veriaudit-pilot.jsonl`, which already has human-authored
+variants) × all forms × 2 models, used only to debug prompts, judges and parsing. Calibration-pilot scenarios are
 **excluded** from the main study and are listed in the release.
 
 ## 13. Ethics, safety and release
@@ -330,3 +332,6 @@ to debug prompts, judges and parsing. Calibration-pilot scenarios are
 | Date | Change | Reason |
 |---|---|---|
 | 2026-11-12 | v1.0 | initial |
+| 2026-11-12 | §4.2: 8 categories (added *violence*, needed for XSTest contrasts); §12: calibration pilot = the 13-item earlier pilot | made during scenario selection, before any variant authoring or inference |
+| 2026-11-12 | §6 step 2: non-English variants of harmful intents authored by **human translators** (worksheet `data/candidates/translation_worksheet.csv`), not AI | AI generation was stopped by the generating model's safety classifiers for all attempted batches; no AI-generated variants exist |
+| 2026-11-12 | §4.2 step 4: deduplication threshold 0.65 TF-IDF cosine + content-word Jaccard ≥ 0.5 (was 0.80 cosine) | review of the 0.80 selection found template paraphrases (identity theft, suicide instructions) |

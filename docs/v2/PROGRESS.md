@@ -1,0 +1,50 @@
+# VeriAudit v2 — Progress
+
+Last updated 2026-11-12 (session 1). Branch `veriaudit-x-dataset`.
+
+## Completed and verified
+
+| Milestone | Evidence | Verification |
+|---|---|---|
+| v1 audit | `docs/v2_codebase_audit.md` | claims spot-checked by running code (e.g. Urdu refusal scored 20.0) |
+| VeriAudit-X schema 2.1.0, validator, leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
+| v0.1 reconstruction | `results/v1_reconstruction/` | **191/191** published numbers reproduced |
+| Corrected v0.1 analyses (full denominator, detector comparison, language drift) | `results/v1_reconstruction/reproducibility_report.md` | stats functions tested against published values and by simulation (Newcombe coverage 95%) |
+| Research protocol + amendments | `docs/v2/research_protocol.md` | licences/model facts checked against sources 2026-11-12 |
+| Power / precision analysis | `results/power/` | Monte-Carlo, seeded |
+| Evaluation framework (records, 7 metrics, H1/H2 families, LLM judge panel, review queues) | `backend/app/v2/` | unit tests on hand-computed fixtures |
+| Dataset pipeline (sources, selection, QC checks, assembly, worksheet, rating merge) | `research/dataset/`, `data/` | 200 scenarios selected; assembly smoke-tested end-to-end with a synthetic worksheet (0 validation errors), synthetic data then deleted |
+| Inference pipeline (Transformers / vLLM / OpenAI-compatible, resumable runner, manifests, Colab) | `backend/app/v2/inference/`, `configs/` | CPU tests with FakeBackend incl. end-to-end fixture → judge → metrics |
+| RQ5 CPU baseline | `results/v2/classifiers/v1_response_baseline.csv` | executed on v0.1 responses |
+| Encoder training code (XLM-R, mDeBERTa, MuRIL) | `research/classifiers/train_encoder.py` | condition/leakage/ECE logic unit-tested; training not run |
+| Platform: `/api/v2/*`, Next.js `/results`, review UI | `backend/app/api/v2_routes.py`, `frontend/src/app/results/`, `tools/review/` | API tests; `tsc` + eslint clean; page rendered in a font-stubbed build |
+| Figures, paper draft | `docs/v2/figures/`, `docs/v2/paper_draft.md` | generated from committed outputs only |
+
+Test suite: see the final session report for the exact count.
+
+## Executed experiments
+1. v0.1 reconstruction and re-analysis (real data).
+2. Power/precision simulation (planning).
+3. Char n-gram classifier transfer on v0.1 responses (real data, exploratory, n = 240, 44 positives).
+
+## Not executed — needs external resources
+| Item | Blocker |
+|---|---|
+| Non-English variants for 170 new scenarios (and benign variants for all 200) | **AI generation stopped by model safety classifiers** in every attempted batch (4 stopped, 4 halted by us; no output produced). Needs human translators → `data/candidates/translation_worksheet.csv`. 30 v0.1 harmful items already have human variants. |
+| Main-study inference (5 models) | GPU + Hugging Face access (gated: Aya Expanse, possibly Gemma 4) |
+| LLM judging and judge validation | GPU (open judges) or authorised API; human validation sample (300 responses) |
+| Encoder classifiers | GPU + HF access |
+| Calibration pilot | GPU |
+
+## Scientific limitations (current)
+- v0.1 findings rest on 30 intents, 2 models, LLM-assisted labels for 72.5% of responses.
+- Weapons category under-filled (14 of target 25) after excluding explosives/CBRN.
+- Seeds are English-origin benchmark prompts; AdvBench items remain template-like even after deduplication.
+- Rule judge evaluated in-sample; classifier baseline tiny.
+
+## Next tasks
+1. PI: recruit 1–2 Urdu translators; fill the worksheet (harmful + benign, T1–T6 for 70 scenarios).
+2. Import → assemble → QC → equivalence review in `tools/review/` (2 raters) → freeze `data/veriaudit-x/2.0.0`.
+3. Pin model revisions in `configs/models.yaml`; run calibration pilot, then main study on GPU.
+4. Choose and validate judges; build classifier example files; run encoder experiments.
+5. Fill paper §6 from real results only.
