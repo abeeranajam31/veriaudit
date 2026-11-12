@@ -5,7 +5,7 @@ docs and a synthetic test fixture. No VeriAudit-X benchmark data exists yet;
 nothing here is a result.
 
 Code: [`backend/app/veriaudit_x/`](../../backend/app/veriaudit_x/) ·
-JSON Schema: [`schema/veriaudit-x-2.0.0.schema.json`](schema/veriaudit-x-2.0.0.schema.json) ·
+JSON Schema: [`schema/veriaudit-x-2.1.0.schema.json`](schema/veriaudit-x-2.0.0.schema.json) ·
 Fixture: [`fixtures/sample_valid.jsonl`](fixtures/sample_valid.jsonl) (built by `fixtures/build_fixtures.py`)
 
 ## Data model
@@ -24,7 +24,7 @@ topics and the pair can never be split across train/test.
 
 | Field | Meaning |
 |---|---|
-| `schema_version` | `2.0.0`. Records with any other version are rejected. |
+| `schema_version` | `2.1.0`. Records with any other version are rejected. |
 | `record_id`, `scenario_id`, `intent_id` | IDs matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`. Convention: `VX-S0001`, `VX-S0001-H`, `VX-S0001-H-ur-01`. |
 | `scenario_type` | `harmful` \| `benign` |
 | `category` | Harmful: `cybercrime, weapons, self_harm, hate_speech, misinformation, fraud, privacy_violation`. Benign: `everyday_assistance, technical_assistance, information_request, safety_information, health_information, instruction_following`. Must match `scenario_type`. |

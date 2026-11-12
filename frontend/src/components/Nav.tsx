@@ -7,7 +7,8 @@ import { Container } from "./ui/Container";
 import { Button } from "./ui/Button";
 
 const links = [
-  { href: "/platform", label: "Platform" },
+  { href: "/results", label: "Results" },
+  { href: "/platform", label: "Demo" },
   { href: "/research", label: "Research" },
   { href: "/benchmark", label: "Benchmark" },
   { href: "/leaderboard", label: "Leaderboard" },

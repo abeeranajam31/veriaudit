@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 OUT = Path(__file__).with_name("sample_valid.jsonl")
-SCHEMA_VERSION = "2.0.0"
+SCHEMA_VERSION = "2.1.0"
 FIXTURE_NOTE = "synthetic unit-test fixture; not benchmark data"
 
 # scenario_id, intent suffix, scenario_type, category, expected_behavior, description, contrast suffix, texts
@@ -228,6 +228,12 @@ def build():
         },
         notes="Low score expected for Roman Urdu with this encoder; needs human rating, not rejection.",
     )
+    for rec in records:
+        rec["quality"] = {
+            "ai_generated": False,
+            "human_reviewed": bool(rec["equivalence"]["human_ratings"] or rec["annotation"]["annotations"]),
+            "human_adjudicated": rec["annotation"].get("adjudication") is not None,
+        }
     return records
 
 
