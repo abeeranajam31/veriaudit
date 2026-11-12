@@ -1,0 +1,627 @@
+{
+  "$defs": {
+    "Adjudication": {
+      "additionalProperties": false,
+      "properties": {
+        "adjudicator_id": {
+          "title": "Adjudicator Id",
+          "type": "string"
+        },
+        "final_labels": {
+          "$ref": "#/$defs/PromptLabels"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "adjudicated_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adjudicated At"
+        }
+      },
+      "required": [
+        "adjudicator_id",
+        "final_labels",
+        "rationale"
+      ],
+      "title": "Adjudication",
+      "type": "object"
+    },
+    "AnnotationBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/AnnotationStatus",
+          "default": "unannotated"
+        },
+        "annotations": {
+          "items": {
+            "$ref": "#/$defs/HumanAnnotation"
+          },
+          "title": "Annotations",
+          "type": "array"
+        },
+        "adjudication": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Adjudication"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "AnnotationBlock",
+      "type": "object"
+    },
+    "AnnotationStatus": {
+      "enum": [
+        "unannotated",
+        "in_progress",
+        "agreed",
+        "disputed",
+        "adjudicated"
+      ],
+      "title": "AnnotationStatus",
+      "type": "string"
+    },
+    "Category": {
+      "enum": [
+        "cybercrime",
+        "weapons",
+        "self_harm",
+        "hate_speech",
+        "misinformation",
+        "fraud",
+        "privacy_violation",
+        "everyday_assistance",
+        "technical_assistance",
+        "information_request",
+        "safety_information",
+        "health_information",
+        "instruction_following"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "EquivalenceJudgement": {
+      "enum": [
+        "equivalent",
+        "partially_equivalent",
+        "not_equivalent"
+      ],
+      "title": "EquivalenceJudgement",
+      "type": "string"
+    },
+    "EquivalenceRating": {
+      "additionalProperties": false,
+      "properties": {
+        "annotator_id": {
+          "title": "Annotator Id",
+          "type": "string"
+        },
+        "judgement": {
+          "$ref": "#/$defs/EquivalenceJudgement"
+        },
+        "harm_preserved": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Does the variant keep the same harmfulness/benignness as the source?",
+          "title": "Harm Preserved"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "annotator_id",
+        "judgement"
+      ],
+      "title": "EquivalenceRating",
+      "type": "object"
+    },
+    "EquivalenceStatus": {
+      "enum": [
+        "source",
+        "pending",
+        "flagged",
+        "verified",
+        "rejected"
+      ],
+      "title": "EquivalenceStatus",
+      "type": "string"
+    },
+    "ExpectedBehavior": {
+      "enum": [
+        "refuse",
+        "refuse_and_redirect",
+        "comply",
+        "comply_with_safety_info"
+      ],
+      "title": "ExpectedBehavior",
+      "type": "string"
+    },
+    "HumanAnnotation": {
+      "additionalProperties": false,
+      "properties": {
+        "annotator_id": {
+          "title": "Annotator Id",
+          "type": "string"
+        },
+        "labels": {
+          "$ref": "#/$defs/PromptLabels"
+        },
+        "annotated_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ISO-8601 date or timestamp",
+          "title": "Annotated At"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "annotator_id",
+        "labels"
+      ],
+      "title": "HumanAnnotation",
+      "type": "object"
+    },
+    "Language": {
+      "enum": [
+        "english",
+        "urdu",
+        "roman_urdu",
+        "code_switched"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "PromptLabels": {
+      "additionalProperties": false,
+      "description": "Labels a human assigns to the *prompt* (not to a model response).",
+      "properties": {
+        "scenario_type": {
+          "$ref": "#/$defs/ScenarioType"
+        },
+        "category": {
+          "$ref": "#/$defs/Category"
+        },
+        "expected_behavior": {
+          "$ref": "#/$defs/ExpectedBehavior"
+        },
+        "naturalness": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1 = unnatural, 5 = fully natural",
+          "title": "Naturalness"
+        }
+      },
+      "required": [
+        "scenario_type",
+        "category",
+        "expected_behavior"
+      ],
+      "title": "PromptLabels",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created By"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "e.g. 'veriaudit-v0.1:VA30-001' when migrated from v1",
+          "title": "Origin"
+        },
+        "license": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "License"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ScenarioType": {
+      "enum": [
+        "harmful",
+        "benign"
+      ],
+      "title": "ScenarioType",
+      "type": "string"
+    },
+    "Script": {
+      "enum": [
+        "latin",
+        "perso_arabic",
+        "mixed"
+      ],
+      "title": "Script",
+      "type": "string"
+    },
+    "SemanticEquivalence": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/EquivalenceStatus"
+        },
+        "reference_record_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Record compared against; defaults to the intent's source record",
+          "title": "Reference Record Id"
+        },
+        "automatic_screen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SimilarityScreen"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "human_ratings": {
+          "items": {
+            "$ref": "#/$defs/EquivalenceRating"
+          },
+          "title": "Human Ratings",
+          "type": "array"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "SemanticEquivalence",
+      "type": "object"
+    },
+    "SimilarityScreen": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        }
+      },
+      "required": [
+        "model",
+        "score"
+      ],
+      "title": "SimilarityScreen",
+      "type": "object"
+    },
+    "Transformation": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/TransformationType"
+        },
+        "source_record_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "record_id this variant was derived from; null for type=source",
+          "title": "Source Record Id"
+        },
+        "method": {
+          "$ref": "#/$defs/TransformationMethod"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "MT system / script / model used, if any",
+          "title": "Tool"
+        },
+        "author_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pseudonymous ID of the human author or post-editor",
+          "title": "Author Id"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "description": "Controlled-transformation knobs, e.g. {'romanization_scheme': 'informal', 'english_token_ratio': 0.4}",
+          "title": "Parameters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "method"
+      ],
+      "title": "Transformation",
+      "type": "object"
+    },
+    "TransformationMethod": {
+      "enum": [
+        "human",
+        "machine",
+        "machine_post_edited",
+        "rule_based"
+      ],
+      "title": "TransformationMethod",
+      "type": "string"
+    },
+    "TransformationType": {
+      "enum": [
+        "source",
+        "translation",
+        "transliteration",
+        "code_switching",
+        "orthographic_variation",
+        "paraphrase",
+        "register_shift"
+      ],
+      "title": "TransformationType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "record_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "title": "Record Id",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "intent_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "scenario_type": {
+      "$ref": "#/$defs/ScenarioType"
+    },
+    "category": {
+      "$ref": "#/$defs/Category"
+    },
+    "expected_behavior": {
+      "$ref": "#/$defs/ExpectedBehavior"
+    },
+    "contrast_intent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "For a matched harmful/benign pair: the intent_id of the opposite-type counterpart (same scenario)",
+      "title": "Contrast Intent Id"
+    },
+    "intent_description": {
+      "description": "Language-independent description of the intent",
+      "minLength": 1,
+      "title": "Intent Description",
+      "type": "string"
+    },
+    "language": {
+      "$ref": "#/$defs/Language"
+    },
+    "script": {
+      "$ref": "#/$defs/Script"
+    },
+    "text": {
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "transformation": {
+      "$ref": "#/$defs/Transformation"
+    },
+    "equivalence": {
+      "$ref": "#/$defs/SemanticEquivalence"
+    },
+    "annotation": {
+      "$ref": "#/$defs/AnnotationBlock"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "split": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Populated only in split output files; must be train, validation or test",
+      "title": "Split"
+    }
+  },
+  "required": [
+    "schema_version",
+    "record_id",
+    "scenario_id",
+    "intent_id",
+    "scenario_type",
+    "category",
+    "expected_behavior",
+    "intent_description",
+    "language",
+    "script",
+    "text",
+    "transformation",
+    "equivalence"
+  ],
+  "title": "VeriAudit-X record (schema 2.0.0)",
+  "type": "object",
+  "$id": "https://github.com/abeeranajam31/veriaudit/schema/veriaudit-x-2.0.0.json"
+}
