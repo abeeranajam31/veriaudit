@@ -35,21 +35,21 @@ n = 200 scenarios, 3 samples per unit; 2000 simulations for rank/permutation/t/M
 | alt_crossover_plus3pp | 0.3035 | 0.2005 | 0.311 | 0.284 | 0.284 | 0.4035 | 0.3433 | 0.3933 |
 | alt_crossover_minus2pp | 0.216 | 0.464 | 0.2 | 0.175 | 0.175 | 0.174 | 0.19 | 0.2733 |
 
-## Rejection rate at α = .05/15 (size under nulls, power under alternatives)
+## Rejection rate at α = .05/12 (confirmatory family) (size under nulls, power under alternatives)
 
 | DGP | signed_rank_wilcox | signed_rank_pratt | paired_t | sign_flip_t | sign_flip_raw | mcnemar_majority | gee_logit | cond_logit |
 |---|---|---|---|---|---|---|---|---|
-| null_exchangeable_5pct | 0.0005 | 0.0015 | 0.0005 | 0.0005 | 0.0005 | 0.0 | 0.0033 | 0.0 |
-| null_exchangeable_20pct | 0.005 | 0.006 | 0.0065 | 0.004 | 0.004 | 0.0025 | 0.0 | 0.0033 |
-| null_rare_1pct | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0033 | 0.0 |
-| null_two_state | 0.002 | 0.002 | 0.0025 | 0.0005 | 0.0005 | 0.0 | 0.0 | 0.0 |
-| null_mean_zero_asymmetric | 0.0035 | 0.0075 | 0.0035 | 0.002 | 0.002 | 0.04 | 0.0 | 0.0 |
-| alt_two_state_10pp | 0.726 | 0.4735 | 0.7235 | 0.684 | 0.684 | 0.7755 | 0.7467 | 0.96 |
-| alt_re_6pp | 0.905 | 0.9025 | 0.9235 | 0.8985 | 0.8985 | 0.385 | 0.9433 | 0.9667 |
-| alt_re_4pp_sigma1 | 0.404 | 0.3945 | 0.4135 | 0.363 | 0.363 | 0.0335 | 0.43 | 0.4633 |
-| alt_rare_2pp | 0.286 | 0.3065 | 0.287 | 0.258 | 0.258 | 0.0005 | 0.2967 | 0.2733 |
-| alt_crossover_plus3pp | 0.0625 | 0.0345 | 0.066 | 0.054 | 0.054 | 0.0955 | 0.09 | 0.12 |
-| alt_crossover_minus2pp | 0.04 | 0.123 | 0.04 | 0.028 | 0.028 | 0.0215 | 0.04 | 0.0733 |
+| null_exchangeable_5pct | 0.0015 | 0.0025 | 0.001 | 0.0005 | 0.0005 | 0.001 | 0.01 | 0.0 |
+| null_exchangeable_20pct | 0.006 | 0.007 | 0.0075 | 0.005 | 0.005 | 0.004 | 0.0 | 0.0033 |
+| null_rare_1pct | 0.0 | 0.0005 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0033 | 0.0 |
+| null_two_state | 0.0035 | 0.0025 | 0.0025 | 0.0015 | 0.0015 | 0.0 | 0.0 | 0.0 |
+| null_mean_zero_asymmetric | 0.004 | 0.0085 | 0.004 | 0.0025 | 0.0025 | 0.0435 | 0.0 | 0.0 |
+| alt_two_state_10pp | 0.747 | 0.503 | 0.7495 | 0.725 | 0.725 | 0.8015 | 0.7767 | 0.9633 |
+| alt_re_6pp | 0.919 | 0.919 | 0.939 | 0.919 | 0.919 | 0.436 | 0.95 | 0.9667 |
+| alt_re_4pp_sigma1 | 0.4365 | 0.4225 | 0.4465 | 0.3925 | 0.3925 | 0.05 | 0.4533 | 0.5033 |
+| alt_rare_2pp | 0.315 | 0.3295 | 0.316 | 0.295 | 0.295 | 0.0035 | 0.3267 | 0.32 |
+| alt_crossover_plus3pp | 0.0725 | 0.0415 | 0.0745 | 0.064 | 0.064 | 0.1045 | 0.1 | 0.14 |
+| alt_crossover_minus2pp | 0.0455 | 0.1375 | 0.0445 | 0.0355 | 0.0355 | 0.0235 | 0.0433 | 0.0767 |
 
 ## Rejections in the wrong direction at α = .05 (alternatives)
 
