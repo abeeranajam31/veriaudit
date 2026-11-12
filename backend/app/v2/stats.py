@@ -283,6 +283,41 @@ def _gh_mean(a: float, sd: float) -> float:
     return float(np.sum((w / w.sum()) / (1 + np.exp(-(a + sd * x)))))
 
 
+def estimate_logit_heterogeneity(shares: Sequence[float], n_samples: int = 3) -> dict:
+    """Method-of-moments estimate of the per-response outcome rate and the SD of a logit-normal
+    distribution of unit-level probabilities, from per-unit sample shares (calibration pilot).
+
+    Var(share) = Var(p) + E[p(1-p)] / n, and share*(1-share)*n/(n-1) is unbiased for p(1-p), so
+    Var(p) = Var(share) - mean(share*(1-share)) / (n-1). The logit SD is the value whose
+    logit-normal distribution (centred to give the observed rate) has that variance. With data from
+    one form only this is the total SD (scenario + form-specific); the form-specific part is not
+    identified. Returns sd_logit = 0 when the estimated Var(p) <= 0.
+    """
+    s = np.asarray(shares, dtype=float)
+    if len(s) < 2:
+        raise ValueError("need at least two units")
+    rate = float(s.mean())
+    var_p = float(s.var(ddof=1) - np.mean(s * (1 - s)) / (n_samples - 1))
+    within_agreement = float(np.mean((s == 0) | (s == 1)))
+    if not 0 < rate < 1 or var_p <= 0:
+        return {"rate": rate, "var_p": var_p, "sd_logit": 0.0, "within_unit_agreement": within_agreement, "n_units": len(s)}
+    x, w = np.polynomial.hermite_e.hermegauss(80)
+    w = w / w.sum()
+
+    def var_for(sd: float) -> float:
+        a = logit_intercept_for_marginal(rate, sd)
+        p = 1 / (1 + np.exp(-(a + sd * x)))
+        return float(np.sum(w * p**2) - rate**2)
+
+    if var_p >= var_for(15.0) - 1e-12:
+        sd = 15.0
+    else:
+        from scipy.optimize import brentq
+
+        sd = float(brentq(lambda v: var_for(v) - var_p, 1e-6, 15.0))
+    return {"rate": rate, "var_p": var_p, "sd_logit": sd, "within_unit_agreement": within_agreement, "n_units": len(s)}
+
+
 def power_from_shares(
     eng: np.ndarray,
     tgt: np.ndarray,

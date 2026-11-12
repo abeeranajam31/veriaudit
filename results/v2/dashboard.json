@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-12T18:14:29+00:00",
+ "generated_utc": "2026-11-12T19:46:15+00:00",
  "status": [
   {
    "item": "v0.1 pilot reconstruction",
@@ -719,168 +719,168 @@
     "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
     "net_gap_pp": "40.0",
     "n_scenarios": 120,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
     "net_gap_pp": "40.0",
     "n_scenarios": 150,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
     "net_gap_pp": "40.0",
     "n_scenarios": 200,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
     "net_gap_pp": "40.0",
     "n_scenarios": 240,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
     "net_gap_pp": "30.0",
     "n_scenarios": 120,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
     "net_gap_pp": "30.0",
     "n_scenarios": 150,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
     "net_gap_pp": "30.0",
     "n_scenarios": 200,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
     "net_gap_pp": "30.0",
     "n_scenarios": 240,
-    "power_bonferroni_15": 1.0,
+    "power_bonferroni_family": 1.0,
     "power_unadjusted": "1.0"
    },
    {
     "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
     "net_gap_pp": "10.0",
     "n_scenarios": 120,
-    "power_bonferroni_15": 0.331,
+    "power_bonferroni_family": 0.347,
     "power_unadjusted": "0.731"
    },
    {
     "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
     "net_gap_pp": "10.0",
     "n_scenarios": 150,
-    "power_bonferroni_15": 0.482,
+    "power_bonferroni_family": 0.512,
     "power_unadjusted": "0.832"
    },
    {
     "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
     "net_gap_pp": "10.0",
     "n_scenarios": 200,
-    "power_bonferroni_15": 0.689,
+    "power_bonferroni_family": 0.713,
     "power_unadjusted": "0.931"
    },
    {
     "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
     "net_gap_pp": "10.0",
     "n_scenarios": 240,
-    "power_bonferroni_15": 0.811,
+    "power_bonferroni_family": 0.831,
     "power_unadjusted": "0.97"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 120,
-    "power_bonferroni_15": 0.434,
+    "power_bonferroni_family": 0.46,
     "power_unadjusted": "0.825"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 150,
-    "power_bonferroni_15": 0.615,
+    "power_bonferroni_family": 0.628,
     "power_unadjusted": "0.912"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 200,
-    "power_bonferroni_15": 0.819,
+    "power_bonferroni_family": 0.839,
     "power_unadjusted": "0.973"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 240,
-    "power_bonferroni_15": 0.912,
+    "power_bonferroni_family": 0.923,
     "power_unadjusted": "0.99"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 120,
-    "power_bonferroni_15": 0.253,
+    "power_bonferroni_family": 0.277,
     "power_unadjusted": "0.631"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 150,
-    "power_bonferroni_15": 0.369,
+    "power_bonferroni_family": 0.4,
     "power_unadjusted": "0.739"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 200,
-    "power_bonferroni_15": 0.553,
+    "power_bonferroni_family": 0.584,
     "power_unadjusted": "0.873"
    },
    {
     "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
     "net_gap_pp": "10.0",
     "n_scenarios": 240,
-    "power_bonferroni_15": 0.684,
+    "power_bonferroni_family": 0.71,
     "power_unadjusted": "0.935"
    },
    {
     "scenario": "7.5 pp net (10% vs 2.5%)",
     "net_gap_pp": "7.5",
     "n_scenarios": 120,
-    "power_bonferroni_15": 0.183,
+    "power_bonferroni_family": 0.203,
     "power_unadjusted": "0.577"
    },
    {
     "scenario": "7.5 pp net (10% vs 2.5%)",
     "net_gap_pp": "7.5",
     "n_scenarios": 150,
-    "power_bonferroni_15": 0.295,
+    "power_bonferroni_family": 0.308,
     "power_unadjusted": "0.695"
    },
    {
     "scenario": "7.5 pp net (10% vs 2.5%)",
     "net_gap_pp": "7.5",
     "n_scenarios": 200,
-    "power_bonferroni_15": 0.481,
+    "power_bonferroni_family": 0.511,
     "power_unadjusted": "0.831"
    },
    {
     "scenario": "7.5 pp net (10% vs 2.5%)",
     "net_gap_pp": "7.5",
     "n_scenarios": 240,
-    "power_bonferroni_15": 0.617,
+    "power_bonferroni_family": 0.644,
     "power_unadjusted": "0.899"
    }
   ]

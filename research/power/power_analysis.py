@@ -2,9 +2,9 @@
 
 Design inputs come from the reconstructed v0.1 pilot
 (results/v1_reconstruction/paired_tests.csv): discordant-pair probabilities for
-the harmful-compliance outcome. Confirmatory family: 5 models x 3 non-English
-forms = 15 paired tests (harmful compliance, target vs English), Holm-adjusted.
-Power is computed at the Bonferroni level alpha/15, which is what the smallest
+the harmful-compliance outcome. Confirmatory family: 4 confirmatory models x 3 non-English
+forms = 12 paired tests (harmful compliance, target vs English), Holm-adjusted.
+Power is computed at the Bonferroni level alpha/12, which is what the smallest
 Holm p-value must clear, so it is conservative for every test in the family.
 
 Two analyses:
@@ -38,7 +38,7 @@ from app.v2.stats import logit_share_power, mcnemar_power, paired_share_power, w
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "results" / "power"
-FAMILY = 15
+FAMILY = 12  # 4 confirmatory models x 3 non-English forms (protocol §10, amended 2026-11-13)
 ALPHA = 0.05
 N_GRID = [60, 90, 120, 150, 180, 200, 240, 300]
 
@@ -97,7 +97,7 @@ def main() -> None:
                     "scenario": label,
                     "net_gap_pp": round(100 * (p10 - p01), 1),
                     "n_scenarios": n,
-                    "power_bonferroni_15": round(mcnemar_power(n, p10, p01, alpha=ALPHA / FAMILY, n_sim=20000, seed=7), 3),
+                    "power_bonferroni_family": round(mcnemar_power(n, p10, p01, alpha=ALPHA / FAMILY, n_sim=20000, seed=7), 3),
                     "power_unadjusted": round(mcnemar_power(n, p10, p01, alpha=ALPHA, n_sim=20000, seed=7), 3),
                 }
             )
@@ -123,9 +123,9 @@ def main() -> None:
 
     def power_cols(res: dict) -> dict:
         return {
-            "power_signed_rank_bonferroni_15": round(res["signed_rank"][0], 3),
-            "power_mcnemar_majority_bonferroni_15": round(res["mcnemar_majority"][0], 3),
-            "power_sign_flip_bonferroni_15": round(res["sign_flip"][0], 3),
+            "power_signed_rank_bonferroni_family": round(res["signed_rank"][0], 3),
+            "power_mcnemar_majority_bonferroni_family": round(res["mcnemar_majority"][0], 3),
+            "power_sign_flip_bonferroni_family": round(res["sign_flip"][0], 3),
             "power_signed_rank_unadjusted": round(res["signed_rank"][1], 3),
             "power_mcnemar_majority_unadjusted": round(res["mcnemar_majority"][1], 3),
             "monte_carlo_se_at_0.8": round(res["mc_se"][0], 3),

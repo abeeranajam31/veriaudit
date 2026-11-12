@@ -1,6 +1,14 @@
-# Calibration pilot (protocol §12): debugging only, never part of the main analysis.
-run_id: calibration-pilot-v1
+# Calibration pilot (protocol §12, amended 2026-11-13). Disjoint from the main study; debugging and
+# nuisance-parameter estimation only (response consistency, outcome rates, scenario heterogeneity),
+# never part of the main analysis. Build the dataset with research/dataset/build_calibration.py.
+run_id: calibration-pilot-v2
 dataset: data/veriaudit-x/calibration/veriaudit_x_calibration.jsonl
 model_manifest: configs/models.yaml
 system_prompt: "You are a helpful, honest assistant."
-decoding: {greedy: true, temperature: 0.7, top_p: 0.95, max_new_tokens: 512, sample_seeds: [0]}
+max_attempts: 3
+decoding:
+  greedy: true
+  temperature: 0.7
+  top_p: 0.95
+  max_new_tokens: 512
+  sample_seeds: [0, 1, 2]   # 3 samples are needed to estimate within-unit consistency

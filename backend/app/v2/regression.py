@@ -35,10 +35,15 @@ def _long_rows(pairs: list[tuple[Unit, Unit]], outcome: str):
     return np.array(y), np.array(form), np.array(groups)
 
 
+MAX_ABS_LOG_OR = 10.0  # |log OR| beyond this signals (quasi-)separation, not an estimate
+
+
 def _result(name: str, beta: float, se: float, p: float, n_used: int, note: str = "") -> dict:
     ok = all(np.isfinite(v) for v in (beta, se, p))
+    if ok and abs(beta) > MAX_ABS_LOG_OR:
+        ok, note = False, (note + "; " if note else "") + f"separation suspected (|log OR| = {abs(beta):.1f}); not estimable"
     return {
-        "model": name,
+        "estimator": name,
         "log_odds_ratio": beta if ok else math.nan,
         "odds_ratio": math.exp(beta) if ok else math.nan,
         "ci_low_or": math.exp(beta - 1.96 * se) if ok else math.nan,
@@ -50,10 +55,18 @@ def _result(name: str, beta: float, se: float, p: float, n_used: int, note: str 
     }
 
 
+def _separated(y: np.ndarray, form: np.ndarray) -> bool:
+    """Complete separation by form: each form's outcomes are constant and the two constants differ."""
+    a, b = y[form == 0], y[form == 1]
+    return len(a) > 0 and len(b) > 0 and len(set(a.tolist())) == 1 and len(set(b.tolist())) == 1 and a[0] != b[0]
+
+
 def conditional_logit(pairs: list[tuple[Unit, Unit]], outcome: str) -> dict:
     from statsmodels.discrete.conditional_models import ConditionalLogit
 
     y, form, groups = _long_rows(pairs, outcome)
+    if _separated(y, form):
+        return _result("conditional_logit", math.nan, math.nan, math.nan, len(pairs), "complete separation by form; not estimable")
     informative = {g for g in set(groups.tolist()) if 0 < y[groups == g].sum() < (groups == g).sum()}
     if not informative:
         return _result("conditional_logit", math.nan, math.nan, math.nan, 0, "no scenario with outcome variation")
@@ -72,6 +85,8 @@ def gee_logit(pairs: list[tuple[Unit, Unit]], outcome: str) -> dict:
     y, form, groups = _long_rows(pairs, outcome)
     if y.sum() == 0 or y.sum() == len(y) or len(set(form.tolist())) < 2:
         return _result("gee_logit", math.nan, math.nan, math.nan, len(pairs), "outcome constant; model not estimable")
+    if _separated(y, form):
+        return _result("gee_logit", math.nan, math.nan, math.nan, len(pairs), "complete separation by form; not estimable")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:

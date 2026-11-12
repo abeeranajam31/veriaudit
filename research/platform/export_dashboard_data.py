@@ -59,7 +59,7 @@ def build() -> dict:
     sel = [json.loads(x) for x in (ROOT / "data" / "candidates" / "selection.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
     sel_counts = Counter((c["category"], c["source"]) for c in sel)
     power = [
-        dict(r, power_bonferroni_15=num(r["power_bonferroni_15"]), n_scenarios=int(r["n_scenarios"]))
+        dict(r, power_bonferroni_family=num(r["power_bonferroni_family"]), n_scenarios=int(r["n_scenarios"]))
         for r in rcsv(ROOT / "results" / "power" / "power_mcnemar.csv")
         if r["n_scenarios"] in ("120", "150", "200", "240")
     ]

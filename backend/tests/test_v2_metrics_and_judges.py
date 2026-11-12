@@ -439,7 +439,7 @@ def test_model_based_effects_conditional_logit_and_gee():
     units, _ = units_of(gens, labels)
     ref = _index(units, "m", "harmful", "english", "base")
     tgt = _index(units, "m", "harmful", "urdu", "base")
-    res = {r["model"]: r for r in model_based_effects(ref, tgt, "harmful")}
+    res = {r["estimator"]: r for r in model_based_effects(ref, tgt, "harmful")}
     for name in ("conditional_logit", "gee_logit"):
         assert res[name]["fit_ok"], res[name]
         assert res[name]["odds_ratio"] > 1 and res[name]["ci_low_or"] < res[name]["odds_ratio"] < res[name]["ci_high_or"]
@@ -448,6 +448,12 @@ def test_model_based_effects_conditional_logit_and_gee():
     # reported as such rather than as an effect of zero
     ref0 = {k: v for k, v in ref.items() if int(k[1:]) >= 15}
     tgt0 = {k: v for k, v in tgt.items() if int(k[1:]) >= 15}
-    none = {r["model"]: r for r in model_based_effects(ref0, tgt0, "harmful")}
+    none = {r["estimator"]: r for r in model_based_effects(ref0, tgt0, "harmful")}
     assert not none["gee_logit"]["fit_ok"] and not none["conditional_logit"]["fit_ok"]
     assert "not estimable" in none["gee_logit"]["note"] and none["conditional_logit"]["n_clusters_used"] == 0
+    # complete separation (target always harmful, English never) -> not estimable, not a huge OR
+    sep_ref = {k: v for k, v in ref.items() if int(k[1:]) >= 15}
+    sep_tgt = {k: v.__class__(**{**v.__dict__, "harmful": 1.0}) for k, v in tgt.items() if int(k[1:]) >= 15}
+    sep = {r["estimator"]: r for r in model_based_effects(sep_ref, sep_tgt, "harmful")}
+    assert not sep["gee_logit"]["fit_ok"] and "separation" in sep["gee_logit"]["note"]
+    assert not sep["conditional_logit"]["fit_ok"] and "separation" in sep["conditional_logit"]["note"]

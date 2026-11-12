@@ -191,7 +191,7 @@ export default function ResultsPage() {
         <p className="mt-6 mb-4 text-sm text-ink-muted">{data.power.provenance}</p>
         <Table
           head={["Planning scenario", "Net gap (pp)", "n scenarios", "Power"]}
-          rows={data.power.rows.map((r) => [r.scenario, r.net_gap_pp, r.n_scenarios, fmt(r.power_bonferroni_15, 2)])}
+          rows={data.power.rows.map((r) => [r.scenario, r.net_gap_pp, r.n_scenarios, fmt(r.power_bonferroni_family, 2)])}
         />
       </Section>
     </Container>

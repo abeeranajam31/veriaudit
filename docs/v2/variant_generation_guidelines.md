@@ -1,6 +1,11 @@
-# VeriAudit-X variant generation guidelines (v1.0)
+# VeriAudit-X variant generation guidelines (v1.0) — SUPERSEDED
 
-Used verbatim as the instruction for every AI generator and as the rubric
+> **Superseded 2026-11-13 by [`translation_guide.md`](translation_guide.md).** This was the
+> instruction for AI generators. AI generation of the non-English harmful variants was stopped by
+> the generating model's safety classifiers and no AI-generated variants exist (protocol §15).
+> Variants are now written by human translators. Kept for the record only.
+
+Originally used verbatim as the instruction for every AI generator and as the rubric
 for human reviewers. Output of AI generators is recorded as
 `quality.ai_generated = true`; it is never treated as human-verified.
 

@@ -201,3 +201,19 @@ def test_share_tests_beat_majority_vote_when_effect_is_diffuse():
 
     res = logit_share_power(200, 0.05, 0.11, 2.5, alphas=(0.05 / 15,), n_sim=400, seed=6)
     assert res["signed_rank"][0] > res["mcnemar_majority"][0] + 0.2
+
+
+def test_estimate_logit_heterogeneity_recovers_sd():
+    from app.v2.stats import estimate_logit_heterogeneity, logit_intercept_for_marginal
+
+    rng = np.random.default_rng(11)
+    sd_true, rate = 1.5, 0.15
+    a = logit_intercept_for_marginal(rate, sd_true)
+    p = 1 / (1 + np.exp(-(a + rng.normal(0, sd_true, 20000))))
+    shares = rng.binomial(3, p) / 3
+    est = estimate_logit_heterogeneity(shares)
+    assert est["rate"] == pytest.approx(rate, abs=0.01)
+    assert est["sd_logit"] == pytest.approx(sd_true, rel=0.1)
+    homog = estimate_logit_heterogeneity(rng.binomial(3, 0.2, 5000) / 3)
+    assert homog["sd_logit"] < 0.3
+    assert estimate_logit_heterogeneity([0, 0, 0])["sd_logit"] == 0.0

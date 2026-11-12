@@ -63,13 +63,14 @@ V01_AUTHOR = "pi"  # the v0.1 variants were written by the lead researcher (data
 STATUS = ("todo", "done", "cannot_translate")
 JUDGEMENTS = ("equivalent", "partially_equivalent", "not_equivalent")
 AMBIGUITY = ("none", "lexical", "referential", "cultural", "harm_level_unclear", "other")
+DRAFTING_AIDS = ("none", "machine_translation", "ai_assistant")  # disclosed by the translator; recorded as provenance
 YES_NO = {"yes": True, "no": False}
 YES_NO_UNSURE = {"yes": True, "no": False, "unsure": None}
 
 WORKSHEET_COLUMNS = [
     "row_id", "phase", "scenario_id", "intent_id", "intent_type", "category", "condition", "target_form", "target_script",
     "derive_from", "instruction", "english_source", "locked", "source_check",
-    "text", "status", "self_equivalence", "self_harm_preserved", "naturalness", "ambiguity", "comments",
+    "text", "status", "drafting_aid", "self_equivalence", "self_harm_preserved", "naturalness", "ambiguity", "comments",
 ]  # fmt: skip
 BENIGN_COLUMNS = ["scenario_id", "category", "harmful_english", "source_check", "benign_english", "drafted_by_ai", "notes"]
 BENIGN_REVIEW_COLUMNS = ["scenario_id", "category", "harmful_english", "benign_english", "source_check", "benign", "topically_matched", "notes"]
@@ -240,7 +241,8 @@ def import_benign_authoring(path: Path, author: str, selection: list[dict]) -> l
         if sid in seen:
             problems.append(f"{where}: duplicate scenario_id")
         seen.add(sid)
-        if row["source_check"] != check(sid, c["harmful_en"]):
+        # recompute from the visible cells: catches edits to read-only cells, not just to the checksum
+        if row["source_check"] != check(sid, c["harmful_en"]) or row["harmful_english"] != c["harmful_en"]:
             problems.append(f"{where}: harmful_english or scenario_id was edited (source_check mismatch)")
         if not row["benign_english"]:
             continue  # not written yet
@@ -295,8 +297,9 @@ def import_benign_review(path: Path, reviewer: str, selection: list[dict], autho
         if a["author_id"] == reviewer:
             problems.append(f"{where}: {reviewer} wrote this contrast and cannot review it")
             continue
-        if row["source_check"] != check(sid, c["harmful_en"], a["benign_en"]):
-            problems.append(f"{where}: texts changed since export (source_check mismatch) - re-export the review sheet")
+        current = check(sid, c["harmful_en"], a["benign_en"])
+        if row["source_check"] != current or check(sid, row["harmful_english"], row["benign_english"]) != current:
+            problems.append(f"{where}: texts changed or were edited since export (source_check mismatch) - re-export the review sheet")
             continue
         if not row["benign"] and not row["topically_matched"]:
             continue
@@ -344,6 +347,7 @@ def export_worksheet(rows: list[PlannedRow], phases: tuple[int, ...] = (1, 2)) -
                 "source_check": r.source_check,
                 "text": r.locked_text,
                 "status": "done" if r.locked_text else "todo",
+                "drafting_aid": "none" if r.locked_text else "",
                 "self_equivalence": "",
                 "self_harm_preserved": "",
                 "naturalness": "",
@@ -380,7 +384,8 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> Imp
         if rid in seen:
             problems.append(f"{where}: duplicate row_id")
         seen.add(rid)
-        if row["source_check"] != p.source_check:
+        visible = check(rid, row["english_source"], row["text"] if p.locked_text else "")
+        if row["source_check"] != p.source_check or (visible != p.source_check and not p.locked_text):
             problems.append(f"{where}: english_source, locked text or row_id was edited (source_check mismatch)")
             continue
         if p.locked_text:
@@ -403,6 +408,8 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> Imp
         if not row["text"]:
             problems.append(f"{where}: status done but text is empty")
             continue
+        if row["drafting_aid"] not in DRAFTING_AIDS:
+            problems.append(f"{where}: drafting_aid must be one of {DRAFTING_AIDS} (say if a tool drafted this)")
         if row["self_equivalence"] not in JUDGEMENTS:
             problems.append(f"{where}: self_equivalence must be one of {JUDGEMENTS}")
         if row["self_harm_preserved"] not in YES_NO_UNSURE:
@@ -426,6 +433,7 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow]) -> Imp
                 "text": row["text"],
                 "text_sha256": sha(row["text"]),
                 "author_id": translator,
+                "drafting_aid": row["drafting_aid"],
                 "derive_from": p.derive_from,
                 "self_assessment": {
                     "equivalence": row["self_equivalence"] or None,
@@ -502,8 +510,9 @@ def import_review(path: Path, reviewer: str, rows: list[PlannedRow], variants: d
         if v["author_id"] == reviewer:
             problems.append(f"{where}: {reviewer} wrote this variant and cannot review it")
             continue
-        if row["source_check"] != check(rid, p.english_source, v["text"]):
-            problems.append(f"{where}: the variant changed since this sheet was exported - re-export")
+        current = check(rid, p.english_source, v["text"])
+        if row["source_check"] != current or check(rid, row["english_source"], row["text"]) != current:
+            problems.append(f"{where}: the variant changed since this sheet was exported, or a read-only cell was edited - re-export")
             continue
         if not row["judgement"]:
             continue
@@ -585,8 +594,9 @@ def import_adjudication(path: Path, adjudicator: str, rows: list[PlannedRow], va
         if v["author_id"] == adjudicator:
             problems.append(f"{where}: {adjudicator} wrote this variant and cannot adjudicate it")
             continue
-        if row["source_check"] != check(rid, p.english_source, v["text"]):
-            problems.append(f"{where}: the variant changed since export - re-export")
+        current = check(rid, p.english_source, v["text"])
+        if row["source_check"] != current or check(rid, row["english_source"], row["text"]) != current:
+            problems.append(f"{where}: the variant changed since export, or a read-only cell was edited - re-export")
             continue
         if not row["decision"]:
             continue
