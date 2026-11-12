@@ -13,7 +13,7 @@ import hashlib
 from collections.abc import Iterable
 
 from app.v2.records import LabelSource, ResponseLabel
-from app.veriaudit_x.schema import EquivalenceJudgement, EquivalenceRating, EquivalenceStatus, VeriAuditXRecord
+from app.veriaudit_x.schema import EquivalenceJudgement, EquivalenceRating, EquivalenceStatus, RaterRole, VeriAuditXRecord
 
 
 def variant_priority(r: VeriAuditXRecord) -> int:
@@ -34,23 +34,58 @@ def variant_queue(records: Iterable[VeriAuditXRecord]) -> list[VeriAuditXRecord]
 
 
 def apply_equivalence_ratings(record: VeriAuditXRecord, ratings: list[EquivalenceRating], min_raters: int = 2) -> VeriAuditXRecord:
-    """Add human ratings and recompute status. Never verifies on fewer than `min_raters` unanimous ratings."""
+    """Add HUMAN ratings and recompute status (translation_guide.md §6).
+
+    - A rating by the variant's author is refused; a rating of a different text version is refused.
+    - A rater's latest rating replaces their earlier one.
+    - Without an adjudicator: verified needs >= `min_raters` independent ratings, all 'equivalent'
+      with harm preserved; any 'not_equivalent' or harm_preserved=false -> rejected (once
+      `min_raters` have rated) else flagged; any 'partially_equivalent' -> flagged.
+    - With an adjudicator: their decision settles it (equivalent -> verified only if at least one
+      independent reviewer also rated 'equivalent'; partially -> flagged for revision; not -> rejected),
+      and quality.human_adjudicated is set.
+    Similarity scores and AI reviews are never inputs here.
+    """
     if record.equivalence.status == EquivalenceStatus.source:
         raise ValueError("source records are not rated")
+    author = record.transformation.author_id
+    text_hash = hashlib.sha256(record.text.encode("utf-8")).hexdigest()
+    for r in ratings:
+        if author and r.annotator_id == author:
+            raise ValueError(f"{author} authored {record.record_id}; an author's rating cannot count as review")
+        if r.text_sha256 is not None and r.text_sha256 != text_hash:
+            raise ValueError(f"rating by {r.annotator_id} for {record.record_id} refers to a different text version")
     by_rater = {h.annotator_id: h for h in record.equivalence.human_ratings}
     for r in ratings:
-        by_rater[r.annotator_id] = r  # a rater's latest rating replaces their earlier one
+        by_rater[r.annotator_id] = r
     all_r = sorted(by_rater.values(), key=lambda h: h.annotator_id)
-    if any(h.judgement == EquivalenceJudgement.not_equivalent or h.harm_preserved is False for h in all_r):
-        status = EquivalenceStatus.rejected if len(all_r) >= min_raters else EquivalenceStatus.flagged
-    elif len(all_r) >= min_raters and all(h.judgement == EquivalenceJudgement.equivalent for h in all_r):
+    independent = [h for h in all_r if h.rater_role == RaterRole.independent_reviewer]
+    adjudicators = [h for h in all_r if h.rater_role == RaterRole.adjudicator]
+    if len(adjudicators) > 1:
+        raise ValueError(f"{record.record_id}: more than one adjudicator")
+
+    def accepts(h: EquivalenceRating) -> bool:
+        return h.judgement == EquivalenceJudgement.equivalent and h.harm_preserved is not False
+
+    adjudicated = bool(adjudicators)
+    if adjudicated:
+        adj = adjudicators[0]
+        if adj.judgement == EquivalenceJudgement.not_equivalent or adj.harm_preserved is False:
+            status = EquivalenceStatus.rejected
+        elif accepts(adj) and any(accepts(h) for h in independent):
+            status = EquivalenceStatus.verified
+        else:
+            status = EquivalenceStatus.flagged
+    elif any(h.judgement == EquivalenceJudgement.not_equivalent or h.harm_preserved is False for h in independent):
+        status = EquivalenceStatus.rejected if len(independent) >= min_raters else EquivalenceStatus.flagged
+    elif len(independent) >= min_raters and all(accepts(h) for h in independent):
         status = EquivalenceStatus.verified
-    elif any(h.judgement == EquivalenceJudgement.partially_equivalent for h in all_r):
+    elif any(h.judgement == EquivalenceJudgement.partially_equivalent for h in independent):
         status = EquivalenceStatus.flagged
     else:
         status = EquivalenceStatus.pending
     eq = record.equivalence.model_copy(update={"human_ratings": all_r, "status": status})
-    q = record.quality.model_copy(update={"human_reviewed": True})
+    q = record.quality.model_copy(update={"human_reviewed": True, "human_adjudicated": record.quality.human_adjudicated or adjudicated})
     return record.model_copy(update={"equivalence": eq, "quality": q})
 
 

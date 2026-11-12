@@ -1,9 +1,21 @@
 """Resumable, cached generation runs over a VeriAudit-X file.
 
 A run is defined by an experiment config (configs/experiments/*.yaml) and a model
-manifest (configs/models.yaml). Outputs are appended to
-results/v2/runs/<run_id>/generations.jsonl; the run is resumable because every
-generation has a deterministic generation_id and existing IDs are skipped.
+manifest (configs/models.yaml). Raw generations are appended to
+results/v2/runs/<run_id>/generations.jsonl as soon as each one returns, before any
+judging. The run is resumable: generation IDs are deterministic, successful ones are
+skipped, and failed ones are retried up to `max_attempts` (each attempt is appended;
+`load_generations` keeps one record per ID).
+
+Safeguards (protocol §7, §12):
+- Hugging Face models (transformers / vllm) must be pinned to a 40-hex commit revision,
+  unless the config sets `allow_unpinned_revisions: true` (debug runs only; the run
+  manifest then says so and the analysis refuses it).
+- The `fake` test backend runs only when named explicitly with --models; its outputs are
+  marked `is_test_fixture` and analyses refuse them.
+- A run manifest (run_manifest.json) records config hash, dataset path/hash/version, git
+  commit, runtime environment, per-model backend description (incl. chat-template hash)
+  and completion status. Only `status: complete` runs are accepted by the analysis.
 
     PYTHONPATH=backend python -m app.v2.inference.runner configs/experiments/main_study.yaml --models qwen3_8b
 """
@@ -13,17 +25,29 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import platform
+import re
+import subprocess
 import time
+from collections import defaultdict
 from datetime import datetime, timezone
+from importlib import metadata
 from pathlib import Path
 
 import yaml
 
-from app.v2.inference.backends import BackendError, FakeBackend, build_backend
+from app.v2.inference.backends import BackendError, FakeBackend, GenResult, build_backend
 from app.v2.records import Decoding, Generation, append_jsonl
 from app.veriaudit_x.validation import validate_file
 
 ROOT = Path(__file__).resolve().parents[4]
+PINNED_REVISION = re.compile(r"^[0-9a-f]{40}$")
+HF_BACKENDS = {"transformers", "vllm"}
+RUN_MANIFEST = "run_manifest.json"
+
+
+class RunConfigError(SystemExit):
+    pass
 
 
 def load_yaml(path: Path) -> dict:
@@ -44,90 +68,219 @@ def plan(config: dict) -> list[tuple[int, Decoding]]:
     return out
 
 
-def run(config_path: Path, model_keys: list[str] | None = None, limit: int | None = None, backend_override=None, out_root: Path | None = None) -> Path:
+def select_models(models: list[dict], model_keys: list[str] | None) -> list[dict]:
+    if model_keys is None:
+        return [m for m in models if m["backend"] != "fake"]
+    unknown = set(model_keys) - {m["key"] for m in models}
+    if unknown:
+        raise RunConfigError(f"unknown model keys: {sorted(unknown)}")
+    return [m for m in models if m["key"] in model_keys]
+
+
+def check_pinned(specs: list[dict], config: dict) -> list[str]:
+    unpinned = [s["key"] for s in specs if s["backend"] in HF_BACKENDS and not PINNED_REVISION.match(str(s.get("revision") or ""))]
+    if unpinned and not config.get("allow_unpinned_revisions", False):
+        raise RunConfigError(
+            f"models not pinned to a 40-hex commit revision: {unpinned}. Pin `revision` in the model manifest "
+            "(or set allow_unpinned_revisions: true for a debug run, which the analysis will refuse)."
+        )
+    return unpinned
+
+
+def dataset_identity(dataset: Path) -> dict:
+    """Path, SHA-256 and the release manifest's dataset_version / is_fixture flag (if present)."""
+    manifest = dataset.parent / "manifest.json"
+    info: dict = {}
+    if manifest.exists():
+        try:
+            info = json.loads(manifest.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            info = {}
+    rel = dataset.relative_to(ROOT) if dataset.is_relative_to(ROOT) else dataset
+    return {
+        "path": str(rel),
+        "sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
+        "dataset_version": info.get("dataset_version"),
+        "is_fixture": bool(info.get("is_fixture", False)),
+    }
+
+
+def runtime_environment() -> dict:
+    pkgs = {}
+    for name in ("torch", "transformers", "vllm", "tokenizers", "httpx", "numpy"):
+        try:
+            pkgs[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            pkgs[name] = None
+    gpu = None
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-gpu=name,driver_version", "--format=csv,noheader"], capture_output=True, text=True, timeout=10)
+        gpu = out.stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        gpu = None
+    try:
+        commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10).stdout.strip() or None
+        dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain"], capture_output=True, text=True, timeout=10).stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        commit, dirty = None, None
+    return {"python": platform.python_version(), "platform": platform.platform(), "packages": pkgs, "gpu": gpu, "git_commit": commit, "git_dirty": dirty}
+
+
+def load_generations(path: Path) -> list[Generation]:
+    """One record per generation_id: the latest successful attempt if any, else the latest failure."""
+    best: dict[str, Generation] = {}
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        g = Generation.model_validate_json(line)
+        prev = best.get(g.generation_id)
+        rank = (g.error is None, g.attempt)
+        if prev is None or rank >= (prev.error is None, prev.attempt):
+            best[g.generation_id] = g
+    return list(best.values())
+
+
+def _call(backend, messages, decoding) -> GenResult:
+    if hasattr(backend, "generate_full"):
+        return backend.generate_full(messages, decoding)
+    return GenResult(backend.generate(messages, decoding))
+
+
+def run(
+    config_path: Path,
+    model_keys: list[str] | None = None,
+    limit: int | None = None,
+    backend_override=None,
+    out_root: Path | None = None,
+) -> Path:
+    config_path = Path(config_path)
     config = load_yaml(config_path)
     models = load_yaml(ROOT / config["model_manifest"])["models"]
     dataset = ROOT / config["dataset"]
+    if not dataset.exists():
+        raise RunConfigError(f"dataset not found: {dataset} (freeze the release first, protocol §12)")
     report = validate_file(dataset)
     if report.errors:
-        raise SystemExit(f"dataset has {len(report.errors)} validation errors; refusing to run")
+        raise RunConfigError(f"dataset has {len(report.errors)} validation errors; refusing to run")
     records = report.records
     if config.get("exclude_equivalence_status"):
         records = [r for r in records if r.equivalence.status.value not in config["exclude_equivalence_status"]]
     if limit:
         records = records[:limit]
 
+    selected = select_models(models, model_keys)
+    if not selected:
+        raise RunConfigError(f"no models selected (keys: {model_keys})")
+    unpinned = check_pinned(selected, config)
+    ds = dataset_identity(dataset)
+    is_fixture_run = all(s["backend"] == "fake" for s in selected)
+    if ds["is_fixture"] and not is_fixture_run:
+        raise RunConfigError(f"dataset {dataset} is a test fixture (manifest is_fixture: true); real models must not be run on it")
+    if ds["dataset_version"] is None and not (is_fixture_run or config.get("allow_unversioned_dataset", False)):
+        raise RunConfigError(f"dataset {dataset} has no manifest.json with dataset_version; analyse only versioned releases")
+
     run_id = config["run_id"]
     out_dir = (out_root or ROOT / "results" / "v2" / "runs") / run_id
     out_file = out_dir / "generations.jsonl"
-    done = set()
+    max_attempts = int(config.get("max_attempts", 3))
+    succeeded: set[str] = set()
+    attempts: dict[str, int] = defaultdict(int)
     if out_file.exists():
         for line in out_file.read_text(encoding="utf-8").splitlines():
             if line.strip():
-                done.add(json.loads(line)["generation_id"])
+                row = json.loads(line)
+                attempts[row["generation_id"]] = max(attempts[row["generation_id"]], row.get("attempt", 1))
+                if row.get("error") is None:
+                    succeeded.add(row["generation_id"])
 
-    selected = [m for m in models if model_keys is None or m["key"] in model_keys]
-    if not selected:
-        raise SystemExit(f"no models match {model_keys}")
-    meta = {
+    manifest = {
         "run_id": run_id,
+        "status": "running",
+        "is_fixture_run": is_fixture_run,
+        "unpinned_models": unpinned,
+        "config_path": str(config_path),
+        "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
         "config": config,
+        "dataset": ds,
+        "n_records": len(records),
+        "plan": [{"sample_index": i, **d.model_dump()} for i, d in plan(config)],
+        "environment": runtime_environment(),
         "started_utc": datetime.now(timezone.utc).isoformat(),
-        "dataset_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
         "models": [],
     }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / RUN_MANIFEST).write_text(json.dumps(manifest, indent=2, default=str) + "\n", encoding="utf-8")
+
     system_prompt = config.get("system_prompt")
+    planned, failed_final = 0, 0
     for spec in selected:
         backend = backend_override or build_backend(spec)
-        is_fake = isinstance(backend, FakeBackend)
-        meta["models"].append({"key": spec["key"], **backend.describe()})
+        is_fake = isinstance(backend, FakeBackend) or spec["backend"] == "fake"
         for record in records:
             for sample_index, decoding in plan(config):
+                planned += 1
                 gid = generation_id(run_id, spec["key"], record.record_id, sample_index)
-                if gid in done:
+                if gid in succeeded:
                     continue
                 messages = ([{"role": "system", "content": system_prompt}] if system_prompt else []) + [{"role": "user", "content": record.text}]
-                t0 = time.perf_counter()
-                text, err = None, None
-                try:
-                    text = backend.generate(messages, decoding)
-                except BackendError as exc:
-                    err = str(exc)
-                g = Generation(
-                    generation_id=gid,
-                    run_id=run_id,
-                    model_key=spec["key"],
-                    model_id=spec["model_id"],
-                    model_revision=spec.get("revision"),
-                    backend=backend.describe()["backend"],
-                    record_id=record.record_id,
-                    scenario_id=record.scenario_id,
-                    intent_id=record.intent_id,
-                    scenario_type=record.scenario_type.value,
-                    language=record.language.value,
-                    transformation_type=record.transformation.type.value,
-                    condition=record.transformation.parameters.get("condition", "base"),
-                    prompt_text=record.text,
-                    system_prompt=system_prompt,
-                    decoding=decoding,
-                    sample_index=sample_index,
-                    response_text=text,
-                    error=err,
-                    latency_s=round(time.perf_counter() - t0, 3),
-                    created_at=datetime.now(timezone.utc).isoformat(),
-                    is_test_fixture=is_fake,
-                )
-                append_jsonl(out_file, [g])
-                done.add(gid)
-    meta["finished_utc"] = datetime.now(timezone.utc).isoformat()
-    (out_dir / "run_metadata.json").write_text(json.dumps(meta, indent=2, default=str) + "\n", encoding="utf-8")
+                while attempts[gid] < max_attempts and gid not in succeeded:
+                    attempts[gid] += 1
+                    t0 = time.perf_counter()
+                    res, err = None, None
+                    try:
+                        res = _call(backend, messages, decoding)
+                    except BackendError as exc:
+                        err = str(exc)
+                    g = Generation(
+                        generation_id=gid,
+                        run_id=run_id,
+                        model_key=spec["key"],
+                        model_id=spec["model_id"],
+                        model_revision=spec.get("revision"),
+                        backend=spec["backend"],
+                        record_id=record.record_id,
+                        scenario_id=record.scenario_id,
+                        intent_id=record.intent_id,
+                        scenario_type=record.scenario_type.value,
+                        language=record.language.value,
+                        transformation_type=record.transformation.type.value,
+                        condition=record.transformation.parameters.get("condition", "base"),
+                        prompt_text=record.text,
+                        system_prompt=system_prompt,
+                        decoding=decoding,
+                        sample_index=sample_index,
+                        response_text=res.text if res else None,
+                        finish_reason=res.finish_reason if res else None,
+                        n_output_tokens=res.n_output_tokens if res else None,
+                        rendered_prompt_sha256=res.rendered_prompt_sha256 if res else None,
+                        error=err,
+                        attempt=attempts[gid],
+                        latency_s=round(time.perf_counter() - t0, 3),
+                        created_at=datetime.now(timezone.utc).isoformat(),
+                        is_test_fixture=is_fake,
+                    )
+                    append_jsonl(out_file, [g])  # raw output persisted before any evaluation
+                    if err is None:
+                        succeeded.add(gid)
+                if gid not in succeeded:
+                    failed_final += 1
+        manifest["models"].append({"key": spec["key"], "spec": {k: v for k, v in spec.items() if k != "key"}, **backend.describe()})
+
+    manifest["n_planned"] = planned
+    manifest["n_succeeded"] = planned - failed_final
+    manifest["n_failed_after_retries"] = failed_final
+    manifest["max_attempts"] = max_attempts
+    manifest["status"] = "complete" if failed_final == 0 else "incomplete"
+    manifest["finished_utc"] = datetime.now(timezone.utc).isoformat()
+    manifest["generations_sha256"] = hashlib.sha256(out_file.read_bytes()).hexdigest() if out_file.exists() else None
+    (out_dir / RUN_MANIFEST).write_text(json.dumps(manifest, indent=2, default=str) + "\n", encoding="utf-8")
     return out_file
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("config", type=Path)
-    ap.add_argument("--models", nargs="*")
+    ap.add_argument("--models", nargs="*", help="model keys; default = every non-test model in the manifest")
     ap.add_argument("--limit", type=int)
     args = ap.parse_args(argv)
     print(run(args.config, args.models, args.limit))

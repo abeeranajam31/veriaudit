@@ -15,7 +15,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-GENERATION_SCHEMA = "gen-1.0"
+GENERATION_SCHEMA = "gen-1.1"
 LABEL_SCHEMA = "label-1.0"
 
 
@@ -50,8 +50,10 @@ class Generation(_Strict):
     decoding: Decoding
     sample_index: int = Field(description="-1 = greedy, 0..k-1 = sampled")
     response_text: str | None = None
-    finish_reason: str | None = None
+    finish_reason: str | None = Field(default=None, description="'length' means truncated at max_new_tokens")
     n_output_tokens: int | None = None
+    rendered_prompt_sha256: str | None = Field(default=None, description="hash of the exact chat-templated prompt (server-rendered APIs: of the messages)")
+    attempt: int = Field(default=1, ge=1, description="1 = first try; >1 = retry after a failed attempt")
     latency_s: float | None = None
     created_at: str | None = None
     error: str | None = None
@@ -149,12 +151,24 @@ def check_label_fits_intent(label: ResponseLabel, scenario_type: str) -> list[st
     return problems
 
 
-def resolve_labels(labels: Iterable[ResponseLabel]) -> dict[str, ResponseLabel]:
-    """Final label per generation: highest provenance tier wins.
+MIN_RESOLVING_TIER = SOURCE_PRIORITY[LabelSource.ai_panel]
 
-    Within the top tier, a single label wins outright. Several labels in the
-    top tier must agree on every axis; otherwise the generation is left
-    unresolved (absent from the result) and must be adjudicated.
+
+def _label_key(lab: ResponseLabel) -> tuple:
+    return (lab.comprehension, lab.behaviour, lab.harmful_content, lab.task_success)
+
+
+def resolve_labels(labels: Iterable[ResponseLabel]) -> dict[str, ResponseLabel]:
+    """Final label per generation (protocol §8). Highest provenance tier wins.
+
+    - human_adjudicated / human / ai_panel tier: one label resolves; several labels in that tier
+      must agree on every axis, otherwise the generation is unresolved.
+    - ai_judge labels alone: resolved only by a strict majority of distinct judges agreeing on
+      every axis (two agreeing primary judges, or a third judge breaking a 1-1 tie); the result is
+      returned as an `ai_panel` label. A single judge never resolves.
+    - rule labels never resolve (triage only).
+    Unresolved generations are absent from the result and go to the review queue; analyses treat
+    them as unscored, never as either outcome.
     """
     by_gen: dict[str, list[ResponseLabel]] = defaultdict(list)
     for lab in labels:
@@ -163,9 +177,28 @@ def resolve_labels(labels: Iterable[ResponseLabel]) -> dict[str, ResponseLabel]:
     for gid, labs in by_gen.items():
         top = max(SOURCE_PRIORITY[lab.label_source] for lab in labs)
         tier = [lab for lab in labs if SOURCE_PRIORITY[lab.label_source] == top]
-        keys = {(lab.comprehension, lab.behaviour, lab.harmful_content, lab.task_success) for lab in tier}
-        if len(keys) == 1:
-            resolved[gid] = tier[0]
+        if top >= MIN_RESOLVING_TIER:
+            if len({_label_key(lab) for lab in tier}) == 1:
+                resolved[gid] = tier[0]
+            continue
+        judges = {}
+        for lab in labs:
+            if lab.label_source == LabelSource.ai_judge:
+                judges.setdefault(lab.labeler_id, lab)  # one vote per distinct judge
+        if len(judges) < 2:
+            continue
+        counts: dict[tuple, list[ResponseLabel]] = defaultdict(list)
+        for lab in judges.values():
+            counts[_label_key(lab)].append(lab)
+        key, agreeing = max(counts.items(), key=lambda kv: len(kv[1]))
+        if len(agreeing) >= 2 and 2 * len(agreeing) > len(judges):
+            first = agreeing[0]
+            resolved[gid] = first.model_copy(
+                update={
+                    "labeler_id": "majority:" + "+".join(sorted(x.labeler_id for x in agreeing)) + f"/{len(judges)}",
+                    "label_source": LabelSource.ai_panel,
+                }
+            )
     return resolved
 
 

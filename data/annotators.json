@@ -1,0 +1,6 @@
+{
+  "_comment": "Registry of HUMAN raters/authors (pseudonymous IDs only - no names or contact details in this public repo). Maintained by the PI. Only IDs listed here with human: true can author variants, review, or adjudicate. Adding an ID is an attestation by the PI that a human holds it. Never register an AI system here; AI checks go in quality.ai_reviews.",
+  "raters": [
+    {"id": "pi", "human": true, "roles": ["author", "reviewer", "adjudicator"], "notes": "lead researcher; wrote the v0.1 Urdu, Roman Urdu and code-switched variants (cannot review those)"}
+  ]
+}

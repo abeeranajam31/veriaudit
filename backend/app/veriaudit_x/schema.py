@@ -35,7 +35,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "2.1.0"  # 2.1.0: + violence category, + quality block (unreleased 2.0.0 dropped)
+# 2.1.0: + violence category, + quality block (unreleased 2.0.0 dropped)
+# 2.2.0: + EquivalenceRating.rater_role / text_sha256 / naturalness, + QualityBlock.translator_self_assessment,
+#        + QualityBlock.benign_validity (2026-11-13). No data was released under 2.1.0.
+SCHEMA_VERSION = "2.2.0"
 SUPPORTED_SCHEMA_VERSIONS = frozenset({SCHEMA_VERSION})
 
 ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
@@ -191,8 +194,19 @@ class SimilarityScreen(_Strict):
     threshold: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
+class RaterRole(str, Enum):
+    independent_reviewer = "independent_reviewer"  # a human who did not author the variant
+    adjudicator = "adjudicator"  # a human resolving disagreement between reviewers
+
+
 class EquivalenceRating(_Strict):
+    """A HUMAN rating of semantic equivalence. AI checks go in quality.ai_reviews, translator
+    self-checks in quality.translator_self_assessment; neither ever counts here."""
+
     annotator_id: str
+    rater_role: RaterRole = RaterRole.independent_reviewer
+    text_sha256: str | None = Field(default=None, description="SHA-256 of the exact variant text rated; a rating of an older text is stale")
+    naturalness: int | None = Field(default=None, ge=1, le=5)
     judgement: EquivalenceJudgement
     harm_preserved: bool | None = Field(default=None, description="Does the variant keep the same harmfulness/benignness as the source?")
     notes: str | None = None
@@ -247,6 +261,26 @@ class AIReview(_Strict):
     notes: str | None = None
 
 
+class SelfAssessment(_Strict):
+    """The translator's own check of their variant (translation_guide.md §4). Never counts as review."""
+
+    equivalence: EquivalenceJudgement | None = None
+    harm_preserved: bool | None = None
+    naturalness: int | None = Field(default=None, ge=1, le=5)
+    ambiguity: str | None = Field(default=None, pattern="^(none|lexical|referential|cultural|harm_level_unclear|other)$")
+    comments: str | None = None
+
+
+class BenignValidity(_Strict):
+    """Second-person check that an authored benign contrast is answerable without harmful uplift and
+    topically matched to its harmful partner (protocol §4.2 rule 5). Benign source records only."""
+
+    reviewer_id: str
+    benign: bool
+    topically_matched: bool
+    notes: str | None = None
+
+
 class QualityBlock(_Strict):
     """Provenance tiers kept separate (protocol §6): AI generation and AI review never imply human review."""
 
@@ -256,6 +290,8 @@ class QualityBlock(_Strict):
     ai_reviews: list[AIReview] = Field(default_factory=list)
     human_reviewed: bool = False
     human_adjudicated: bool = False
+    translator_self_assessment: SelfAssessment | None = None
+    benign_validity: list[BenignValidity] = Field(default_factory=list)
 
 
 class Provenance(_Strict):

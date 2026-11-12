@@ -9,7 +9,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = REPO_ROOT / "dataset" / "veriaudit-x" / "fixtures"
 FIXTURE_FILE = FIXTURE_DIR / "sample_valid.jsonl"
-SCHEMA_FILE = REPO_ROOT / "dataset" / "veriaudit-x" / "schema" / "veriaudit-x-2.1.0.schema.json"
+SCHEMA_FILE = REPO_ROOT / "dataset" / "veriaudit-x" / "schema" / "veriaudit-x-2.2.0.schema.json"
 
 LANGS = [
     ("english", "en", "latin", "source", None),
@@ -36,7 +36,7 @@ def make_intent(scenario_id: str, suffix: str, scenario_type: str, category: str
     for lang, code, script, ttype, parent in LANGS:
         out.append(
             {
-                "schema_version": "2.1.0",
+                "schema_version": "2.2.0",
                 "record_id": f"{intent_id}-{code}-01",
                 "scenario_id": scenario_id,
                 "intent_id": intent_id,

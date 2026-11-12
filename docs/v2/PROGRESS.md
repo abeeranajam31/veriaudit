@@ -7,7 +7,7 @@ Last updated 2026-11-12 (session 2). Branch `veriaudit-x-dataset`.
 | Milestone | Evidence | Verification |
 |---|---|---|
 | v1 audit | `docs/v2_codebase_audit.md` | claims spot-checked by running code (e.g. Urdu refusal scored 20.0) |
-| VeriAudit-X schema 2.1.0, validator, leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
+| VeriAudit-X schema 2.2.0, validator, leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
 | v0.1 reconstruction | `results/v1_reconstruction/` | **191/191** published numbers reproduced |
 | Corrected v0.1 analyses (full denominator, detector comparison, language drift) | `results/v1_reconstruction/reproducibility_report.md` | stats functions tested against published values and by simulation (Newcombe coverage 95%) |
 | Research protocol + amendments | `docs/v2/research_protocol.md` | licences/model facts checked against sources 2026-11-12 |

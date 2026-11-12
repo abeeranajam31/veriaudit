@@ -1,103 +1,223 @@
-"""Human translation worksheet for VeriAudit-X (export and import).
+"""Human authoring workflow for VeriAudit-X - command line (guide: docs/v2/translation_guide.md).
 
-AI generation of the non-English harmful variants was stopped by model safety
-classifiers in this project's sandbox (see docs/v2/PROGRESS.md), so the variants
-are authored by human translators following docs/v2/variant_generation_guidelines.md.
+All files live in data/candidates/authoring/ (sheets/ = CSVs for people; *.jsonl = imports).
+Every person ID must be registered as human in data/annotators.json.
 
-    export:  PYTHONPATH=backend python research/dataset/translation_worksheet.py export
-             -> data/candidates/translation_worksheet.csv (UTF-8 with BOM, opens in Excel/Sheets)
-    import:  PYTHONPATH=backend python research/dataset/translation_worksheet.py import FILLED.csv --translator ID
-             -> data/candidates/generated/human_<ID>.jsonl (consumed by assemble_veriaudit_x.py)
+Stage A - benign contrasts
+  export-benign                          -> sheets/benign_authoring.csv
+  import-benign FILE --author ID         -> benign_authored.jsonl
+  export-benign-review --reviewer ID     -> sheets/benign_review_<ID>.csv   (never your own contrasts)
+  import-benign-review FILE --reviewer ID-> benign_validity.jsonl
+Stage B - translation
+  export [--phase 1|2|all]               -> data/candidates/translation_worksheet.csv
+  import FILE --translator ID            -> variants_<time>_<ID>.jsonl
+Stage C - independent review and adjudication
+  export-review --reviewer ID            -> sheets/review_<ID>.csv          (never your own variants)
+  import-review FILE --reviewer ID       -> ratings_<time>_<ID>.jsonl
+  export-adjudication --adjudicator ID   -> sheets/adjudication_<ID>.csv
+  import-adjudication FILE --adjudicator ID -> ratings_<time>_<ID>.jsonl
+status                                   -> authoring/STATUS.md
 
-Pre-filled cells: English sources, XSTest benign prompts, and the human-authored
-v0.1 harmful variants (do not edit those).
+Run from the repo root with PYTHONPATH=backend. An import with any problem writes nothing and
+lists every problem; fix the sheet and import again.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
 import json
-from collections import defaultdict
+import sys
+from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
+
+from app.veriaudit_x import authoring as A
 
 ROOT = Path(__file__).resolve().parents[2]
 CAND = ROOT / "data" / "candidates"
-FORMS = ["urdu", "roman_urdu", "code_switched"]
-TS = ["T1", "T2", "T3", "T4", "T5", "T6"]
-COLUMNS = ["scenario_id", "category", "intent", "needs_transformations", "english", *FORMS, *TS, "notes"]
+AUTH = CAND / "authoring"
+SHEETS = AUTH / "sheets"
+REGISTRY = ROOT / "data" / "annotators.json"
 
 
-def export() -> Path:
-    rows = []
-    for p in sorted((CAND / "batches").glob("batch_*.jsonl")):
-        for line in p.read_text(encoding="utf-8").splitlines():
-            b = json.loads(line)
-            fixed = b.get("fixed_harmful_variants") or {}
-            for intent, en in (("harmful", b["harmful_en"]), ("benign", b["benign_en"] or "")):
-                row = {c: "" for c in COLUMNS}
-                row.update(
-                    scenario_id=b["scenario_id"],
-                    category=b["category"],
-                    intent=intent,
-                    needs_transformations="yes" if b["needs_transformations"] else "no",
-                    english=en,
-                )
-                if intent == "harmful":
-                    row.update({f: fixed.get(f, "") for f in FORMS})
-                rows.append(row)
-    out = CAND / "translation_worksheet.csv"
-    with out.open("w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
-        w.writeheader()
-        w.writerows(rows)
+def load_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def append_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+def stamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def selection() -> list[dict]:
+    return load_jsonl(CAND / "selection.jsonl")
+
+
+def subset() -> set[str]:
+    return set(json.loads((CAND / "transformation_subset.json").read_text(encoding="utf-8")))
+
+
+def authored_benign() -> dict[str, dict]:
+    return {r["scenario_id"]: r for r in load_jsonl(AUTH / "benign_authored.jsonl")}  # later lines win
+
+
+def plan() -> tuple[list[A.PlannedRow], list[str]]:
+    return A.plan_rows(selection(), subset(), authored_benign())
+
+
+def variants(rows: list[A.PlannedRow]) -> dict[str, dict]:
+    v = A.locked_variants(rows)
+    v.update(A.load_variants(sorted(AUTH.glob("variants_*.jsonl"))))
+    return v
+
+
+def ratings() -> list[dict]:
+    out = []
+    for p in sorted(AUTH.glob("ratings_*.jsonl")):
+        out += load_jsonl(p)
     return out
 
 
-def import_filled(path: Path, translator: str) -> Path:
-    by_s: dict[str, dict] = defaultdict(dict)
-    with Path(path).open(encoding="utf-8-sig") as f:
-        for row in csv.DictReader(f):
-            by_s[row["scenario_id"]][row["intent"]] = row
-    out_rows = []
-    for sid, d in by_s.items():
-        if set(d) != {"harmful", "benign"}:
-            continue
-        h, b = d["harmful"], d["benign"]
-        if not all(x[f].strip() for x in (h, b) for f in FORMS) or not b["english"].strip():
-            continue  # incomplete scenarios are left for a later import
-        needs_t = h["needs_transformations"] == "yes"
-        out_rows.append(
-            {
-                "scenario_id": sid,
-                "benign_en": b["english"].strip(),
-                "harmful": {f: h[f].strip() for f in FORMS},
-                "benign": {f: b[f].strip() for f in FORMS},
-                "transformations": {"harmful": {t: h[t].strip() for t in TS}, "benign": {t: b[t].strip() for t in TS}} if needs_t else None,
-                "notes": " | ".join(x["notes"] for x in (h, b) if x["notes"]),
-                "skipped": False,
-                "author": "human",
-                "translator_id": translator,
-            }
-        )
-    out = CAND / "generated" / f"human_{translator}.jsonl"
+def registered(person: str) -> None:
+    A._check_registered(person, A.load_registry(REGISTRY))
+
+
+def status() -> Path:
+    rows, waiting = plan()
+    v = variants(rows)
+    rs = ratings()
+    validity = load_jsonl(AUTH / "benign_validity.jsonl")
+    ab = authored_benign()
+    need_benign = [c["scenario_id"] for c in selection() if not c.get("benign_en")]
+    reviewed_ok = {r["scenario_id"] for r in validity if r["benign"] and r["topically_matched"]}
+    by_row = Counter()
+    for r in rs:
+        vv = v.get(r["record_id"])
+        if vv and r.get("text_sha256") == vv["text_sha256"] and r["rater_role"] == "independent_reviewer":
+            by_row[r["record_id"]] += 1
+    lines = [
+        "# Authoring status",
+        "",
+        f"Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')}. Counts only; nothing here is a result.",
+        "",
+        "| Stage | Done | Total |",
+        "|---|---|---|",
+        f"| A. benign contrasts written | {sum(s in ab for s in need_benign)} | {len(need_benign)} |",
+        f"| A. benign contrasts passing review | {sum(s in reviewed_ok for s in need_benign)} | {len(need_benign)} |",
+    ]
+    for phase in (1, 2):
+        pr = [r for r in rows if r.phase == phase]
+        lines.append(f"| B. phase {phase} variants written | {sum(r.row_id in v for r in pr)} | {len(pr)} (planned so far) |")
+        lines.append(f"| C. phase {phase} variants with >= 2 current independent ratings | {sum(by_row[r.row_id] >= 2 for r in pr)} | {len(pr)} |")
+    lines += ["", f"Scenarios whose benign rows cannot be planned until stage A is done: {len(waiting)}"]
+    out = AUTH / "STATUS.md"
     out.parent.mkdir(parents=True, exist_ok=True)
-    with out.open("w", encoding="utf-8") as f:
-        for r in out_rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    print(f"{len(out_rows)} complete scenarios imported")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("export")
-    imp = sub.add_parser("import")
-    imp.add_argument("path", type=Path)
-    imp.add_argument("--translator", required=True, help="pseudonymous translator ID, e.g. tr01")
+    sub.add_parser("export-benign")
+    for name, who in (
+        ("import-benign", "--author"),
+        ("import-benign-review", "--reviewer"),
+        ("import", "--translator"),
+        ("import-review", "--reviewer"),
+        ("import-adjudication", "--adjudicator"),
+    ):
+        p = sub.add_parser(name)
+        p.add_argument("path", type=Path)
+        p.add_argument(who, required=True, dest="person")
+    for name, who in (("export-benign-review", "--reviewer"), ("export-review", "--reviewer"), ("export-adjudication", "--adjudicator")):
+        sub.add_parser(name).add_argument(who, required=True, dest="person")
+    sub.add_parser("export").add_argument("--phase", choices=["1", "2", "all"], default="all")
+    sub.add_parser("status")
     args = ap.parse_args(argv)
-    print(export() if args.cmd == "export" else import_filled(args.path, args.translator))
+
+    try:
+        if args.cmd == "export-benign":
+            out = A.write_csv(SHEETS / "benign_authoring.csv", A.BENIGN_COLUMNS, A.export_benign_authoring(selection(), authored_benign()))
+        elif args.cmd == "import-benign":
+            registered(args.person)
+            rows = A.import_benign_authoring(args.path, args.person, selection())
+            append_jsonl(AUTH / "benign_authored.jsonl", rows)
+            out = f"{len(rows)} benign contrasts imported (each now needs a review by someone else)"
+        elif args.cmd == "export-benign-review":
+            registered(args.person)
+            out = A.write_csv(
+                SHEETS / f"benign_review_{args.person}.csv", A.BENIGN_REVIEW_COLUMNS, A.export_benign_review(selection(), authored_benign(), args.person)
+            )
+        elif args.cmd == "import-benign-review":
+            registered(args.person)
+            rows = A.import_benign_review(args.path, args.person, selection(), authored_benign())
+            append_jsonl(AUTH / "benign_validity.jsonl", rows)
+            out = f"{len(rows)} benign-validity reviews imported"
+        elif args.cmd == "export":
+            rows, waiting = plan()
+            phases = (1, 2) if args.phase == "all" else (int(args.phase),)
+            sheet = A.export_worksheet(rows, phases)
+            done = variants(rows)
+            for r in sheet:  # show already-imported work so translators do not redo it
+                if r["locked"] == "no" and r["row_id"] in done:
+                    r.update(text=done[r["row_id"]]["text"], status="done", comments=f"imported from {done[r['row_id']]['author_id']}")
+            out = A.write_csv(CAND / "translation_worksheet.csv", A.WORKSHEET_COLUMNS, sheet)
+            if waiting:
+                print(f"note: benign rows for {len(waiting)} scenarios appear after their benign contrast is written (stage A)", file=sys.stderr)
+        elif args.cmd == "import":
+            registered(args.person)
+            rows, _ = plan()
+            res = A.import_worksheet(args.path, args.person, rows)
+            prev = variants(rows)
+            new = [x for x in res.variants if not (x["status"] == "done" and prev.get(x["row_id"], {}).get("text") == x["text"])]
+            for x in new:
+                x["imported_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            if new:
+                append_jsonl(AUTH / f"variants_{stamp()}_{args.person}.jsonl", new)
+            for w in res.warnings:
+                print("warning:", w, file=sys.stderr)
+            n_done = sum(x["status"] == "done" for x in new)
+            n_cannot = sum(x["status"] == "cannot_translate" for x in new)
+            out = f"{n_done} new or revised variants, {n_cannot} marked cannot_translate"
+        elif args.cmd == "export-review":
+            registered(args.person)
+            rows, _ = plan()
+            v = variants(rows)
+            rated = {(r["record_id"], r.get("text_sha256")) for r in ratings() if r["annotator_id"] == args.person}
+            out = A.write_csv(SHEETS / f"review_{args.person}.csv", A.REVIEW_COLUMNS, A.export_review(rows, v, args.person, rated))
+        elif args.cmd == "import-review":
+            rows, _ = plan()
+            rs = A.import_review(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY))
+            append_jsonl(AUTH / f"ratings_{stamp()}_{args.person}.jsonl", rs)
+            out = f"{len(rs)} ratings imported"
+        elif args.cmd == "export-adjudication":
+            registered(args.person)
+            rows, _ = plan()
+            out = A.write_csv(
+                SHEETS / f"adjudication_{args.person}.csv", A.ADJUDICATION_COLUMNS, A.export_adjudication(rows, variants(rows), ratings(), args.person)
+            )
+        elif args.cmd == "import-adjudication":
+            rows, _ = plan()
+            rs = A.import_adjudication(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY))
+            append_jsonl(AUTH / f"ratings_{stamp()}_{args.person}.jsonl", rs)
+            out = f"{len(rs)} adjudications imported"
+        else:
+            out = status()
+    except A.WorkflowError as exc:
+        print("IMPORT/EXPORT REFUSED - nothing was written.", file=sys.stderr)
+        for p in exc.problems:
+            print("  -", p, file=sys.stderr)
+        return 1
+    print(out)
     return 0
 
 

@@ -88,6 +88,10 @@ def parse_judgement(text: str, gen: Generation, labeler_id: str) -> ResponseLabe
     except json.JSONDecodeError as exc:
         raise JudgeParseError(f"invalid JSON: {exc.msg}") from exc
     harmful_intent = gen.scenario_type == "harmful"
+    hc = data.get("harmful_content")
+    if hc is not None and not isinstance(hc, bool):
+        # e.g. the string "false" must not be read as truthy -> harmful
+        raise JudgeParseError(f"harmful_content must be a JSON boolean or null, got {hc!r}")
     try:
         label = ResponseLabel(
             generation_id=gen.generation_id,
@@ -95,7 +99,7 @@ def parse_judgement(text: str, gen: Generation, labeler_id: str) -> ResponseLabe
             label_source=LabelSource.ai_judge,
             comprehension=Comprehension(data["comprehension"]),
             behaviour=Behaviour(data["behaviour"]),
-            harmful_content=bool(data["harmful_content"]) if harmful_intent and data.get("harmful_content") is not None else None,
+            harmful_content=hc if harmful_intent else None,
             task_success=TaskSuccess(data["task_success"]) if not harmful_intent and data.get("task_success") else None,
             confidence=data.get("confidence"),
             rationale=str(data.get("rationale", ""))[:500],

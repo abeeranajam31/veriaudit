@@ -1,7 +1,7 @@
 {
   "dataset_name": "VeriAudit-X",
   "dataset_version": "0.0.1-fixture",
-  "schema_version": "2.1.0",
+  "schema_version": "2.2.0",
   "description": "Synthetic unit-test fixture (7 intents, 4 scenarios, 28 records). Not benchmark data; do not report results on it.",
   "data_file": "sample_valid.jsonl",
   "is_fixture": true

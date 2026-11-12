@@ -11,6 +11,7 @@ Severity
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -31,6 +32,7 @@ from app.veriaudit_x.schema import (
     EquivalenceStatus,
     Language,
     PromptLabels,
+    RaterRole,
     ScenarioType,
     TransformationMethod,
     TransformationType,
@@ -75,6 +77,11 @@ class ValidationConfig:
     min_annotators: int = 2
     require_all_languages: bool = True
     required_languages: tuple[Language, ...] = tuple(Language)
+    # release=True: gaps that are warnings while authoring become errors before a dataset is frozen
+    # (protocol §12): every scenario has exactly one harmful and one benign intent that name each
+    # other as contrasts, every intent has all required base forms, and every authored benign
+    # contrast has a passing benign-validity review by someone other than its author.
+    release: bool = False
 
 
 @dataclass
@@ -252,19 +259,49 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
     raters = [h.annotator_id for h in eq.human_ratings]
     if len(raters) != len(set(raters)):
         _err(report, "duplicate_annotator", "an annotator rated equivalence more than once", r, line, "equivalence.human_ratings")
-    if eq.status == EquivalenceStatus.verified:
-        if len(eq.human_ratings) < config.min_equivalence_raters:
+    author = r.transformation.author_id
+    text_hash = hashlib.sha256(r.text.encode("utf-8")).hexdigest()
+    stale = [h.annotator_id for h in eq.human_ratings if h.text_sha256 is not None and h.text_sha256 != text_hash]
+    if stale:
+        _err(report, "stale_rating", f"ratings by {stale} were given to a different version of this text", r, line, "equivalence.human_ratings")
+    self_rated = [h for h in eq.human_ratings if author and h.annotator_id == author]
+    if self_rated:
+        _err(report, "rater_is_author", f"{author} rated their own variant; that rating cannot count as review", r, line, "equivalence.human_ratings")
+    counted = [h for h in eq.human_ratings if not (author and h.annotator_id == author) and h.annotator_id not in stale]
+    independent = [h for h in counted if h.rater_role == RaterRole.independent_reviewer]
+    adjudicators = [h for h in counted if h.rater_role == RaterRole.adjudicator]
+    if len(adjudicators) > 1:
+        _err(report, "multiple_adjudicators", "more than one adjudicator rating", r, line, "equivalence.human_ratings")
+    if eq.status == EquivalenceStatus.verified and adjudicators:
+        # adjudicated route: the adjudicator accepts and at least one independent reviewer agreed
+        adj = adjudicators[0]
+        if not (adj.judgement == EquivalenceJudgement.equivalent and adj.harm_preserved is not False):
+            _err(report, "unsupported_verification", "verified, but the adjudicator did not accept the variant", r, line, "equivalence")
+        elif not any(h.judgement == EquivalenceJudgement.equivalent and h.harm_preserved is not False for h in independent):
             _err(
                 report,
                 "unsupported_verification",
-                f"status 'verified' requires >= {config.min_equivalence_raters} human ratings; similarity alone never verifies",
+                "adjudicated verification needs at least one independent reviewer rating 'equivalent'",
                 r,
                 line,
                 "equivalence",
             )
-        elif any(h.judgement != EquivalenceJudgement.equivalent for h in eq.human_ratings):
+        if not r.quality.human_adjudicated:
+            _err(report, "provenance_mismatch", "adjudicated variant must set quality.human_adjudicated", r, line, "quality.human_adjudicated")
+    elif eq.status == EquivalenceStatus.verified:
+        eq_ratings = independent
+        if len(eq_ratings) < config.min_equivalence_raters:
+            _err(
+                report,
+                "unsupported_verification",
+                f"status 'verified' requires >= {config.min_equivalence_raters} human ratings by people other than the author; similarity alone never verifies",
+                r,
+                line,
+                "equivalence",
+            )
+        elif any(h.judgement != EquivalenceJudgement.equivalent for h in eq_ratings):
             _err(report, "unsupported_verification", "status 'verified' requires every human rating to be 'equivalent'", r, line, "equivalence")
-        elif any(h.harm_preserved is False for h in eq.human_ratings):
+        elif any(h.harm_preserved is False for h in eq_ratings):
             _err(report, "unsupported_verification", "a rater marked harm_preserved=false on a verified variant", r, line, "equivalence")
     if eq.status == EquivalenceStatus.rejected and not eq.human_ratings:
         _err(report, "unsupported_verification", "status 'rejected' requires at least one human rating", r, line, "equivalence")
@@ -379,10 +416,12 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
         if len(sources) != 1:
             _err(report, "source_count", f"intent {intent_id} has {len(sources)} source records (expected exactly 1)", first, line, "transformation.type")
 
-        if config.require_all_languages:
-            missing = [lang.value for lang in config.required_languages if lang not in {r.language for r in recs}]
+        if config.require_all_languages or config.release:
+            base_langs = {r.language for r in recs if r.transformation.parameters.get("condition", "base") == "base"}
+            missing = [lang.value for lang in config.required_languages if lang not in base_langs]
             if missing:
-                _err(report, "missing_language", f"intent {intent_id} has no variant for: {', '.join(missing)}", first, line, "language", "warning")
+                sev = "error" if config.release else "warning"
+                _err(report, "missing_language", f"intent {intent_id} has no base variant for: {', '.join(missing)}", first, line, "language", sev)
 
         seen_text: dict[tuple[Language, str], str] = {}
         for r in recs:
@@ -442,6 +481,9 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
                 if intent_type[c] == r.scenario_type:
                     _err(report, "invalid_contrast", "contrast intent must have the opposite scenario_type", r, line, "contrast_intent_id")
 
+    if config.release:
+        _check_release(report, line_of, intent_scenario, intent_type)
+
     # split field, when present, must be constant within a scenario
     split_by_scenario: dict[str, set[str | None]] = defaultdict(set)
     for r in report.records:
@@ -457,3 +499,51 @@ def _check_cross_record(report: ValidationReport, line_of: dict[str, int], confi
                 line_of[rec.record_id],
                 "split",
             )
+
+
+def _check_release(report: ValidationReport, line_of: dict[str, int], intent_scenario: dict, intent_type: dict) -> None:
+    """Hard checks before freezing a release (ValidationConfig.release)."""
+    intents_by_scenario: dict[str, list[str]] = defaultdict(list)
+    for intent_id, sid in intent_scenario.items():
+        intents_by_scenario[sid].append(intent_id)
+    by_intent = defaultdict(list)
+    for r in report.records:
+        by_intent[r.intent_id].append(r)
+    for sid, intents in sorted(intents_by_scenario.items()):
+        first = by_intent[intents[0]][0]
+        line = line_of[first.record_id]
+        types = sorted(intent_type[i].value for i in intents)
+        if types != ["benign", "harmful"]:
+            _err(
+                report,
+                "unpaired_scenario",
+                f"scenario {sid} has intents of types {types}; a release needs exactly one harmful and one benign",
+                first,
+                line,
+                "scenario_id",
+            )
+            continue
+        h = next(i for i in intents if intent_type[i] == ScenarioType.harmful)
+        b = next(i for i in intents if intent_type[i] == ScenarioType.benign)
+        if by_intent[h][0].contrast_intent_id != b or by_intent[b][0].contrast_intent_id != h:
+            _err(
+                report,
+                "unpaired_scenario",
+                f"scenario {sid}: harmful {h} and benign {b} must name each other in contrast_intent_id",
+                first,
+                line,
+                "contrast_intent_id",
+            )
+        # authored benign contrasts (not taken verbatim from a source benchmark) need a benign-validity review
+        src = next((r for r in by_intent[b] if r.transformation.type == TransformationType.source), None)
+        if src is not None and not (src.provenance.origin or "").startswith(("xstest:", "veriaudit-v0.1:")):
+            reviews = [v for v in src.quality.benign_validity if v.reviewer_id != src.transformation.author_id]
+            if not reviews or not all(v.benign and v.topically_matched for v in reviews):
+                _err(
+                    report,
+                    "benign_validity_unreviewed",
+                    f"benign contrast {src.record_id} needs a passing benign-validity review by someone other than its author",
+                    src,
+                    line_of[src.record_id],
+                    "quality.benign_validity",
+                )

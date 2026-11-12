@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 OUT = Path(__file__).with_name("sample_valid.jsonl")
-SCHEMA_VERSION = "2.1.0"
+SCHEMA_VERSION = "2.2.0"
 FIXTURE_NOTE = "synthetic unit-test fixture; not benchmark data"
 
 # scenario_id, intent suffix, scenario_type, category, expected_behavior, description, contrast suffix, texts

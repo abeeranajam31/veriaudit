@@ -1,0 +1,12 @@
+dgp,true_gap_pp,n_sim,coverage_bootstrap_percentile,coverage_t_interval,degenerate_bootstrap_intervals,mean_bootstrap_width_pp
+null_exchangeable_5pct,0.0,400,0.927,0.935,0,4.2
+null_exchangeable_20pct,0.0,400,0.948,0.955,0,8.8
+null_rare_1pct,0.0,400,0.912,0.93,0,2.0
+null_two_state,0.0,400,0.935,0.938,0,3.89
+null_mean_zero_asymmetric,0.0,400,0.935,0.935,0,7.39
+alt_two_state_10pp,8.7,400,0.958,0.958,0,9.57
+alt_re_6pp,6.0,400,0.95,0.95,0,5.52
+alt_re_4pp_sigma1,4.0,400,0.955,0.952,0,5.66
+alt_rare_2pp,2.0,400,0.948,0.945,0,3.06
+alt_crossover_plus3pp,3.0,400,0.93,0.94,0,7.67
+alt_crossover_minus2pp,-2.0,400,0.935,0.935,0,7.12

@@ -109,6 +109,43 @@
       "title": "AnnotationStatus",
       "type": "string"
     },
+    "BenignValidity": {
+      "additionalProperties": false,
+      "description": "Second-person check that an authored benign contrast is answerable without harmful uplift and\ntopically matched to its harmful partner (protocol §4.2 rule 5). Benign source records only.",
+      "properties": {
+        "reviewer_id": {
+          "title": "Reviewer Id",
+          "type": "string"
+        },
+        "benign": {
+          "title": "Benign",
+          "type": "boolean"
+        },
+        "topically_matched": {
+          "title": "Topically Matched",
+          "type": "boolean"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "reviewer_id",
+        "benign",
+        "topically_matched"
+      ],
+      "title": "BenignValidity",
+      "type": "object"
+    },
     "Category": {
       "enum": [
         "cybercrime",
@@ -181,10 +218,42 @@
     },
     "EquivalenceRating": {
       "additionalProperties": false,
+      "description": "A HUMAN rating of semantic equivalence. AI checks go in quality.ai_reviews, translator\nself-checks in quality.translator_self_assessment; neither ever counts here.",
       "properties": {
         "annotator_id": {
           "title": "Annotator Id",
           "type": "string"
+        },
+        "rater_role": {
+          "$ref": "#/$defs/RaterRole",
+          "default": "independent_reviewer"
+        },
+        "text_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "SHA-256 of the exact variant text rated; a rating of an older text is stale",
+          "title": "Text Sha256"
+        },
+        "naturalness": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Naturalness"
         },
         "judgement": {
           "$ref": "#/$defs/EquivalenceJudgement"
@@ -445,10 +514,36 @@
           "default": false,
           "title": "Human Adjudicated",
           "type": "boolean"
+        },
+        "translator_self_assessment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SelfAssessment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "benign_validity": {
+          "items": {
+            "$ref": "#/$defs/BenignValidity"
+          },
+          "title": "Benign Validity",
+          "type": "array"
         }
       },
       "title": "QualityBlock",
       "type": "object"
+    },
+    "RaterRole": {
+      "enum": [
+        "independent_reviewer",
+        "adjudicator"
+      ],
+      "title": "RaterRole",
+      "type": "string"
     },
     "ScenarioType": {
       "enum": [
@@ -466,6 +561,76 @@
       ],
       "title": "Script",
       "type": "string"
+    },
+    "SelfAssessment": {
+      "additionalProperties": false,
+      "description": "The translator's own check of their variant (translation_guide.md §4). Never counts as review.",
+      "properties": {
+        "equivalence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EquivalenceJudgement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "harm_preserved": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Harm Preserved"
+        },
+        "naturalness": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Naturalness"
+        },
+        "ambiguity": {
+          "anyOf": [
+            {
+              "pattern": "^(none|lexical|referential|cultural|harm_level_unclear|other)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ambiguity"
+        },
+        "comments": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comments"
+        }
+      },
+      "title": "SelfAssessment",
+      "type": "object"
     },
     "SemanticEquivalence": {
       "additionalProperties": false,
@@ -748,7 +913,7 @@
     "transformation",
     "equivalence"
   ],
-  "title": "VeriAudit-X record (schema 2.1.0)",
+  "title": "VeriAudit-X record (schema 2.2.0)",
   "type": "object",
-  "$id": "https://github.com/abeeranajam31/veriaudit/schema/veriaudit-x-2.1.0.json"
+  "$id": "https://github.com/abeeranajam31/veriaudit/schema/veriaudit-x-2.2.0.json"
 }

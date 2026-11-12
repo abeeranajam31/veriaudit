@@ -343,7 +343,7 @@ def test_normalize_text_ignores_presentation_differences():
     assert normalize_text("kya") != normalize_text("kia")
 
 
-# ---------------------------------------------------------------- provenance tiers (schema 2.1.0)
+# ---------------------------------------------------------------- provenance tiers (schema 2.1.0+)
 
 
 def test_ai_generated_requires_generator_and_non_human_method():
@@ -377,3 +377,62 @@ def test_violence_category_is_harmful():
     from app.veriaudit_x.schema import HARMFUL_CATEGORIES, Category
 
     assert Category.violence in HARMFUL_CATEGORIES
+
+
+# ---------------------------------------------------------------- schema 2.2.0: raters and release mode
+
+
+def test_author_cannot_rate_own_variant():
+    recs = load_fixture()
+    rec = by_id(recs, UR)  # verified with fixture-ann-A and fixture-ann-B
+    rec["transformation"]["author_id"] = "fixture-ann-A"
+    c = codes(recs)
+    assert c["rater_is_author"] == 1
+    assert c["unsupported_verification"] == 1  # only one independent rating remains
+
+
+def test_apply_ratings_refuses_author():
+    from app.v2.review import apply_equivalence_ratings
+    from app.veriaudit_x.schema import EquivalenceRating
+
+    rec = validate_objects(load_fixture()).records
+    target = next(r for r in rec if r.record_id == "VX-S0002-H-ur-01")
+    with pytest.raises(ValueError, match="authored"):
+        apply_equivalence_ratings(target, [EquivalenceRating(annotator_id=target.transformation.author_id, judgement="equivalent")])
+
+
+def test_release_mode_turns_gaps_into_errors():
+    recs = [r for r in load_fixture() if r["record_id"] != "VX-S0004-B-cs-01"]
+    assert validate_objects(recs).codes()["missing_language"] == 1 and validate_objects(recs).ok
+    rel = validate_objects(recs, ValidationConfig(release=True))
+    assert not rel.ok
+    assert any(i.code == "missing_language" and i.severity == "error" for i in rel.issues)
+    # VX-S0004 has a benign intent only -> unpaired in a release
+    assert rel.codes()["unpaired_scenario"] >= 1
+
+
+def test_release_requires_benign_validity_for_authored_contrasts():
+    recs = load_fixture()
+    for r in recs:  # make the fixture's paired scenarios look like authored (non-source) contrasts
+        r.setdefault("provenance", {})["origin"] = "authored benign contrast for advbench:1" if r["scenario_type"] == "benign" else "advbench:1"
+    rel = validate_objects([r for r in recs if r["scenario_id"] != "VX-S0004"], ValidationConfig(release=True))
+    assert rel.codes()["benign_validity_unreviewed"] == 3
+    for r in recs:
+        if r["scenario_type"] == "benign" and r["transformation"]["type"] == "source":
+            r.setdefault("quality", {})["benign_validity"] = [{"reviewer_id": "rev-9", "benign": True, "topically_matched": True}]
+    rel = validate_objects([r for r in recs if r["scenario_id"] != "VX-S0004"], ValidationConfig(release=True))
+    assert rel.ok, rel.summary()
+    # a failing or self-made review does not count
+    src = by_id(recs, "VX-S0001-B-en-01")
+    src["quality"]["benign_validity"] = [{"reviewer_id": src["transformation"]["author_id"], "benign": True, "topically_matched": True}]
+    assert validate_objects([r for r in recs if r["scenario_id"] != "VX-S0004"], ValidationConfig(release=True)).codes()["benign_validity_unreviewed"] == 1
+
+
+def test_translator_self_assessment_is_not_a_rating():
+    recs = load_fixture()
+    by_id(recs, RUR).setdefault("quality", {})["translator_self_assessment"] = {"equivalence": "equivalent", "naturalness": 5, "ambiguity": "none"}
+    by_id(recs, RUR)["equivalence"]["status"] = "verified"
+    assert codes(recs)["unsupported_verification"] == 1
+    bad = load_fixture()
+    by_id(bad, RUR).setdefault("quality", {})["translator_self_assessment"] = {"ambiguity": "vague"}
+    assert codes(bad)["invalid_value"] == 1

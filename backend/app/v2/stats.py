@@ -140,6 +140,17 @@ def signed_rank_test(differences: Sequence[float]) -> float:
     return float(_st.wilcoxon(d, zero_method="wilcox", alternative="two-sided").pvalue)
 
 
+def paired_t_test(differences: Sequence[float]) -> float:
+    """Two-sided one-sample t-test of mean difference = 0 (sensitivity analysis targeting the mean;
+    protocol §10). Returns 1.0 if every difference is 0, and 0.0 if all are equal and non-zero."""
+    d = np.asarray(differences, dtype=float)
+    if len(d) == 0 or np.all(d == 0):
+        return 1.0
+    if np.all(d == d[0]):
+        return 0.0
+    return float(_st.ttest_1samp(d, 0.0).pvalue)
+
+
 def cohen_kappa(labels_a: Sequence[str], labels_b: Sequence[str]) -> float:
     """Unweighted Cohen's kappa for two raters over the same items."""
     if len(labels_a) != len(labels_b) or not labels_a:
