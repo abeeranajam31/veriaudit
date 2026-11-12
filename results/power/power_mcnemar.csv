@@ -1,0 +1,49 @@
+scenario,net_gap_pp,n_scenarios,power_bonferroni_15,power_unadjusted
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,60,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,90,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,120,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,150,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,180,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,200,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,240,1.0,1.0
+"pilot-like large gap (Aya x Urdu: 12/30, 0/30)",40.0,300,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,60,0.995,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,90,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,120,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,150,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,180,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,200,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,240,1.0,1.0
+"pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",30.0,300,1.0,1.0
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,60,0.059,0.36
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,90,0.182,0.577
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,120,0.331,0.731
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,150,0.482,0.832
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,180,0.618,0.9
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,200,0.689,0.931
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,240,0.811,0.97
+"pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",10.0,300,0.919,0.992
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,60,0.07,0.426
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,90,0.233,0.667
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,120,0.434,0.825
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,150,0.615,0.912
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,180,0.746,0.957
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,200,0.819,0.973
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,240,0.912,0.99
+"smallest effect of interest: 10 pp net, noisy (12% vs 2%)",10.0,300,0.973,0.998
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,60,0.052,0.306
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,90,0.142,0.491
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,120,0.253,0.631
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,150,0.369,0.739
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,180,0.484,0.83
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,200,0.553,0.873
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,240,0.684,0.935
+"smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",10.0,300,0.827,0.974
+7.5 pp net (10% vs 2.5%),7.5,60,0.021,0.233
+7.5 pp net (10% vs 2.5%),7.5,90,0.086,0.42
+7.5 pp net (10% vs 2.5%),7.5,120,0.183,0.577
+7.5 pp net (10% vs 2.5%),7.5,150,0.295,0.695
+7.5 pp net (10% vs 2.5%),7.5,180,0.409,0.783
+7.5 pp net (10% vs 2.5%),7.5,200,0.481,0.831
+7.5 pp net (10% vs 2.5%),7.5,240,0.617,0.899
+7.5 pp net (10% vs 2.5%),7.5,300,0.765,0.958
