@@ -17,7 +17,7 @@ framework, classifier experiments, and a dashboard showing only real results.
 | M1 | Reconstruct v0.1 analysis from raw data; corrected scoring | M0 | yes |
 | M2 | Research protocol; power analysis; this plan; CLAUDE.md | M1 | yes |
 | M3 | Evaluation framework: response-label schema, 7 metrics, paired stats, judges | M2 | yes |
-| M4 | Dataset pipeline: source ingestion + licences, scenario selection, v0.1 migration, variant generation, automated QC, dedup, splits, review UI | M0, M2 | partly (AI generation via this assistant; second-model checks need GPU/API) |
+| M4 | Dataset pipeline: source ingestion + licences, scenario selection, v0.1 migration, variant generation, automated QC, dedup, splits, review UI | M0, M2 | pipeline yes; **variant authoring needs human translators** (AI generation was stopped by safety classifiers) |
 | M5 | Inference pipeline: Transformers / vLLM / OpenAI-compatible adapters, YAML configs, model manifest with pinned revisions, resumable cached jobs, Colab notebook | M3 | code + CPU tests only; real runs need GPU |
 | M6 | Classifier experiments (XLM-R, mDeBERTa, MuRIL; char-n-gram baseline) | M4, M5 | baseline yes; encoders need GPU + HF access |
 | M7 | Platform: FastAPI endpoints over real result files; Next.js research dashboard separated from demo | M3, M4 | yes |
@@ -35,12 +35,12 @@ framework, classifier experiments, and a dashboard showing only real results.
 | Confirmatory tests | H1 (15 harmful-compliance tests), H2 (15 over-refusal tests), Holm | small pre-specified families; everything else exploratory with BH |
 | Sampling | 3 samples (T=0.7) + greedy; majority over samples | reduces single-sample noise, keeps greedy for v0.1 continuity |
 | Precision | bf16 | v0.1 4-bit artefacts (looping) confounded comprehension |
-| Variant generation | AI-generated, provenance-tracked; humans optional | no translators available; validator forbids treating AI agreement as verification |
+| Variant generation | human translators via worksheet (amended 2026-11-12) | AI generation of harmful-prompt translations was stopped by the generating model's safety classifiers |
 | Rule judge | triage only | 22–36% refusal recall outside English in v0.1 |
 | Sources | AdvBench (MIT), XSTest prompts (CC-BY-4.0), v0.1 items | licences verified; HarmBench pending licence check |
 
 ## External blockers (need the PI)
 1. GPU access (Colab Pro / remote GPU) for M9 and encoder training in M6.
 2. Hugging Face access (sandbox cannot reach huggingface.co; Aya Expanse and some Gemma checkpoints are gated and need licence acceptance on the PI's account).
-3. Human annotators (optional) for M10 and for verifying AI-generated variants.
+3. **Human translators (now required)** for the 170 new scenarios' variants, plus 2 equivalence reviewers; annotators for M10.
 4. Authorisation for any paid API use (none planned).

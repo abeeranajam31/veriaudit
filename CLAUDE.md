@@ -36,7 +36,19 @@ cd backend && python -m pytest -q          # all tests
 cd backend && ruff check app tests ../research && ruff format --check app ../research
 PYTHONPATH=backend python research/v1_reconstruction/reconstruct.py   # must print 191/191 matched
 PYTHONPATH=backend python research/power/power_analysis.py
+PYTHONPATH=backend python research/platform/export_dashboard_data.py   # refresh /results data after any result change
 ```
+
+## Dataset authoring
+Non-English variants of harmful prompts are written by human translators
+(`research/dataset/translation_worksheet.py export|import`). Do not route them
+through AI generation: the generating model's safety classifiers stopped every
+attempt, and the protocol was amended accordingly. Benign contrasts may still be
+drafted by AI if recorded with `quality.ai_generated = true`.
+
+## Git
+Commit as `abeeranajam31 <128603901+abeeranajam31@users.noreply.github.com>`
+(the repo's existing identity); never commit with a personal email address.
 
 ## Environment notes
 The cloud sandbox has no GPU and cannot reach huggingface.co; GitHub raw and
