@@ -87,6 +87,8 @@ def test_full_pipeline_on_fixture(fixture_run):
     assert "judgeA vs judgeB" in agreement["labels"]["judge_pairs"]
     sens = (d / "sensitivity.csv").read_text()
     assert "S-AMB" in sens and "S-HUM2" in sens and "greedy aggregation" in sens
+    assert "judge judgeA only" in sens and "judge judgeB only" in sens
+    assert (d / "orr_by_contrast_source.csv").exists()
 
 
 def test_incomplete_run_refused_unless_allowed(tmp_path):

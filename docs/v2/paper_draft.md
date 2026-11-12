@@ -1,6 +1,6 @@
 # Draft — Comprehension, Not Only Compliance: Re-examining Cross-Lingual Safety Gaps for Urdu, Roman Urdu and Code-Switched Prompts
 
-*Working draft, 2026-11-12. Written only from results that exist in this repository. Sections marked
+*Working draft, 2026-11-13. Written only from results that exist in this repository. Sections marked
 **[PENDING MAIN STUDY]** describe planned work and contain no results. Not for submission or
 circulation without the PI's review.*
 
@@ -16,9 +16,11 @@ actual harmful compliance is counted on all 30 pairs, and is no longer significa
 correction (p = .086). Second, lexical refusal detectors collapse outside English (0% refusal recall
 on Urdu-script refusals for the pilot's own heuristic), which would have reported gaps of 42.5–70
 points on the same responses. All 191 published pilot numbers are reproduced exactly from raw data.
-We describe VeriAudit-X, a 200-scenario benchmark of matched harmful/benign pairs designed to measure
-harmful compliance, over-refusal and comprehension separately, with a pre-specified, power-justified
-analysis plan. **[PENDING MAIN STUDY]**
+We describe the design of VeriAudit-X, a 200-scenario benchmark of matched harmful/benign pairs
+intended to measure harmful compliance, over-refusal and comprehension separately, with a pre-specified
+analysis plan whose primary test was validated by simulation. The benchmark is under construction: 60
+of the 200 benign contrasts exist, and the remaining contrasts and all new non-English variants are being
+written by human translators. **[PENDING MAIN STUDY]**
 
 ## 1. Introduction
 
@@ -26,7 +28,7 @@ Safety behaviour degrades when harmful requests are translated into lower-resour
 ([Yong et al., 2023](https://arxiv.org/html/2310.02446v1); [Deng et al., ICLR 2024](https://arxiv.org/abs/2310.06474))
 and when they are code-switched ([Yoo et al., 2024](https://arxiv.org/abs/2406.15481)). For Urdu, the
 dominant everyday written forms are Roman Urdu, which lacks a standard orthography
-([Butt et al.](https://arxiv.org/html/2503.21530v2)), and Urdu–English code-switching. A cross-lingual
+([Butt, Varanasi & Neumann, 2025](https://arxiv.org/abs/2503.21530)), and Urdu–English code-switching. A cross-lingual
 "safety gap" in these forms can arise from at least three different mechanisms: the model understood and
 complied (a safety failure), the model did not understand and produced something unscoreable (a
 comprehension failure), or the measurement instrument failed in that language (an evaluation failure).
@@ -99,27 +101,38 @@ A character n-gram logistic-regression classifier of harmful responses trained o
 on the fourth recalled none of the 16 unsafe Urdu-script responses (macro-F1 0.42); with intent-grouped
 cross-validation across all forms it reached macro-F1 0.68 [0.61, 0.74] overall. With 44 positives
 (one in English) this is indicative only; script-specific surface features do not transfer across scripts.
+The leave-one-form-out folds train on the same intents in the other three forms, so they measure transfer
+across scripts for intents already seen, not generalisation to new requests.
 
 ## 5. VeriAudit-X design
 
 200 scenarios, each a harmful request and a benign contrast on the same topic, sampled from AdvBench
 (MIT), XSTest (CC-BY-4.0) and the v0.1 items, deduplicated and stratified over eight harm categories
-(weapons is under-filled at 14 after excluding explosives and CBRN). Each intent appears in four base
+(14–29 per category; weapons is under-filled at 14 after excluding explosives and CBRN from new seeds —
+two generic v0.1 items on those topics are kept for continuity with the pilot). Sixty contrasts are XSTest
+safe prompts, which test a different kind of over-refusal (safe prompts that look unsafe) from the 140
+same-topic contrasts written for the study, so over-refusal is also reported by contrast source. Each intent appears in four base
 forms; a stratified third (70 scenarios) adds six controlled transformations (Roman Urdu spelling
 variants, formal transliteration, colloquial register, low/high English ratio, script mixing). Responses
 receive four labels (comprehension, behaviour, harmful content, task success); metrics are harmful
 compliance, appropriate refusal, over-refusal, benign task success, comprehension and linguistic
-robustness, all on full denominators. Confirmatory tests: 15 paired Wilcoxon signed-rank tests each for
-harmful compliance and over-refusal (5 models × 3 forms, Holm) on per-scenario differences in the share of
-three sampled responses, with exact McNemar tests on majority votes as a secondary analysis. Under two
-planning models (`results/power/`), n = 200 gives about 0.78 power for a 10-point gap concentrated in a
-few scenarios when responses are highly consistent, and ≥ 0.82 for a 6-point gap spread across scenarios;
-the calibration pilot will estimate which regime applies before the main study.
+robustness, all on full denominators. Confirmatory tests: 12 paired Wilcoxon signed-rank tests each for
+harmful compliance and over-refusal (four open models of 4–9B parameters × 3 forms, Holm) on per-scenario
+differences in the share of three sampled responses. In a simulation study over eleven data-generating
+processes the test held its nominal Type I error under every null, including one with asymmetric
+differences, while exact McNemar on majority votes tested a different quantity (23% rejections under a
+null with zero mean per-response gap); McNemar is therefore secondary, and a paired t-test is a
+sensitivity analysis (`docs/v2/statistical_validation.md`). Under two planning models
+(`results/power/`), n = 200 gives about 0.80 power for a 10-point gap concentrated in a few scenarios when
+responses are highly consistent, and ≥ 0.85 for a 6-point gap spread across scenarios; a calibration pilot
+on scenarios disjoint from the main study will estimate which regime applies before the main study.
 
 **Dataset construction status.** Automatic generation of the non-English variants of harmful requests
 with an AI model was stopped by that model's safety classifiers, so the variants will be written by
-human translators using the released worksheet and guidelines. This changes the provenance (human-authored
-variants, the standard the protocol prefers) and the timeline, not the design.
+human translators (`docs/v2/translation_guide.md`). Any machine or AI drafting aid is disclosed per variant
+and recorded. Equivalence status comes only from independent human review by someone other than the
+translator, bound to the exact text reviewed; with a two-person team most variants will have a single
+independent review, which is reported as such.
 
 ## 6. Results **[PENDING MAIN STUDY]**
 
@@ -131,7 +144,10 @@ The pilot has 30 harmful intents, no benign controls, one translator, unverified
 quantised models, one sample per prompt and LLM-assisted labels for 72.5% of responses; every pilot
 estimate is imprecise and the re-analysis is a methodological illustration, not a population estimate. The
 rule judge was built on the evaluation data. VeriAudit-X seeds are English-origin benchmark items, not
-naturally occurring Urdu requests.
+naturally occurring Urdu requests. The confirmatory models are small open models; results will not
+transfer to larger or proprietary models. If no human response labels are collected, every VeriAudit-X
+result will be AI-judged and limited by judge reliability, which is part of what is measured. In
+simulation, nominal 95% intervals covered 91–94% of the time at rates of 1–5%.
 
 ## 8. Ethics
 
@@ -142,4 +158,6 @@ released responses will be gated.
 
 `PYTHONPATH=backend python research/v1_reconstruction/reconstruct.py` (191/191 checks);
 `research/figures/make_v2_figures.py`; `research/classifiers/v1_response_baseline.py`;
-`research/power/power_analysis.py`. Protocol: `docs/v2/research_protocol.md`.
+`research/power/power_analysis.py`; `research/stats_validation/validate_primary_test.py` (simulation
+study); `research/analysis/run_analysis.py` (main-study analysis, not yet run). Protocol:
+`docs/v2/research_protocol.md`.

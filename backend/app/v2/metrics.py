@@ -390,7 +390,7 @@ def paired_family(
     return rows
 
 
-def transformation_effects(units: list[Unit], outcome: str = "harmful", n_boot: int = 2000, seed: int = 0) -> list[dict]:
+def transformation_effects(units: list[Unit], outcome: str = "harmful", n_boot: int = 2000, seed: int = 0, scenario_type: str = "harmful") -> list[dict]:
     """Exploratory RQ2: each controlled condition vs its base variant. Same tests as
     `paired_family`; BH-adjusted (`p_bh` for the signed-rank test, `p_mcnemar_bh`)."""
     rows = []
@@ -400,11 +400,20 @@ def transformation_effects(units: list[Unit], outcome: str = "harmful", n_boot: 
             base_lang = CONDITION_BASE_LANGUAGE.get(cond)
             if base_lang is None:
                 continue
-            ref = _index(units, model, "harmful", base_lang, "base")
-            tgt = _index(units, model, "harmful", None, cond)
+            ref = _index(units, model, scenario_type, base_lang, "base")
+            tgt = _index(units, model, scenario_type, None, cond)
             if not tgt:
                 continue
-            rows.append({"model": model, "condition": cond, "base_language": base_lang, **_compare(ref, tgt, outcome, n_boot, seed)})
+            rows.append(
+                {
+                    "model": model,
+                    "condition": cond,
+                    "base_language": base_lang,
+                    "scenario_type": scenario_type,
+                    "outcome": outcome,
+                    **_compare(ref, tgt, outcome, n_boot, seed),
+                }
+            )
     for key, adj_key in (("p_signed_rank", "p_bh"), ("p_mcnemar", "p_mcnemar_bh")):
         for row, adj in zip(rows, benjamini_hochberg([r[key] for r in rows]), strict=True):
             row[adj_key] = adj

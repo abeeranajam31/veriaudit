@@ -260,14 +260,14 @@ def analyse(o: Options) -> dict:
     if o.calibration:
         outputs.update(calibration(units, o))
     else:
-        outputs.update(main_analysis(units, gens, resolved, records, manifest, o, fixture))
+        outputs.update(main_analysis(units, gens, resolved, records, manifest, o, fixture, labels))
     repro = reproducibility(manifest, o, ds_path, unit_stats, labels, resolved)
     (o.out_dir / "reproducibility.json").write_text(json.dumps(repro, indent=2, default=str) + "\n", encoding="utf-8")
     (o.out_dir / "summary.md").write_text(summary_md(repro, outputs, agreement, fixture, o), encoding="utf-8")
     return outputs
 
 
-def main_analysis(units, gens, resolved, records, manifest, o: Options, fixture: bool) -> dict:
+def main_analysis(units, gens, resolved, records, manifest, o: Options, fixture: bool, labels: list[ResponseLabel]) -> dict:
     out = {}
     models = confirmatory_models(o.model_manifest, {u.model for u in units}, fixture)
     cells = M.cell_metrics(units, n_boot=o.n_boot, seed=o.seed)
@@ -309,6 +309,12 @@ def main_analysis(units, gens, resolved, records, manifest, o: Options, fixture:
         u, _ = M.build_units(gens, resolved, ambiguous_benign=treat, allow_fixtures=fixture)
         add(f"S-AMB benign non_scoreable={treat}", *_families(u, models, o.n_boot, o.seed))
     add("greedy aggregation", *_safe_families(greedy_units, models, o))
+    # each primary judge alone (its labels treated as final), protocol §10
+    judges = sorted({lab.labeler_id for lab in labels if lab.label_source == LabelSource.ai_judge})
+    for j in judges:
+        own = {lab.generation_id: lab.model_copy(update={"label_source": LabelSource.ai_panel}) for lab in labels if lab.labeler_id == j}
+        u, _ = M.build_units(gens, own, allow_fixtures=fixture)
+        add(f"judge {j} only", *_safe_families(u, models, o))
     for name, drop in record_filters(records).items():
         kept = [g for g in gens if g.record_id not in drop]
         u, _ = M.build_units(kept, resolved, allow_fixtures=fixture)
@@ -325,10 +331,26 @@ def main_analysis(units, gens, resolved, records, manifest, o: Options, fixture:
                 for r in model_based_effects(ref, tgt, outcome):
                     mb.append({"model": model, "language": lang, "outcome": outcome, **r})
     write_csv(o.out_dir / "model_based.csv", mb)
+    # RQ2 (exploratory): harmful compliance on harmful intents and over-refusal on benign contrasts; BH within each
     write_csv(
         o.out_dir / "transformation_effects.csv",
-        [dict(r, outcome="harmful") for r in M.transformation_effects(units, "harmful", o.n_boot, o.seed)],
+        M.transformation_effects(units, "harmful", o.n_boot, o.seed, "harmful") + M.transformation_effects(units, "refused", o.n_boot, o.seed, "benign"),
     )
+    # ORR by benign-contrast source (protocol §4.2 rule 5): XSTest prompts vs contrasts authored for this study
+    origin = {r.intent_id: r.provenance.origin or "" for r in records if r.transformation.type.value == "source"}
+    by_source = []
+    for src_name, pred in (("xstest", lambda o_: o_.startswith("xstest:")), ("authored", lambda o_: not o_.startswith("xstest:"))):
+        sub_units = [u for u in units if u.scenario_type == "benign" and pred(origin.get(u.intent_id, ""))]
+        for c in M.cell_metrics(sub_units, n_boot=o.n_boot, seed=o.seed):
+            by_source.append(
+                {
+                    "contrast_source": src_name,
+                    "model": c["model"],
+                    "language": c["language"],
+                    **{k: v for k, v in c["ORR"].items() if k != "n_unscored_by_status"},
+                }
+            )
+    write_csv(o.out_dir / "orr_by_contrast_source.csv", by_source)
     write_csv(o.out_dir / "linguistic_robustness.csv", M.linguistic_robustness(units))
     write_csv(o.out_dir / "comprehension_strata.csv", M.comprehension_stratified(gens, resolved, allow_fixtures=fixture))
     out["figures"] = figures(cells, h1, h2, o)

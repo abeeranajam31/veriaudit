@@ -22,6 +22,7 @@ framework, classifier experiments, and a dashboard showing only real results.
 | M6 | Classifier experiments (XLM-R, mDeBERTa, MuRIL; char-n-gram baseline) | M4, M5 | baseline yes; encoders need GPU + HF access |
 | M7 | Platform: FastAPI endpoints over real result files; Next.js research dashboard separated from demo | M3, M4 | yes |
 | M8 | Independent reviews, figures, paper draft from actual findings, release prep, draft PR | all | yes |
+| M8b | Statistical validation of the primary test (simulation); protocol audit and v1.1 amendments; human translation workflow; calibration-pilot redesign; end-to-end analysis pipeline | M3–M7 | yes (done 2026-11-13) |
 | M9 | **Main study execution** (calibration pilot → frozen dataset → inference → judging → analysis) | M4, M5, GPU | **no — external** |
 | M10 | Human validation sample (300 responses, double annotation) | M9, annotators | **no — external** |
 
@@ -30,10 +31,13 @@ framework, classifier experiments, and a dashboard showing only real results.
 | Decision | Choice | Why |
 |---|---|---|
 | Unit of analysis | scenario (harmful intent + benign contrast) | paired design; lets RQ4 compare harmful compliance and over-refusal on matched topics; split unit for leakage control |
-| Size | 200 scenarios | Primary test: signed-rank on 3-sample shares. Power ≈ 0.78 for a 10 pp gap concentrated in few scenarios (high response consistency) and ≥ 0.82 for a 6 pp gap spread across scenarios; re-checked after the calibration pilot (`results/power/`, protocol §4.3) |
+| Size | 200 scenarios | Primary test: signed-rank on 3-sample shares, family of 12. Power ≈ 0.80 for a 10 pp gap concentrated in few scenarios (high response consistency) and ≥ 0.85 for a 6 pp gap spread across scenarios; re-checked after the calibration pilot (`results/power/`, protocol §4.3) |
 | Primary outcome | harmful compliance on full denominator | v0.1 reconstruction showed the legacy safety-rate CLSG conflates comprehension failure with unsafe behaviour |
-| Confirmatory tests | H1 (15 harmful-compliance tests), H2 (15 over-refusal tests), Holm | small pre-specified families; everything else exploratory with BH |
-| Sampling | 3 samples (T=0.7) + greedy; majority over samples | reduces single-sample noise, keeps greedy for v0.1 continuity |
+| Confirmatory panel | 4 models fixed in advance (Qwen3-8B, Aya Expanse 8B, Qwen3.5-9B, Gemma 4 E4B-it); larger Gemma exploratory | a compute-dependent 5th model left the Holm family undefined |
+| Confirmatory tests | H1 (12 harmful-compliance tests), H2 (12 over-refusal tests), Wilcoxon signed-rank on share differences, Holm | validated by simulation (`docs/v2/statistical_validation.md`); McNemar on majority votes secondary (different estimand); paired t sensitivity |
+| Sampling | 3 samples (T=0.7) + greedy; per-response shares | reduces single-sample noise, keeps greedy for v0.1 continuity |
+| Labels | two agreeing AI judges or a third-judge majority; humans override; single judge / rule judge never final | protocol §8; unresolved responses are unscored and counted |
+| Equivalence | human review by someone other than the translator, bound to text hashes; adjudication by a third person; drafting aids disclosed | AI agreement is not human validation |
 | Precision | bf16 | v0.1 4-bit artefacts (looping) confounded comprehension |
 | Variant generation | human translators via worksheet (amended 2026-11-12) | AI generation of harmful-prompt translations was stopped by the generating model's safety classifiers |
 | Rule judge | triage only | 22–36% refusal recall outside English in v0.1 |
@@ -42,5 +46,6 @@ framework, classifier experiments, and a dashboard showing only real results.
 ## External blockers (need the PI)
 1. GPU access (Colab Pro / remote GPU) for M9 and encoder training in M6.
 2. Hugging Face access (sandbox cannot reach huggingface.co; Aya Expanse and some Gemma checkpoints are gated and need licence acceptance on the PI's account).
-3. **Human translators (now required)** for the 170 new scenarios' variants, plus 2 equivalence reviewers; annotators for M10.
+3. **People for the dataset:** someone to write the 140 missing benign contrasts and someone else to check them; 1–2 translators for ~1,110 phase-1 and 840 phase-2 variants; an independent reviewer (ideally a third person for a 20% agreement sample and adjudication); register their pseudonymous IDs in `data/annotators.json`. Annotators for M10.
 4. Authorisation for any paid API use (none planned).
+5. Choice of the two primary LLM judges (protocol §8), and pinning of every model revision before any run.

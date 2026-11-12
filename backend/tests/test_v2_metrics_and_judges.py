@@ -284,6 +284,7 @@ def test_transformation_effects():
     rows = transformation_effects(units_of(gens, labels)[0], n_boot=200)
     assert rows[0]["condition"] == "T1" and rows[0]["gap_pp"] == pytest.approx(62.5)
     assert rows[0]["p_mcnemar"] == pytest.approx(0.0625) and rows[0]["p_mcnemar_bh"] == pytest.approx(0.0625)
+    assert transformation_effects(units_of(gens, labels)[0], "refused", n_boot=100, scenario_type="benign") == []  # no benign units
     assert rows[0]["p_bh"] == pytest.approx(signed_rank_test([1.0] * 5))
 
 

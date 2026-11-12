@@ -22,7 +22,7 @@ Tests compared (all two-sided):
                         (frequentist analogue of the random-intercept GLMM's
                         within-scenario odds ratio)
 
-Reported per DGP: rejection rate at alpha = .05 and .05/15 (Type I error under
+Reported per DGP: rejection rate at alpha = .05 and .05/12 (family of 12) (Type I error under
 nulls, power under alternatives), the rate of rejections whose direction is
 opposite to the true mean gap ("directional errors"), and coverage of the 95%
 scenario-bootstrap CI and t-interval for the true mean gap.
@@ -49,7 +49,8 @@ from app.v2.stats import cluster_bootstrap, mcnemar_exact, signed_rank_test
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "results" / "stats_validation"
-ALPHAS = (0.05, 0.05 / 15)
+FAMILY = 12  # confirmatory family: 4 models x 3 forms (protocol §10)
+ALPHAS = (0.05, 0.05 / FAMILY)
 N_SAMPLES = 3
 QUICK = "--quick" in sys.argv
 N_SIM = 300 if QUICK else 2000
@@ -319,7 +320,7 @@ def rejection_table(dgp: DGP, tests: dict, n_sim: int, seed: int) -> list[dict]:
         row = {"dgp": dgp.name, "kind": dgp.kind, "true_gap_pp": round(100 * true, 2), "test": k, "n_sim": n_sim, "n_failed_fits": int((~valid).sum())}
         for a in ALPHAS:
             rej = valid & (p < a)
-            label = "05" if a == 0.05 else "05_over_15"
+            label = "05" if a == 0.05 else "05_over_family"
             row[f"reject_{label}"] = round(float(rej.sum() / n_sim), 4)
             row[f"mc_se_{label}"] = round(math.sqrt(max(row[f"reject_{label}"] * (1 - row[f"reject_{label}"]), 1e-12) / n_sim), 4)
             if true != 0:
