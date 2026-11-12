@@ -100,7 +100,13 @@ def build() -> dict:
             "counts": [{"category": cat, "source": src, "n": n} for (cat, src), n in sorted(sel_counts.items())],
             "total": len(sel),
         },
-        "power": {"provenance": "Monte-Carlo power of exact McNemar, alpha .05/15 (protocol §4.3).", "rows": power},
+        "power": {
+            "provenance": (
+                "Monte-Carlo power of exact McNemar on noise-free scenario outcomes, alpha .05/15 (protocol §4.3). "
+                "With 3-sample response noise power is lower; see results/power/power_with_sampling_noise.csv."
+            ),
+            "rows": power,
+        },
     }
 
 

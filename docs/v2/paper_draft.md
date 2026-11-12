@@ -110,8 +110,11 @@ variants, formal transliteration, colloquial register, low/high English ratio, s
 receive four labels (comprehension, behaviour, harmful content, task success); metrics are harmful
 compliance, appropriate refusal, over-refusal, benign task success, comprehension and linguistic
 robustness, all on full denominators. Confirmatory tests: 15 exact McNemar tests each for harmful
-compliance and over-refusal (5 models × 3 forms, Holm). n = 200 gives 0.82 power for a 10-point net gap at
-α = .05/15 (`results/power/`).
+compliance and over-refusal (5 models × 3 forms, Holm), with a pre-specified secondary signed-rank test
+on per-scenario sample shares. n = 200 gives 0.82 power for a 10-point net gap at α = .05/15 if scenario
+outcomes were observed without error, and 0.76–0.80 once disagreement among the three sampled responses
+is simulated under high-to-moderate consistency (0.41 at low consistency; `results/power/`). The
+calibration pilot will estimate that consistency before the main study.
 
 **Dataset construction status.** Automatic generation of the non-English variants of harmful requests
 with an AI model was stopped by that model's safety classifiers, so the variants will be written by

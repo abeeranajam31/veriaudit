@@ -13,6 +13,7 @@ from app.v2.judges.llm_judge import (
     parse_judgement,
 )
 from app.v2.metrics import (
+    FixtureInAnalysisError,
     build_units,
     cell_metrics,
     comprehension_stratified,
@@ -92,75 +93,110 @@ def build_fixture():
     return gens, {x.generation_id: x for x in labels}
 
 
+def units_of(gens, labels, **kw):
+    return build_units(gens, labels, allow_fixtures=True, **kw)
+
+
 def test_cell_metrics_full_denominator():
     gens, labels = build_fixture()
-    units, stats = build_units(gens, labels)
-    assert stats["unlabelled_units"] == 0
-    cells = {c["language"]: c for c in cell_metrics(units)}
+    units, stats = units_of(gens, labels)
+    assert stats == {"units": 80, "ok": 80}
+    cells = {c["language"]: c for c in cell_metrics(units, n_boot=200)}
     assert cells["english"]["HCR"]["rate"] == 0
-    assert cells["urdu"]["HCR"]["count"] == 6 and cells["urdu"]["HCR"]["n"] == 10
-    assert cells["urdu"]["ORR"]["count"] == 4
-    assert cells["urdu"]["BTS"]["count"] == 6
+    assert cells["urdu"]["HCR"]["rate"] == pytest.approx(0.6) and cells["urdu"]["HCR"]["n_units_scored"] == 10
+    assert cells["urdu"]["HCR"]["majority_rate"] == pytest.approx(0.6)
+    assert cells["urdu"]["ORR"]["rate"] == pytest.approx(0.4)
+    assert cells["urdu"]["BTS"]["rate"] == pytest.approx(0.6)
     # not-understood responses stay in the denominator and are not "appropriate refusals"
-    assert cells["roman_urdu"]["ARR"]["count"] == 4 and cells["roman_urdu"]["ARR"]["n"] == 10
-    assert cells["roman_urdu"]["CA"]["count"] == 16 and cells["roman_urdu"]["CA"]["n"] == 20
+    assert cells["roman_urdu"]["ARR"]["rate"] == pytest.approx(0.4) and cells["roman_urdu"]["ARR"]["n_units_scored"] == 10
+    assert cells["roman_urdu"]["CA"]["rate"] == pytest.approx(0.8) and cells["roman_urdu"]["CA"]["n_units_scored"] == 20
+    assert cells["urdu"]["HCR"]["ci_low"] < 0.6 < cells["urdu"]["HCR"]["ci_high"]
+
+
+def test_fixtures_are_rejected_from_analysis_by_default():
+    gens, labels = build_fixture()
+    with pytest.raises(FixtureInAnalysisError):
+        build_units(gens, labels)
 
 
 def test_paired_family_h1_and_h2():
     gens, labels = build_fixture()
-    units, _ = build_units(gens, labels)
-    h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1")}
-    assert h1["urdu"]["target_only"] == 6 and h1["urdu"]["english_only"] == 0
+    units, _ = units_of(gens, labels)
+    h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=200)}
+    assert h1["urdu"]["target_only"] == 6 and h1["urdu"]["reference_only"] == 0
     assert h1["urdu"]["gap_pp"] == pytest.approx(60.0)
     assert h1["urdu"]["p_mcnemar"] == pytest.approx(0.03125)
-    assert h1["urdu"]["p_holm"] == pytest.approx(min(1, 3 * 0.03125))
-    assert h1["code_switched"]["p_mcnemar"] == 1.0
+    # Holm over (0.03125, 0.5, 1.0)
+    assert h1["urdu"]["p_holm"] == pytest.approx(3 * 0.03125)
+    assert h1["urdu"]["reject_h0_at_0.05"] is False
+    assert h1["code_switched"]["p_mcnemar"] == 1.0 and h1["code_switched"]["p_signed_rank"] == 1.0
     assert h1["urdu"]["ci_low_pp"] < 60 < h1["urdu"]["ci_high_pp"]
-    h2 = {r["language"]: r for r in paired_family(units, "benign", "refused", "H2")}
+    # secondary analysis on shares agrees in direction
+    assert h1["urdu"]["share_gap_pp"] == pytest.approx(60.0)
+    assert 0 < h1["urdu"]["p_signed_rank"] < 0.05
+    assert "p_signed_rank_holm" in h1["urdu"]
+    h2 = {r["language"]: r for r in paired_family(units, "benign", "refused", "H2", n_boot=200)}
     assert h2["urdu"]["gap_pp"] == pytest.approx(40.0)
 
 
-def test_majority_and_greedy_aggregation():
+def test_sample_shares_majority_and_greedy():
     g = [gen("m", "S0", "harmful", "urdu", s) for s in (0, 1, 2)] + [gen("m", "S0", "harmful", "urdu", -1)]
     labels = {x.generation_id: lab(x, harmful=h, refused=not h) for x, h in zip(g, [True, True, False, False], strict=True)}
-    maj, _ = build_units(g, labels, "majority")
-    grd, _ = build_units(g, labels, "greedy")
-    assert maj[0].harmful is True and maj[0].n_samples == 3
-    assert grd[0].harmful is False and grd[0].n_samples == 1
+    sam, _ = units_of(g, labels)
+    grd, _ = units_of(g, labels, aggregation="greedy")
+    assert sam[0].harmful == pytest.approx(2 / 3) and sam[0].majority("harmful") is True and sam[0].n_samples == 3
+    assert grd[0].harmful == 0 and grd[0].n_samples == 1
     with pytest.raises(ValueError):
-        build_units(g, labels, "mean")
+        units_of(g, labels, aggregation="majority")
 
 
-def test_unlabelled_units_are_counted_not_guessed():
+def test_incomplete_or_failed_units_are_counted_not_guessed():
     gens, labels = build_fixture()
     missing = next(x for x in gens if x.language == "urdu" and x.scenario_type == "harmful")
     del labels[missing.generation_id]
-    units, stats = build_units(gens, labels)
-    assert stats["unlabelled_units"] == 1
-    h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1")}
-    assert h1["urdu"]["n_dropped_unlabelled"] == 1 and h1["urdu"]["n_pairs"] == 9
+    failed_src = next(x for x in gens if x.language == "roman_urdu" and x.scenario_type == "harmful" and x.scenario_id == "S9")
+    gens = [x if x is not failed_src else x.model_copy(update={"response_text": None, "error": "timeout"}) for x in gens]
+    units, stats = units_of(gens, labels)
+    assert stats["unlabelled"] == 1 and stats["generation_failed"] == 1
+    h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=200)}
+    assert h1["urdu"]["n_units_excluded_unlabelled"] == 1 and h1["urdu"]["n_pairs"] == 9
+    assert h1["roman_urdu"]["n_units_excluded_generation_failed"] == 1
+    cell = {c["language"]: c for c in cell_metrics(units, n_boot=200)}["urdu"]["HCR"]
+    assert cell["n_units_unscored"] == 1
+    # unscored unit counted as 0 or 1 in the bounds, never silently dropped from them
+    assert cell["bound_low"] <= cell["rate"] <= cell["bound_high"]
+    assert cell["bound_high"] - cell["bound_low"] == pytest.approx(0.1)
+
+
+def test_missing_sample_makes_unit_unscored():
+    g = [gen("m", "S0", "harmful", "urdu", s) for s in (0, 1)]
+    labels = {x.generation_id: lab(x) for x in g}
+    units, stats = units_of(g, labels)
+    assert units[0].status == "unlabelled" and stats["unlabelled"] == 1
 
 
 def test_linguistic_robustness_and_comprehension_strata():
     gens, labels = build_fixture()
-    units, _ = build_units(gens, labels)
+    units, _ = units_of(gens, labels)
     lr = linguistic_robustness(units)[0]
     assert lr["count"] == 4 and lr["n"] == 10  # scenarios 6-9 consistent across all four forms
-    strata = {(r["language"], r["understood"]): r for r in comprehension_stratified(units)}
-    assert strata[("roman_urdu", False)]["n"] == 4 and strata[("roman_urdu", False)]["count"] == 0
-    assert strata[("roman_urdu", True)]["count"] == 2
+    strata = {(r["language"], r["engaged"]): r for r in comprehension_stratified(units)}
+    assert strata[("roman_urdu", False)]["n_units"] == 4 and strata[("roman_urdu", False)]["mean_harmful_share"] == 0
+    assert strata[("roman_urdu", True)]["n_units"] == 6
+    assert strata[("roman_urdu", True)]["mean_harmful_share"] == pytest.approx(2 / 6)
 
 
 def test_transformation_effects():
     gens, labels = [], {}
     for i in range(8):
         for cond, harmful in (("base", False), ("T1", i < 5)):
-            g = gen("m", f"S{i}", "harmful", "roman_urdu", 0, cond)
-            gens.append(g)
-            labels[g.generation_id] = lab(g, harmful=harmful, refused=not harmful)
-    rows = transformation_effects(build_units(gens, labels)[0])
+            for s in range(3):
+                g = gen("m", f"S{i}", "harmful", "roman_urdu", s, cond)
+                gens.append(g)
+                labels[g.generation_id] = lab(g, harmful=harmful, refused=not harmful)
+    rows = transformation_effects(units_of(gens, labels)[0], n_boot=200)
     assert rows[0]["condition"] == "T1" and rows[0]["gap_pp"] == pytest.approx(62.5)
-    assert rows[0]["p_bh"] == pytest.approx(0.0625)
+    assert rows[0]["p_mcnemar"] == pytest.approx(0.0625) and rows[0]["p_bh"] == pytest.approx(0.0625)
 
 
 # --------------------------------------------------------------- records

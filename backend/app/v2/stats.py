@@ -120,8 +120,24 @@ def cluster_bootstrap(
         idx = rng.integers(0, k, size=k)
         draws[i] = statistic([clusters[j] for j in idx])
     alpha = (1 - confidence) / 2
+    n_nan = int(np.isnan(draws).sum())
+    if n_nan > 0.01 * n_boot:
+        raise ValueError(f"{n_nan} of {n_boot} bootstrap draws were NaN; statistic undefined on many resamples")
     lo, hi = np.nanquantile(draws, [alpha, 1 - alpha])
     return Interval(point, float(lo), float(hi))
+
+
+def signed_rank_test(differences: Sequence[float]) -> float:
+    """Two-sided Wilcoxon signed-rank p-value on paired differences (zeros dropped, Pratt not used).
+
+    Uses scipy's method="auto". Differences of 3-sample shares take few distinct values, so ties are
+    the norm and the tie-corrected normal approximation is what applies in practice.
+    Returns 1.0 when every difference is zero.
+    """
+    d = [x for x in differences if x != 0]
+    if not d:
+        return 1.0
+    return float(_st.wilcoxon(d, zero_method="wilcox", alternative="two-sided").pvalue)
 
 
 def cohen_kappa(labels_a: Sequence[str], labels_b: Sequence[str]) -> float:
@@ -153,3 +169,70 @@ def mcnemar_power(n_pairs: int, p10: float, p01: float, alpha: float = 0.05, n_s
     pvals = np.minimum(1.0, 2 * _st.binom.cdf(np.minimum(b, c), np.maximum(n_disc, 1), 0.5))
     pvals = np.where(n_disc == 0, 1.0, pvals)
     return float(np.mean(pvals < alpha))
+
+
+def simulate_paired_shares(
+    n_pairs: int,
+    p10: float,
+    p01: float,
+    p11: float,
+    q_harm: float,
+    q_safe: float,
+    n_samples: int = 3,
+    n_sim: int = 2000,
+    seed: int = 0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Simulate per-scenario harmful-sample shares for (English, target) pairs.
+
+    Each scenario has a latent state in each form, drawn jointly: harmful in target only (p10),
+    English only (p01), both (p11), neither (rest). Each of `n_samples` responses is then harmful
+    with probability q_harm in a harmful state and q_safe otherwise. Returns arrays
+    (english_shares, target_shares) of shape (n_sim, n_pairs).
+    """
+    probs = [p10, p01, p11, 1 - p10 - p01 - p11]
+    if probs[3] < 0 or min(probs) < 0:
+        raise ValueError("state probabilities must be non-negative and sum to <= 1")
+    if not (0 <= q_safe <= 1 and 0 <= q_harm <= 1):
+        raise ValueError("q_harm and q_safe must be probabilities")
+    rng = np.random.default_rng(seed)
+    state = rng.choice(4, size=(n_sim, n_pairs), p=probs)
+    tgt_harm = (state == 0) | (state == 2)
+    eng_harm = (state == 1) | (state == 2)
+    eng = rng.binomial(n_samples, np.where(eng_harm, q_harm, q_safe)) / n_samples
+    tgt = rng.binomial(n_samples, np.where(tgt_harm, q_harm, q_safe)) / n_samples
+    return eng, tgt
+
+
+def paired_share_power(
+    n_pairs: int,
+    p10: float,
+    p01: float,
+    p11: float,
+    q_harm: float,
+    q_safe: float,
+    alphas: Sequence[float] = (0.05,),
+    n_samples: int = 3,
+    n_sim: int = 2000,
+    seed: int = 0,
+) -> dict[str, list[float]]:
+    """Monte-Carlo power, on the same simulated data, of
+    (a) the primary test: Wilcoxon signed-rank on per-scenario share differences, and
+    (b) the secondary test: exact McNemar on majority-vote (> half of samples) outcomes.
+
+    Returns {"signed_rank": [power per alpha], "mcnemar_majority": [...], "mean_gap": [...]},
+    where mean_gap is the average simulated per-response gap (target - English).
+    """
+    if n_samples % 2 == 0:
+        raise ValueError("majority vote needs an odd number of samples")
+    eng, tgt = simulate_paired_shares(n_pairs, p10, p01, p11, q_harm, q_safe, n_samples, n_sim, seed)
+    diffs = tgt - eng
+    p_sr = np.array([signed_rank_test(row) for row in diffs])
+    me, mt = eng > 0.5, tgt > 0.5
+    b = np.sum(mt & ~me, axis=1)
+    c = np.sum(me & ~mt, axis=1)
+    p_mc = np.array([mcnemar_exact(int(x), int(y)) for x, y in zip(b, c, strict=True)])
+    return {
+        "signed_rank": [float(np.mean(p_sr < a)) for a in alphas],
+        "mcnemar_majority": [float(np.mean(p_mc < a)) for a in alphas],
+        "mean_gap": [float(diffs.mean())],
+    }

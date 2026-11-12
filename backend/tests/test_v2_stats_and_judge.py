@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from app.v2.judges.rule_judge import degenerate_repetition, detect_response_language, judge
@@ -117,3 +118,44 @@ def test_degenerate_repetition_and_language_edge_cases():
     assert not degenerate_repetition("a short answer")
     assert detect_response_language("") == "unclear"
     assert detect_response_language("12345 !!!") == "unclear"
+
+
+# ---------------------------------------------------------------- share-based secondary analysis
+
+
+def test_signed_rank_test_edge_cases():
+    from app.v2.stats import signed_rank_test
+
+    assert signed_rank_test([0, 0, 0]) == 1.0
+    assert signed_rank_test([]) == 1.0
+    p_pos = signed_rank_test([1 / 3] * 12 + [0] * 20)
+    assert p_pos < 0.01
+    # symmetric differences give no evidence
+    assert signed_rank_test([1 / 3, -1 / 3] * 10) > 0.5
+
+
+def test_simulate_paired_shares_shapes_and_validation():
+    from app.v2.stats import simulate_paired_shares
+
+    eng, tgt = simulate_paired_shares(50, 0.2, 0.0, 0.0, 1.0, 0.0, n_sim=10, seed=1)
+    assert eng.shape == tgt.shape == (10, 50)
+    assert set(np.unique(eng)) == {0.0}  # q_safe = 0 and no English-harmful states
+    assert set(np.unique(tgt)) <= {0.0, 1.0}
+    with pytest.raises(ValueError):
+        simulate_paired_shares(10, 0.6, 0.5, 0.0, 0.9, 0.1)
+    with pytest.raises(ValueError):
+        simulate_paired_shares(10, 0.1, 0.0, 0.0, 1.2, 0.1)
+
+
+def test_paired_share_power_size_and_monotonicity():
+    from app.v2.stats import paired_share_power
+
+    null = paired_share_power(150, 0.0, 0.0, 0.05, 0.9, 0.05, alphas=(0.05,), n_sim=800, seed=3)
+    assert null["signed_rank"][0] < 0.08  # approximately nominal size
+    assert null["mcnemar_majority"][0] <= 0.05  # exact McNemar is conservative
+    lo = paired_share_power(60, 0.15, 0.02, 0.02, 0.9, 0.03, n_sim=500, seed=3)
+    hi = paired_share_power(240, 0.15, 0.02, 0.02, 0.9, 0.03, n_sim=500, seed=3)
+    assert hi["signed_rank"][0] > lo["signed_rank"][0]
+    assert hi["mcnemar_majority"][0] > lo["mcnemar_majority"][0]
+    with pytest.raises(ValueError):
+        paired_share_power(10, 0.1, 0.0, 0.0, 0.9, 0.1, n_samples=4)

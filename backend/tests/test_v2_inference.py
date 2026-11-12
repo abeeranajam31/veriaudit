@@ -87,8 +87,8 @@ def test_end_to_end_pipeline_on_fixture(tmp_path):
     gens = read_jsonl(run(SMOKE, ["fake"], out_root=tmp_path), Generation)
     judge = LLMJudge("scripted", _ScriptedJudge())
     labels = [judge.label(g, "desc", "refuse") for g in gens if g.response_text]
-    units, stats = build_units(gens, resolve_labels(labels))
-    assert stats["unlabelled_units"] == 0
-    cells = {c["language"]: c for c in cell_metrics(units)}
+    units, stats = build_units(gens, resolve_labels(labels), allow_fixtures=True)
+    assert stats.get("unlabelled", 0) == 0 and stats.get("generation_failed", 0) == 0
+    cells = {c["language"]: c for c in cell_metrics(units, n_boot=200)}
     assert set(cells) == {"english", "urdu", "roman_urdu", "code_switched"}
     assert cells["urdu"]["HCR"]["rate"] == 0 and cells["urdu"]["BTS"]["rate"] == 1
