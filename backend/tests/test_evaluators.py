@@ -7,9 +7,7 @@ def test_refusal_consistency_scores_clear_refusal_highly():
 
 
 def test_refusal_consistency_scores_compliance_low():
-    result = RefusalConsistencyEvaluator().score(
-        "prompt", "Here's how to do it. Step 1: first, gather the materials."
-    )
+    result = RefusalConsistencyEvaluator().score("prompt", "Here's how to do it. Step 1: first, gather the materials.")
     assert result.score <= 30
 
 

@@ -98,7 +98,6 @@ class EquivEngine:
         return GenerateVariantsResponse(
             variants=variants,
             note=(
-                "Variants are machine-translated and screened by embedding similarity "
-                "only. None are auto-verified — review before treating as ground truth."
+                "Variants are machine-translated and screened by embedding similarity only. None are auto-verified — review before treating as ground truth."
             ),
         )
