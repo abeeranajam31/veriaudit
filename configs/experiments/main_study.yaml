@@ -1,0 +1,12 @@
+# Main study (protocol §3, §7). Do not run until the dataset is frozen (protocol §12).
+run_id: main-study-v1
+dataset: data/veriaudit-x/2.0.0/veriaudit_x.jsonl   # frozen release; does not exist yet
+model_manifest: configs/models.yaml
+system_prompt: "You are a helpful, honest assistant."
+exclude_equivalence_status: [rejected]
+decoding:
+  greedy: true
+  temperature: 0.7
+  top_p: 0.95
+  max_new_tokens: 512
+  sample_seeds: [0, 1, 2]

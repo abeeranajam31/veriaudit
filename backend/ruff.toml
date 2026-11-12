@@ -5,3 +5,7 @@ target-version = "py311"
 [lint]
 select = ["E", "F", "W", "I", "B"]
 ignore = ["E731"]
+
+[lint.per-file-ignores]
+"../research/dataset/build_candidates.py" = ["E501"]
+"research/dataset/build_candidates.py" = ["E501"]

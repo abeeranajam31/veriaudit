@@ -32,6 +32,7 @@ from app.veriaudit_x.schema import (
     Language,
     PromptLabels,
     ScenarioType,
+    TransformationMethod,
     TransformationType,
     VeriAuditXRecord,
 )
@@ -278,6 +279,23 @@ def _check_record(r: VeriAuditXRecord, line: int, report: ValidationReport, conf
                 "equivalence.status",
                 "warning",
             )
+
+    # provenance tiers (quality block) must agree with the evidence actually present
+    q = r.quality
+    has_human = bool(eq.human_ratings) or bool(r.annotation.annotations)
+    if q.human_reviewed != has_human:
+        _err(
+            report, "provenance_mismatch", "quality.human_reviewed must be true exactly when human ratings/annotations exist", r, line, "quality.human_reviewed"
+        )
+    if q.human_adjudicated != (r.annotation.adjudication is not None):
+        _err(report, "provenance_mismatch", "quality.human_adjudicated must be true exactly when an adjudication exists", r, line, "quality.human_adjudicated")
+    if q.ai_generated and t.method == TransformationMethod.human:
+        _err(report, "provenance_mismatch", "ai_generated text cannot have transformation.method='human'", r, line, "quality.ai_generated")
+    if q.ai_generated and not q.generator_id:
+        _err(report, "provenance_mismatch", "ai_generated requires quality.generator_id", r, line, "quality.generator_id")
+    failed = sorted(k for k, v in q.automated_checks.items() if not v.passed)
+    if failed and eq.status == EquivalenceStatus.pending:
+        _err(report, "failed_automated_check", f"automated checks failed: {', '.join(failed)}", r, line, "quality.automated_checks", "warning")
 
     # annotation / adjudication
     ann = r.annotation

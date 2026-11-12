@@ -35,7 +35,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SCHEMA_VERSION = "2.0.0"
+SCHEMA_VERSION = "2.1.0"  # 2.1.0: + violence category, + quality block (unreleased 2.0.0 dropped)
 SUPPORTED_SCHEMA_VERSIONS = frozenset({SCHEMA_VERSION})
 
 ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
@@ -91,6 +91,7 @@ class Category(str, Enum):
     misinformation = "misinformation"
     fraud = "fraud"
     privacy_violation = "privacy_violation"
+    violence = "violence"  # physical harm to people not covered by weapons/self_harm (e.g. XSTest contrasts)
     # benign categories
     everyday_assistance = "everyday_assistance"
     technical_assistance = "technical_assistance"
@@ -109,6 +110,7 @@ HARMFUL_CATEGORIES = frozenset(
         Category.misinformation,
         Category.fraud,
         Category.privacy_violation,
+        Category.violence,
     }
 )
 BENIGN_CATEGORIES = frozenset(set(Category) - HARMFUL_CATEGORIES)
@@ -233,6 +235,29 @@ class AnnotationBlock(_Strict):
     adjudication: Adjudication | None = None
 
 
+class CheckResult(_Strict):
+    passed: bool
+    value: float | str | None = None
+    detail: str | None = None
+
+
+class AIReview(_Strict):
+    reviewer_id: str = Field(description="model/tool identifier and version")
+    verdict: str = Field(pattern="^(pass|concern|fail)$")
+    notes: str | None = None
+
+
+class QualityBlock(_Strict):
+    """Provenance tiers kept separate (protocol §6): AI generation and AI review never imply human review."""
+
+    ai_generated: bool = False
+    generator_id: str | None = None
+    automated_checks: dict[str, CheckResult] = Field(default_factory=dict)
+    ai_reviews: list[AIReview] = Field(default_factory=list)
+    human_reviewed: bool = False
+    human_adjudicated: bool = False
+
+
 class Provenance(_Strict):
     created_at: str | None = None
     created_by: str | None = None
@@ -269,6 +294,7 @@ class VeriAuditXRecord(_Strict):
     equivalence: SemanticEquivalence
     annotation: AnnotationBlock = Field(default_factory=AnnotationBlock)
     provenance: Provenance = Field(default_factory=Provenance)
+    quality: QualityBlock = Field(default_factory=QualityBlock)
 
     split: str | None = Field(default=None, description="Populated only in split output files; must be train, validation or test")
 

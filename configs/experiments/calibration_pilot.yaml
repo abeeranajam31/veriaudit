@@ -1,0 +1,6 @@
+# Calibration pilot (protocol §12): debugging only, never part of the main analysis.
+run_id: calibration-pilot-v1
+dataset: data/veriaudit-x/calibration/veriaudit_x_calibration.jsonl
+model_manifest: configs/models.yaml
+system_prompt: "You are a helpful, honest assistant."
+decoding: {greedy: true, temperature: 0.7, top_p: 0.95, max_new_tokens: 512, sample_seeds: [0]}

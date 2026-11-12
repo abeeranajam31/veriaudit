@@ -1,0 +1,40 @@
+# Model manifest for VeriAudit v2 (protocol §7). Pin `revision` to the exact commit hash on first download;
+# runs record whatever is set here. Licence/language facts verified 2026-11-12 (see protocol table).
+models:
+  - key: qwen3_8b
+    role: historical baseline (v0.1)
+    backend: vllm
+    model_id: Qwen/Qwen3-8B
+    revision: null            # TODO pin at download
+    chat_template_kwargs: {enable_thinking: false}
+    licence: Apache-2.0
+  - key: aya_expanse_8b
+    role: historical baseline (v0.1); Urdu NOT in declared languages
+    backend: vllm
+    model_id: CohereLabs/aya-expanse-8b
+    revision: null
+    licence: CC-BY-NC-4.0 (non-commercial; gated on Hugging Face)
+    hf_gated: true
+  - key: qwen3_5_9b
+    role: newer Qwen family
+    backend: vllm
+    model_id: Qwen/Qwen3.5-9B   # verify exact repo id and licence on the model card before running
+    revision: null
+    chat_template_kwargs: {enable_thinking: false}
+    licence: verify at download
+  - key: gemma4_e4b
+    role: current Gemma family
+    backend: vllm
+    model_id: google/gemma-4-E4B-it   # announcement listed gg-hf-gg/gemma-4-E4B-it; confirm public repo id
+    revision: null
+    licence: Apache-2.0
+  - key: gemma4_31b
+    role: larger multilingual (only if compute permits)
+    backend: vllm
+    model_id: google/gemma-4-31B-it
+    revision: null
+    licence: Apache-2.0
+  - key: fake
+    role: TEST ONLY - deterministic echo, never analysed
+    backend: fake
+    model_id: fake/echo

@@ -139,8 +139,17 @@ def cell_metrics(units: list[Unit], condition: str = "base") -> list[dict]:
 
 
 def _paired(units: list[Unit], model: str, scenario_type: str, outcome: str, ref: tuple[str, str], tgt: tuple[str, str]):
-    """Return (a, b, c, d, n_dropped) with p1 = target, p2 = reference."""
-    idx = {(u.scenario_id, u.language, u.condition): getattr(u, outcome) for u in units if u.model == model and u.scenario_type == scenario_type}
+    """Return (a, b, c, d, n_dropped) with p1 = target, p2 = reference.
+
+    A language of "*" matches any language for that condition (controlled transformations such as
+    T6 change the script/language label of the record while still deriving from one base variant).
+    """
+    idx = {}
+    for u in units:
+        if u.model == model and u.scenario_type == scenario_type:
+            idx[(u.scenario_id, u.language, u.condition)] = getattr(u, outcome)
+            if u.condition != "base":
+                idx[(u.scenario_id, "*", u.condition)] = getattr(u, outcome)
     scenarios = sorted({k[0] for k in idx})
     a = b = c = d = dropped = 0
     for s in scenarios:
@@ -203,7 +212,7 @@ def transformation_effects(units: list[Unit]) -> list[dict]:
             base_lang = CONDITION_BASE_LANGUAGE.get(cond)
             if base_lang is None:
                 continue
-            a, b, c, d, dropped = _paired(units, model, "harmful", "harmful", (base_lang, "base"), (base_lang, cond))
+            a, b, c, d, dropped = _paired(units, model, "harmful", "harmful", (base_lang, "base"), ("*", cond))
             # transformed variants keep the base language
             n = a + b + c + d
             if n == 0:

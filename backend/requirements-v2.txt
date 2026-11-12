@@ -1,0 +1,9 @@
+# VeriAudit v2 research dependencies (in addition to requirements.txt)
+numpy>=2.0
+scipy>=1.13
+pandas>=2.2
+scikit-learn>=1.5
+pyyaml>=6.0
+matplotlib>=3.9
+wordfreq>=3.1
+# GPU-only (install on the inference machine): vllm, torch, transformers, accelerate

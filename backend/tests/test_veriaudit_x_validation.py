@@ -288,7 +288,7 @@ def test_adjudication_requires_rationale():
 
 def test_adjudicator_who_annotated_warns():
     adj = {"adjudicator_id": "a", "final_labels": A["labels"], "rationale": "r"}
-    recs = mutated(load_fixture(), SRC, annotation={"status": "adjudicated", "annotations": [A, B_DIFF], "adjudication": adj})
+    recs = mutated(load_fixture(), SRC, annotation={"status": "adjudicated", "annotations": [A, B_DIFF], "adjudication": adj}, quality__human_adjudicated=True)
     report = validate_objects(recs)
     assert report.ok and report.codes()["adjudicator_not_independent"] == 1
 
@@ -341,3 +341,39 @@ def test_normalize_text_ignores_presentation_differences():
     assert normalize_text("ي") == normalize_text("ی")
     # but real spelling differences are kept apart
     assert normalize_text("kya") != normalize_text("kia")
+
+
+# ---------------------------------------------------------------- provenance tiers (schema 2.1.0)
+
+
+def test_ai_generated_requires_generator_and_non_human_method():
+    recs = mutated(load_fixture(), UR, quality__ai_generated=True)
+    c = codes(recs)
+    assert c["provenance_mismatch"] == 2  # method is 'human' and generator_id missing
+    ok = mutated(load_fixture(), UR, quality__ai_generated=True, quality__generator_id="gen-x", transformation__method="machine")
+    assert "provenance_mismatch" not in codes(ok)
+
+
+def test_human_reviewed_flag_must_match_evidence():
+    # claiming human review without any human rating/annotation is an error
+    assert codes(mutated(load_fixture(), RUR, quality__human_reviewed=True))["provenance_mismatch"] == 1
+    # and having human ratings without the flag is also an error
+    assert codes(mutated(load_fixture(), UR, quality__human_reviewed=False))["provenance_mismatch"] == 1
+
+
+def test_ai_review_never_verifies():
+    review = [{"reviewer_id": "llm-x", "verdict": "pass"}]
+    recs = mutated(load_fixture(), RUR, equivalence__status="verified", quality__ai_reviews=review)
+    assert codes(recs)["unsupported_verification"] == 1
+
+
+def test_failed_automated_check_warns_when_pending():
+    checks = {"script_consistency": {"passed": False, "value": 0.4}}
+    report = validate_objects(mutated(load_fixture(), "VX-S0004-B-ur-01", quality__automated_checks=checks))
+    assert report.ok and report.codes()["failed_automated_check"] == 1
+
+
+def test_violence_category_is_harmful():
+    from app.veriaudit_x.schema import HARMFUL_CATEGORIES, Category
+
+    assert Category.violence in HARMFUL_CATEGORIES

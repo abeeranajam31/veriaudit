@@ -1,0 +1,28 @@
+[
+  {
+    "name": "advbench_harmful_behaviors.csv",
+    "url": "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_behaviors.csv",
+    "licence": "MIT",
+    "licence_url": "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/LICENSE",
+    "citation": "Zou, Wang, Kolter, Fredrikson (2023). Universal and Transferable Adversarial Attacks on Aligned Language Models. arXiv:2307.15043",
+    "used_fields": [
+      "goal"
+    ],
+    "sha256": "6cd1a5c63c07610d7eb67307772ee5606017ee950b5770ab288a2c487489d3e1"
+  },
+  {
+    "name": "xstest_prompts.csv",
+    "url": "https://raw.githubusercontent.com/paul-rottger/exaggerated-safety/main/xstest_prompts.csv",
+    "licence": "CC-BY-4.0 (prompts only; model completions in the source repo are under other licences and are not used)",
+    "licence_url": "https://github.com/paul-rottger/xstest",
+    "citation": "Röttger et al. (2024). XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models. NAACL 2024",
+    "used_fields": [
+      "id",
+      "prompt",
+      "type",
+      "label",
+      "focus"
+    ],
+    "sha256": "11783fb294ed017473ee53c207d71f2161c7672c8d0b037501e78387f801cb5a"
+  }
+]
