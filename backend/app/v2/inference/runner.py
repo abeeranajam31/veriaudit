@@ -223,57 +223,71 @@ def run(
 
     system_prompt = config.get("system_prompt")
     planned, failed_final = 0, 0
+    batch_size = int(config.get("batch_size", 256))
     for spec in selected:
         backend = backend_override or build_backend(spec)
         is_fake = isinstance(backend, FakeBackend) or spec["backend"] == "fake"
-        for record in records:
-            for sample_index, decoding in plan(config):
-                planned += 1
-                gid = generation_id(run_id, spec["key"], record.record_id, sample_index)
-                if gid in succeeded:
-                    continue
-                messages = ([{"role": "system", "content": system_prompt}] if system_prompt else []) + [{"role": "user", "content": record.text}]
-                while attempts[gid] < max_attempts and gid not in succeeded:
-                    attempts[gid] += 1
+        batched = hasattr(backend, "generate_batch_full")  # vLLM: many prompts per call (same results, far faster)
+
+        def make(record, sample_index, decoding, gid, res, err, latency, spec=spec, is_fake=is_fake):
+            return Generation(
+                generation_id=gid,
+                run_id=run_id,
+                model_key=spec["key"],
+                model_id=spec["model_id"],
+                model_revision=spec.get("revision"),
+                backend=spec["backend"],
+                record_id=record.record_id,
+                scenario_id=record.scenario_id,
+                intent_id=record.intent_id,
+                scenario_type=record.scenario_type.value,
+                language=record.language.value,
+                transformation_type=record.transformation.type.value,
+                condition=record.transformation.parameters.get("condition", "base"),
+                prompt_text=record.text,
+                system_prompt=system_prompt,
+                decoding=decoding,
+                sample_index=sample_index,
+                response_text=res.text if res else None,
+                finish_reason=res.finish_reason if res else None,
+                n_output_tokens=res.n_output_tokens if res else None,
+                rendered_prompt_sha256=res.rendered_prompt_sha256 if res else None,
+                error=err,
+                attempt=attempts[gid],
+                latency_s=round(latency, 3),
+                created_at=datetime.now(timezone.utc).isoformat(),
+                is_test_fixture=is_fake,
+            )
+
+        def messages(record):
+            return ([{"role": "system", "content": system_prompt}] if system_prompt else []) + [{"role": "user", "content": record.text}]
+
+        for sample_index, decoding in plan(config):
+            planned += len(records)
+            gid_of = {r.record_id: generation_id(run_id, spec["key"], r.record_id, sample_index) for r in records}
+            pending = [r for r in records if gid_of[r.record_id] not in succeeded and attempts[gid_of[r.record_id]] < max_attempts]
+            while pending:
+                chunks = [pending[i : i + batch_size] for i in range(0, len(pending), batch_size)] if batched else [[r] for r in pending]
+                for chunk in chunks:
                     t0 = time.perf_counter()
-                    res, err = None, None
                     try:
-                        res = _call(backend, messages, decoding)
+                        if batched:
+                            outs = [(res, None) for res in backend.generate_batch_full([messages(r) for r in chunk], decoding)]
+                        else:
+                            outs = [(_call(backend, messages(chunk[0]), decoding), None)]
                     except BackendError as exc:
-                        err = str(exc)
-                    g = Generation(
-                        generation_id=gid,
-                        run_id=run_id,
-                        model_key=spec["key"],
-                        model_id=spec["model_id"],
-                        model_revision=spec.get("revision"),
-                        backend=spec["backend"],
-                        record_id=record.record_id,
-                        scenario_id=record.scenario_id,
-                        intent_id=record.intent_id,
-                        scenario_type=record.scenario_type.value,
-                        language=record.language.value,
-                        transformation_type=record.transformation.type.value,
-                        condition=record.transformation.parameters.get("condition", "base"),
-                        prompt_text=record.text,
-                        system_prompt=system_prompt,
-                        decoding=decoding,
-                        sample_index=sample_index,
-                        response_text=res.text if res else None,
-                        finish_reason=res.finish_reason if res else None,
-                        n_output_tokens=res.n_output_tokens if res else None,
-                        rendered_prompt_sha256=res.rendered_prompt_sha256 if res else None,
-                        error=err,
-                        attempt=attempts[gid],
-                        latency_s=round(time.perf_counter() - t0, 3),
-                        created_at=datetime.now(timezone.utc).isoformat(),
-                        is_test_fixture=is_fake,
-                    )
-                    append_jsonl(out_file, [g])  # raw output persisted before any evaluation
-                    if err is None:
-                        succeeded.add(gid)
-                if gid not in succeeded:
-                    failed_final += 1
+                        outs = [(None, str(exc))] * len(chunk)
+                    latency = (time.perf_counter() - t0) / len(chunk)
+                    gens = []
+                    for r, (res, err) in zip(chunk, outs, strict=True):
+                        gid = gid_of[r.record_id]
+                        attempts[gid] += 1
+                        gens.append(make(r, sample_index, decoding, gid, res, err, latency))
+                        if err is None:
+                            succeeded.add(gid)
+                    append_jsonl(out_file, gens)  # raw output persisted before any evaluation
+                pending = [r for r in pending if gid_of[r.record_id] not in succeeded and attempts[gid_of[r.record_id]] < max_attempts]
+            failed_final += sum(gid_of[r.record_id] not in succeeded for r in records)
         manifest["models"].append({"key": spec["key"], "spec": {k: v for k, v in spec.items() if k != "key"}, **backend.describe()})
 
     manifest["n_planned"] = planned
