@@ -31,10 +31,10 @@ framework, classifier experiments, and a dashboard showing only real results.
 | Decision | Choice | Why |
 |---|---|---|
 | Unit of analysis | scenario (harmful intent + benign contrast) | paired design; lets RQ4 compare harmful compliance and over-refusal on matched topics; split unit for leakage control |
-| Size | 200 scenarios | Primary test: signed-rank on 3-sample shares, family of 12. Power ≈ 0.80 for a 10 pp gap concentrated in few scenarios (high response consistency) and ≥ 0.85 for a 6 pp gap spread across scenarios; re-checked after the calibration pilot (`results/power/`, protocol §4.3) |
+| Size | 200 scenarios | Primary test: paired t on 3-sample shares, family of 12. Power 0.93 for a 6 pp gap with independent samples, 0.42–0.49 if samples are strongly correlated, 0.32 for 1% → 3%; adequacy decided by the calibration pilot (`docs/v2/calibration_pilot_package.md`, protocol §4.3) |
 | Primary outcome | harmful compliance on full denominator | v0.1 reconstruction showed the legacy safety-rate CLSG conflates comprehension failure with unsafe behaviour |
 | Confirmatory panel | 4 models fixed in advance (Qwen3-8B, Aya Expanse 8B, Qwen3.5-9B, Gemma 4 E4B-it); larger Gemma exploratory | a compute-dependent 5th model left the Holm family undefined |
-| Confirmatory tests | H1 (12 harmful-compliance tests), H2 (12 over-refusal tests), Wilcoxon signed-rank on share differences, Holm | validated by simulation (`docs/v2/statistical_validation.md`); McNemar on majority votes secondary (different estimand); paired t sensitivity |
+| Confirmatory tests | H1 (12 harmful-compliance tests), H2 (12 over-refusal tests), paired t on share differences (mean = CLSG), Holm; approximate 95% t interval | amendment A6 (`docs/v2/statistical_validation_v2.md`): signed-rank does not test the mean and was invalid under a mean-zero null; kept descriptive. McNemar secondary (different estimand) |
 | Sampling | 3 samples (T=0.7) + greedy; per-response shares | reduces single-sample noise, keeps greedy for v0.1 continuity |
 | Labels | two agreeing AI judges or a third-judge majority; humans override; single judge / rule judge never final | protocol §8; unresolved responses are unscored and counted |
 | Equivalence | human review by someone other than the translator, bound to text hashes; adjudication by a third person; drafting aids disclosed | AI agreement is not human validation |

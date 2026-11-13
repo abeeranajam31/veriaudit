@@ -1,6 +1,13 @@
 # Statistical validation of the primary test
 
-Status: **validated by simulation under the planning assumptions below; not yet checked against real
+> **Superseded in part (2026-11-13, protocol amendment A6).** A second round of validation
+> (`statistical_validation_v2.md`) found that the signed-rank test does not test the mean gap: under a
+> mean-zero null with a negative signed-rank functional it rejected 25.5% of the time at α = .05. The
+> primary test is now the paired t-test, with its t interval. The nulls below are all ones where the
+> signed-rank functional is close to 0, which is why this round did not detect the problem. This
+> document is kept as a record.
+
+Status (original): **validated by simulation under the planning assumptions below; not yet checked against real
 data.** Produced 2026-11-13 for protocol v1.1 §10. All numbers come from
 `results/stats_validation/` (tables rendered in `report.md` by `make_report.py`); every simulation is
 seeded and reproducible with `research/stats_validation/validate_primary_test.py` and `ci_methods.py`.

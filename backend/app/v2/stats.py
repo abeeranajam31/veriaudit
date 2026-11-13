@@ -130,8 +130,16 @@ def cluster_bootstrap(
 def signed_rank_test(differences: Sequence[float]) -> float:
     """Two-sided Wilcoxon signed-rank p-value on paired differences (zeros dropped, Pratt not used).
 
-    Uses scipy's method="auto". Differences of 3-sample shares take few distinct values, so ties are
-    the norm and the tie-corrected normal approximation is what applies in practice.
+    SECONDARY, descriptive only (protocol amendment A6). This does not test the mean. Its null is
+    symmetry of the non-zero differences about 0. The functional it is consistent against is
+    P(D_i + D_j > 0) - P(D_i + D_j < 0) over pairs of non-zero differences (Walsh sums). That
+    functional can have the opposite sign to the mean gap: see results/stats_validation/v2/estimand.csv,
+    scenarios A8/A9 and null N11, where the test rejects 25.5% of the time at alpha .05 with a mean gap of 0.
+
+    scipy method="auto" (scipy 1.18) chooses: exact distribution if there are no ties and n <= 50;
+    an exhaustive sign-flip permutation if there are ties and n <= 13; otherwise the normal
+    approximation with tie correction and no continuity correction. Differences of 3-sample shares
+    take at most 7 distinct values, so ties are the norm.
     Returns 1.0 when every difference is zero.
     """
     d = [x for x in differences if x != 0]
@@ -141,14 +149,33 @@ def signed_rank_test(differences: Sequence[float]) -> float:
 
 
 def paired_t_test(differences: Sequence[float]) -> float:
-    """Two-sided one-sample t-test of mean difference = 0 (sensitivity analysis targeting the mean;
-    protocol §10). Returns 1.0 if every difference is 0, and 0.0 if all are equal and non-zero."""
+    """Two-sided one-sample t-test of mean difference = 0. PRIMARY confirmatory test of CLSG(v2)
+    (protocol amendment A6). Returns 1.0 if every difference is 0, and 0.0 if all are equal and non-zero."""
     d = np.asarray(differences, dtype=float)
     if len(d) == 0 or np.all(d == 0):
         return 1.0
     if np.all(d == d[0]):
         return 0.0
     return float(_st.ttest_1samp(d, 0.0).pvalue)
+
+
+def mean_t_interval(differences: Sequence[float], level: float = 0.95) -> Interval:
+    """t interval for the mean difference: the interval dual to `paired_t_test`. Excludes 0 exactly
+    when the test rejects at 1 - level.
+
+    Simulated coverage at n = 200, 3 samples per unit (results/stats_validation/v2/ci_coverage.csv)
+    was 0.92-0.97 for nominal 0.95. Coverage falls short when the base rate is at most 1-2% and the
+    gap is non-zero, mostly by the interval lying below the true gap. Report it as approximate.
+    Degenerate (zero-width) when every difference is equal.
+    """
+    d = np.asarray(differences, dtype=float)
+    if len(d) == 0:
+        raise ValueError("no differences")
+    m = float(d.mean())
+    if len(d) < 2 or np.all(d == d[0]):
+        return Interval(m, m, m)
+    half = float(_st.t.ppf(0.5 + level / 2, len(d) - 1) * d.std(ddof=1) / math.sqrt(len(d)))
+    return Interval(m, m - half, m + half)
 
 
 def cohen_kappa(labels_a: Sequence[str], labels_b: Sequence[str]) -> float:

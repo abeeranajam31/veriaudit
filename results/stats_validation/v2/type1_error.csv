@@ -1,0 +1,34 @@
+dgp,kind,description,rho,true_mean_gap_pp,test,n_sim,median_nonzero_diffs,reject_05,reject_05_ci_low,reject_05_ci_high,reject_05_over_12,reject_05_over_12_ci_low,reject_05_over_12_ci_high
+N1_re_5pct,null,"logit RE, 5% both forms, sigma_u 2.5",0.0,0.0,signed_rank,20000,27,0.0476,0.04469,0.05064,0.00255,0.0019,0.00335
+N1_re_5pct,null,"logit RE, 5% both forms, sigma_u 2.5",0.0,0.0,paired_t,20000,27,0.0475,0.04459,0.05054,0.0026,0.00194,0.00341
+N1_re_5pct,null,"logit RE, 5% both forms, sigma_u 2.5",0.0,0.0,mcnemar_majority,20000,27,0.01585,0.01416,0.01768,0.0003,0.00011,0.00065
+N2_re_20pct,null,"logit RE, 20% both forms, sigma_u 1.0",0.0,0.0,signed_rank,20000,101,0.0485,0.04556,0.05157,0.0037,0.00291,0.00464
+N2_re_20pct,null,"logit RE, 20% both forms, sigma_u 1.0",0.0,0.0,paired_t,20000,101,0.04915,0.04619,0.05224,0.00395,0.00313,0.00492
+N2_re_20pct,null,"logit RE, 20% both forms, sigma_u 1.0",0.0,0.0,mcnemar_majority,20000,101,0.03495,0.03245,0.03759,0.00275,0.00207,0.00358
+N3_rare_1pct,null,"logit RE, 1% both forms, sigma_u 2.5",0.0,0.0,signed_rank,20000,7,0.0174,0.01563,0.01931,0.00065,0.00035,0.00111
+N3_rare_1pct,null,"logit RE, 1% both forms, sigma_u 2.5",0.0,0.0,paired_t,20000,7,0.0405,0.03781,0.04332,0.00045,0.00021,0.00085
+N3_rare_1pct,null,"logit RE, 1% both forms, sigma_u 2.5",0.0,0.0,mcnemar_majority,20000,7,0.0,0.0,0.00018,0.0,0.0,0.00018
+N4_rare_0.5pct,null,"logit RE, 0.5% both forms, sigma_u 2.5",0.0,0.0,signed_rank,20000,4,0.00605,0.00502,0.00722,0.0001,1e-05,0.00036
+N4_rare_0.5pct,null,"logit RE, 0.5% both forms, sigma_u 2.5",0.0,0.0,paired_t,20000,4,0.03645,0.0339,0.03914,0.0001,1e-05,0.00036
+N4_rare_0.5pct,null,"logit RE, 0.5% both forms, sigma_u 2.5",0.0,0.0,mcnemar_majority,20000,4,0.0,0.0,0.00018,0.0,0.0,0.00018
+N5_re_5pct_rho0.8,null,"logit RE, 5%, within-unit correlation 0.8",0.8,0.0,signed_rank,20000,18,0.0474,0.0445,0.05044,0.00295,0.00225,0.0038
+N5_re_5pct_rho0.8,null,"logit RE, 5%, within-unit correlation 0.8",0.8,0.0,paired_t,20000,18,0.04975,0.04678,0.05285,0.00315,0.00242,0.00403
+N5_re_5pct_rho0.8,null,"logit RE, 5%, within-unit correlation 0.8",0.8,0.0,mcnemar_majority,20000,18,0.02695,0.02475,0.02929,0.00145,0.00097,0.00208
+N6_re_20pct_rho0.8,null,"logit RE, 20%, sigma_u 1.0, within-unit correlation 0.8",0.8,0.0,signed_rank,20000,74,0.0504,0.04741,0.05352,0.00375,0.00295,0.0047
+N6_re_20pct_rho0.8,null,"logit RE, 20%, sigma_u 1.0, within-unit correlation 0.8",0.8,0.0,paired_t,20000,74,0.05115,0.04814,0.05429,0.00395,0.00313,0.00492
+N6_re_20pct_rho0.8,null,"logit RE, 20%, sigma_u 1.0, within-unit correlation 0.8",0.8,0.0,mcnemar_majority,20000,74,0.03725,0.03467,0.03997,0.00215,0.00156,0.00289
+N7_asym_A,null,"mean 0: 10% of scenarios +40 pp, rest -4.4 pp (base 10%)",0.0,0.0,signed_rank,20000,79,0.0539,0.05081,0.05712,0.0039,0.00308,0.00487
+N7_asym_A,null,"mean 0: 10% of scenarios +40 pp, rest -4.4 pp (base 10%)",0.0,0.0,paired_t,20000,79,0.05245,0.0494,0.05563,0.00335,0.0026,0.00425
+N7_asym_A,null,"mean 0: 10% of scenarios +40 pp, rest -4.4 pp (base 10%)",0.0,0.0,mcnemar_majority,20000,79,0.23945,0.23355,0.24543,0.04205,0.03931,0.04492
+N8_asym_B,null,"mean 0: 3% of scenarios +60 pp, rest -1.9 pp (base 5%)",0.0,0.0,signed_rank,20000,46,0.05665,0.05349,0.05994,0.0048,0.00389,0.00586
+N8_asym_B,null,"mean 0: 3% of scenarios +60 pp, rest -1.9 pp (base 5%)",0.0,0.0,paired_t,20000,46,0.05335,0.05028,0.05656,0.0043,0.00344,0.00531
+N8_asym_B,null,"mean 0: 3% of scenarios +60 pp, rest -1.9 pp (base 5%)",0.0,0.0,mcnemar_majority,20000,46,0.1357,0.13098,0.14052,0.0156,0.01393,0.01741
+N9_asym_C,null,"mean 0: 10% of scenarios -35 pp, rest +3.9 pp (base 40%)",0.0,0.0,signed_rank,20000,138,0.05105,0.04804,0.05419,0.004,0.00317,0.00498
+N9_asym_C,null,"mean 0: 10% of scenarios -35 pp, rest +3.9 pp (base 40%)",0.0,0.0,paired_t,20000,138,0.04945,0.04649,0.05255,0.0038,0.003,0.00475
+N9_asym_C,null,"mean 0: 10% of scenarios -35 pp, rest +3.9 pp (base 40%)",0.0,0.0,mcnemar_majority,20000,138,0.04975,0.04678,0.05285,0.0052,0.00425,0.0063
+N10_asym_A_rho0.8,null,as N7 with within-unit correlation 0.8,0.8,0.0,signed_rank,20000,48,0.0494,0.04644,0.05249,0.00365,0.00286,0.00459
+N10_asym_A_rho0.8,null,as N7 with within-unit correlation 0.8,0.8,0.0,paired_t,20000,48,0.04845,0.04552,0.05152,0.0035,0.00273,0.00442
+N10_asym_A_rho0.8,null,as N7 with within-unit correlation 0.8,0.8,0.0,mcnemar_majority,20000,48,0.03175,0.02936,0.03427,0.00235,0.00173,0.00312
+N11_conflict_mean0,null,"mean 0 with negative signed-rank functional: 9% of scenarios 0->2 of 3 harmful, 6% 3->0",0.0,0.0,signed_rank,20000,30,0.25545,0.24942,0.26155,0.05085,0.04785,0.05399
+N11_conflict_mean0,null,"mean 0 with negative signed-rank functional: 9% of scenarios 0->2 of 3 harmful, 6% 3->0",0.0,0.0,paired_t,20000,30,0.0511,0.04809,0.05424,0.0045,0.00362,0.00553
+N11_conflict_mean0,null,"mean 0 with negative signed-rank functional: 9% of scenarios 0->2 of 3 harmful, 6% 3->0",0.0,0.0,mcnemar_majority,20000,30,0.14125,0.13645,0.14615,0.0255,0.02336,0.02778

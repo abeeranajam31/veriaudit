@@ -35,6 +35,7 @@ from app.v2.stats import (
     cluster_bootstrap,
     holm,
     mcnemar_exact,
+    mean_t_interval,
     paired_difference_newcombe,
     paired_t_test,
     sign_flip_test,
@@ -286,9 +287,10 @@ def _compare(ref: dict[str, Unit], tgt: dict[str, Unit], outcome: str, n_boot: i
             if not u.ok:
                 excluded[u.status] += 1
 
-    # primary: share differences
+    # primary: share differences; paired t and its dual t interval (protocol amendment A6)
     diffs = [getattr(t, outcome) - getattr(r, outcome) for r, t in pairs]
-    ci = cluster_bootstrap([[x] for x in diffs], lambda cs: _mean([c_[0] for c_ in cs]), n_boot=n_boot, seed=seed)
+    ci = mean_t_interval(diffs) if diffs else None
+    boot = cluster_bootstrap([[x] for x in diffs], lambda cs: _mean([c_[0] for c_ in cs]), n_boot=n_boot, seed=seed)
 
     # bounds over every shared scenario: unscored target counted as 1 / reference as 0 (worst) and v.v.
     def filled(u: Unit, value: float) -> float:
@@ -317,16 +319,19 @@ def _compare(ref: dict[str, Unit], tgt: dict[str, Unit], outcome: str, n_boot: i
         "n_pairs": len(pairs),
         "n_scenarios_missing_a_unit": len(set(ref) ^ set(tgt)),
         **{f"n_units_excluded_{k}": v for k, v in excluded.items()},
-        # primary
-        "gap_pp": 100 * ci.estimate,
-        "ci_low_pp": 100 * ci.low,
-        "ci_high_pp": 100 * ci.high,
-        "p_signed_rank": signed_rank_test(diffs),
+        # primary (amendment A6): mean gap, t interval (approximate 95%), paired t
+        "gap_pp": 100 * boot.estimate,
+        "ci_low_pp": 100 * ci.low if ci else float("nan"),
+        "ci_high_pp": 100 * ci.high if ci else float("nan"),
+        "p_paired_t": paired_t_test(diffs),
         "gap_bound_low_pp": 100 * _mean(best),
         "gap_bound_high_pp": 100 * _mean(worst),
-        # robustness / sensitivity (protocol §10): sign-flip on the mean; paired t on the mean
+        # sensitivity: percentile cluster bootstrap interval; sign-flip permutation test of the mean
+        "boot_ci_low_pp": 100 * boot.low,
+        "boot_ci_high_pp": 100 * boot.high,
         "p_sign_flip": sign_flip_test(diffs, seed=seed),
-        "p_paired_t": paired_t_test(diffs),
+        # secondary, descriptive only: signed-rank does NOT test the mean (stats.signed_rank_test)
+        "p_signed_rank": signed_rank_test(diffs),
         # secondary
         "majority_gap_pp": 100 * nw.estimate,
         "majority_ci_low_pp": 100 * nw.low,
@@ -353,9 +358,10 @@ def paired_family(
 ) -> list[dict]:
     """Confirmatory family: English vs each non-English base form, per model.
 
-    H1: ("harmful", "harmful"); H2: ("benign", "refused"). Primary: signed-rank on per-scenario
-    share differences, Holm across the family (`p_holm`, `reject_h0_at_0.05`); effect `gap_pp`
-    = CLSG(v2). Secondary McNemar on majority outcomes is Holm-adjusted separately
+    H1: ("harmful", "harmful"); H2: ("benign", "refused"). Primary (protocol amendment A6): paired
+    t on per-scenario share differences, Holm across the family (`p_holm`, `reject_h0_at_0.05`);
+    effect `gap_pp` = CLSG(v2) with t interval `ci_low_pp`/`ci_high_pp`. The signed-rank test
+    (`p_signed_rank`, `p_signed_rank_holm`) is reported as descriptive only. Secondary McNemar on majority outcomes is Holm-adjusted separately
     (`p_mcnemar_holm`). Gap = target - English. Pass `models` (the confirmatory panel) for
     confirmatory use: the family is then exactly those models x 3 forms, and a missing model or
     form raises instead of silently shrinking the Holm family.
@@ -378,10 +384,10 @@ def paired_family(
                 raise FamilyIncompleteError(f"family {family}: no {scenario_type} units for {model} x {'english' if not ref else lang}")
             rows.append({"family": family, "model": model, "language": lang, **_compare(ref, tgt, outcome, n_boot, seed)})
     for key, adj_key in (
-        ("p_signed_rank", "p_holm"),
+        ("p_paired_t", "p_holm"),
         ("p_mcnemar", "p_mcnemar_holm"),
         ("p_sign_flip", "p_sign_flip_holm"),
-        ("p_paired_t", "p_paired_t_holm"),
+        ("p_signed_rank", "p_signed_rank_holm"),
     ):
         for row, adj in zip(rows, holm([r[key] for r in rows]), strict=True):
             row[adj_key] = adj
@@ -392,7 +398,7 @@ def paired_family(
 
 def transformation_effects(units: list[Unit], outcome: str = "harmful", n_boot: int = 2000, seed: int = 0, scenario_type: str = "harmful") -> list[dict]:
     """Exploratory RQ2: each controlled condition vs its base variant. Same tests as
-    `paired_family`; BH-adjusted (`p_bh` for the signed-rank test, `p_mcnemar_bh`)."""
+    `paired_family`; BH-adjusted (`p_bh` for the paired t, `p_mcnemar_bh`)."""
     rows = []
     conds = sorted({u.condition for u in units if u.condition != "base"})
     for model in sorted({u.model for u in units}):
@@ -414,7 +420,7 @@ def transformation_effects(units: list[Unit], outcome: str = "harmful", n_boot: 
                     **_compare(ref, tgt, outcome, n_boot, seed),
                 }
             )
-    for key, adj_key in (("p_signed_rank", "p_bh"), ("p_mcnemar", "p_mcnemar_bh")):
+    for key, adj_key in (("p_paired_t", "p_bh"), ("p_mcnemar", "p_mcnemar_bh")):
         for row, adj in zip(rows, benjamini_hochberg([r[key] for r in rows]), strict=True):
             row[adj_key] = adj
     return rows

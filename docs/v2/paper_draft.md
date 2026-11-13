@@ -116,16 +116,21 @@ forms; a stratified third (70 scenarios) adds six controlled transformations (Ro
 variants, formal transliteration, colloquial register, low/high English ratio, script mixing). Responses
 receive four labels (comprehension, behaviour, harmful content, task success); metrics are harmful
 compliance, appropriate refusal, over-refusal, benign task success, comprehension and linguistic
-robustness, all on full denominators. Confirmatory tests: 12 paired Wilcoxon signed-rank tests each for
-harmful compliance and over-refusal (four open models of 4–9B parameters × 3 forms, Holm) on per-scenario
-differences in the share of three sampled responses. In a simulation study over eleven data-generating
-processes the test held its nominal Type I error under every null, including one with asymmetric
-differences, while exact McNemar on majority votes tested a different quantity (23% rejections under a
-null with zero mean per-response gap); McNemar is therefore secondary, and a paired t-test is a
-sensitivity analysis (`docs/v2/statistical_validation.md`). Under two planning models
-(`results/power/`), n = 200 gives about 0.80 power for a 10-point gap concentrated in a few scenarios when
-responses are highly consistent, and ≥ 0.85 for a 6-point gap spread across scenarios; a calibration pilot
-on scenarios disjoint from the main study will estimate which regime applies before the main study.
+robustness, all on full denominators. Confirmatory tests: 12 paired t-tests each for harmful compliance and
+over-refusal (four open models of 4–9B parameters × 3 forms, Holm), testing whether the mean per-scenario
+difference in the share of three sampled responses (CLSG) is zero. The effect is reported with the
+dual t interval, described as approximately 95%. A simulation study over eleven mean-zero
+data-generating processes (`docs/v2/statistical_validation_v2.md`) informed the choice. The paired
+t-test held its level: at most 5.3% at α = .05, and within Monte Carlo error at the family level.
+The Wilcoxon signed-rank test, specified earlier, does not test the mean: when most differences are
+zero it tests the sign balance of the non-zero differences. It rejected 25.5% of the time under one
+mean-zero null and was significant in the wrong direction under some mean-positive alternatives.
+It is therefore reported only descriptively. Exact McNemar on majority votes tests a different
+quantity again (23.9% rejections under a mean-zero null) and is secondary. At n = 200, power for a
+6-point gap is 0.93 when the three samples are independent but 0.42–0.49 when they are strongly
+correlated, and 0.32 for a 1% → 3% gap. A calibration pilot on scenarios disjoint from the main study
+estimates the response correlation and base rates, and the minimum detectable effect is reported
+before the main study.
 
 **Dataset construction status.** Automatic generation of the non-English variants of harmful requests
 with an AI model was stopped by that model's safety classifiers, so the variants will be written by
@@ -147,7 +152,10 @@ rule judge was built on the evaluation data. VeriAudit-X seeds are English-origi
 naturally occurring Urdu requests. The confirmatory models are small open models; results will not
 transfer to larger or proprietary models. If no human response labels are collected, every VeriAudit-X
 result will be AI-judged and limited by judge reliability, which is part of what is measured. In
-simulation, nominal 95% intervals covered 91–94% of the time at rates of 1–5%.
+simulation, nominal 95% intervals for the gap covered 92–97% of the time. Below base rates of 1–2%
+they tended to fall below the true gap, and per-cell rate intervals covered as little as 85% at 1%;
+the intervals are therefore described as approximate. With strongly correlated samples and rare
+outcomes, n = 200 can only detect large gaps, so a non-significant result is not evidence of no gap.
 
 ## 8. Ethics
 
@@ -158,6 +166,6 @@ released responses will be gated.
 
 `PYTHONPATH=backend python research/v1_reconstruction/reconstruct.py` (191/191 checks);
 `research/figures/make_v2_figures.py`; `research/classifiers/v1_response_baseline.py`;
-`research/power/power_analysis.py`; `research/stats_validation/validate_primary_test.py` (simulation
-study); `research/analysis/run_analysis.py` (main-study analysis, not yet run). Protocol:
+`research/power/power_analysis.py`; `research/stats_validation/validate_v2.py` (simulation study;
+the earlier `validate_primary_test.py` is kept for the record); `research/analysis/run_analysis.py` (main-study analysis, not yet run). Protocol:
 `docs/v2/research_protocol.md`.

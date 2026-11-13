@@ -127,7 +127,10 @@ message"). Rules, applied in order and logged per item:
 
 The original sizing (v1.0) used exact McNemar on noise-free scenario-level
 outcomes. It is kept as a reference point; the primary test is now the
-signed-rank test (§10) and the confirmatory family has 12 tests. Planning
+paired t-test (§10, amendment A6) and the confirmatory family has 12 tests.
+The signed-rank columns below were computed before A6; the paired t-test's
+power is within ±0.06 of them in every scenario simulated (table at the end
+of this section). Planning
 effect from the pilot: the smallest pilot gap (Qwen3-8B × Urdu, 10 pp net;
 4/30 vs 1/30 discordant) and a smallest effect of interest of 10 pp net.
 
@@ -153,7 +156,7 @@ scenario is harmful or not in each form (12% target-only, 2% English-only,
 2% both); each response is harmful with probability q_harm in a harmful
 state, q_safe otherwise. The effect sits in a few discordant scenarios.
 
-| Response consistency (q_harm / q_safe) | Signed-rank on shares (primary) | Majority-vote McNemar (secondary) |
+| Response consistency (q_harm / q_safe) | Signed-rank on shares (primary before A6) | Majority-vote McNemar (secondary) |
 |---|---|---|
 | high (0.95 / 0.02) | 0.80 | 0.82 |
 | moderate (0.90 / 0.03) | 0.74 | 0.78 |
@@ -170,9 +173,10 @@ effect is spread over all scenarios.
 | 6 pp (5% → 11%) | 0.85 / 0.18 | 0.91 / 0.41 |
 | 4 pp (5% → 9%) | 0.42 / 0.03 | 0.53 / 0.12 |
 
-Neither model is known to be right. Signed-rank loses 0.02–0.06 power under
-model A and gains up to ≈ 0.7 under model B, so it is the primary test
-(§10; validated by simulation in `docs/v2/statistical_validation.md`). The
+Neither model is known to be right. A test on share differences loses
+0.02–0.06 power under model A and gains up to ≈ 0.7 under model B relative to
+McNemar, which is why the primary test is on share differences (§10; since
+A6 the paired t-test, whose power matches signed-rank, see below). The
 80% target is met for a 10 pp per-response gap under model B, and under
 model A only when responses are highly consistent (0.80 ± 0.01). The
 calibration pilot estimates
@@ -180,6 +184,24 @@ consistency and scenario heterogeneity; both tables are re-run with those
 estimates, and the minimum detectable effect at 80% power is reported before
 the main study. n is not increased: translation capacity (§6), not power, is
 the binding constraint.
+
+**Power of the paired t-test, within-unit correlation and rare outcomes
+(amendment A6; `results/stats_validation/v2/power.csv`, 4,000 simulations, α = .05/12).**
+
+| Scenario | Paired t | Signed-rank |
+|---|---|---|
+| 5% → 11%, σ = 2.5 | 0.93 | 0.92 |
+| same, within-unit correlation ρ = 0.8 / 0.95 | 0.49 / 0.42 | 0.44 / 0.39 |
+| 5% → 9%, σ = 1 | 0.43 | 0.42 |
+| 1% → 3% | 0.32 | 0.31 |
+| 0.5% → 2% | 0.17 | 0.19 |
+| heterogeneous, mean +3 pp (10% of scenarios +40 pp) | 0.08 | 0.08 |
+
+If the three samples of a unit are strongly correlated, n = 200 has power of
+about 0.4–0.5 for a 6 pp gap. At base rates ≤ 1%, only gaps of several
+times the base rate are detectable. The calibration pilot (§12) estimates ρ
+and the base rates, and the minimum detectable effect is reported with every
+non-significant confirmatory result.
 
 **Decision: n = 200 scenarios (400 intents).** 200 is the smallest size with
 ≈ 80% power for a 10 pp effect after correction across 12 tests under both
@@ -347,8 +369,10 @@ including non-scoreable ones). Rates are per-response: the mean over scored
 units of each unit's sample share, with a scenario bootstrap 95% CI; the
 majority-vote rate with a Wilson CI is reported alongside. In simulation
 the per-response bootstrap CI covered 0.91–0.96 of the time (nominal 0.95),
-lowest at rates of 1–5%; no alternative interval (BCa, basic, t) did better
-(`docs/v2/statistical_validation.md`). Degenerate [0, 0] intervals are
+lowest at rates of 1–5%; clustered Wilson covered as little as 0.85 at 1%
+with within-unit correlation (`docs/v2/statistical_validation_v2.md`). Rate
+intervals are labelled approximate; below 2%, counts of harmful responses
+and of scenarios with any harmful response are reported alongside. Degenerate [0, 0] intervals are
 flagged. Unscored units
 (§10) are reported per cell together with bounds that count them as all
 0 and all 1:
@@ -369,25 +393,32 @@ Implementation: `backend/app/v2/metrics.py`.
 ## 10. Statistical analysis plan
 
 **Confirmatory family H1 (12 tests).** For each confirmatory model × non-English form:
-two-sided Wilcoxon signed-rank test on per-scenario differences of
-harmful-compliance shares (target − English); Holm at α = 0.05. Effect =
-CLSG(v2) = mean share difference (the per-response HCR gap, §9) with a
-scenario bootstrap 95% CI, plus worst/best-case bounds that count unscored
-units as 0/1.
+two-sided **paired t-test** on per-scenario differences of harmful-compliance
+shares (target − English), testing mean difference = 0; Holm at α = 0.05
+(amendment A6). Effect = CLSG(v2) = mean share difference (the per-response
+HCR gap, §9) with the t interval (the interval dual to the test), reported
+as an *approximate* 95% interval, plus worst/best-case bounds that count
+unscored units as 0/1. The percentile scenario-bootstrap interval is a
+sensitivity interval.
 
 **Confirmatory family H2 (12 tests).** Same, for over-refusal on benign
 contrasts. The analysis refuses to run a family with a missing model or
 form rather than shrink the Holm family.
 
-**What the primary test tests.** The signed-rank test (zeros dropped,
-tie-corrected) tests whether per-scenario differences are symmetric about
-zero; the reported effect is their mean. These coincide when forms are
-exchangeable within scenario. In simulation (`docs/v2/statistical_validation.md`)
-it held its nominal Type I error under five null scenarios, including a
-mean-zero null with asymmetric differences, at α = .05 and at the family
-level; the alternative zero handling (Pratt) did not. A paired t-test on
-the same differences, which tests the mean directly, is a pre-specified
-sensitivity analysis; any disagreement is reported.
+**Why the paired t-test (amendment A6).** The estimand is a mean. In
+simulation (`docs/v2/statistical_validation_v2.md`; 11 nulls, 20,000
+simulations each) the paired t-test held its level for the mean null: at most
+0.053 at α = .05 and within Monte Carlo error of .05/12 at the family level.
+It was conservative at base rates ≤ 1%. The previously primary Wilcoxon
+signed-rank test tests symmetry of the non-zero differences; its functional
+(the sign balance of their Walsh sums) can have the opposite sign to the mean
+when most differences are zero. Under a mean-zero null of that kind it
+rejected 25.5% of the time at α = .05, and under mean-positive alternatives
+it was significant in the wrong direction up to 17.6% of the time. It is
+reported as a descriptive secondary statistic only, never as evidence about
+CLSG(v2). Simulated t-interval coverage was 0.92–0.97 (nominal 0.95). The
+misses at base rates ≤ 1–2% place the interval below the true gap, so the
+upper bound can understate a gap at those rates.
 
 **Pre-specified secondary and robustness tests (amendment 2026-11-12b).**
 Exact McNemar on majority-vote outcomes with a Newcombe paired CI, Holm
@@ -431,8 +462,9 @@ fixtures.
 cannot be estimated is listed as such). S-AMB for harmful intents
 (non-scoreable treated as harmful, as safe, excluded) and for benign intents
 (non-scoreable treated as a refusal, excluded); S-EQ, S-HUM1, S-HUM2 (§6);
-greedy-only generations; each primary judge's labels alone; paired t-test
-(above).
+greedy-only generations; each primary judge's labels alone; percentile
+scenario-bootstrap interval and sign-flip permutation test on the mean
+(above); signed-rank test (descriptive).
 
 ## 11. Classifier study (RQ5)
 
@@ -527,3 +559,4 @@ near-duplicate overlap; zero found).
 | 2026-11-13 | §4.2/§6: benign-contrast validity check by a second person; ORR by contrast source; human translation workflow with drafting-aid disclosure, independent review bound to text hashes, adjudication, review-capacity rule, S-HUM1/S-HUM2; release gate; schema 2.2.0; back-translation check withdrawn (never implemented) | 140 benign contrasts are still to be written and had no validity step; the equivalence gate could be satisfied by the variant's own author (audit) |
 | 2026-11-13 | §12: calibration pilot redesigned (disjoint from the main study, 3 samples, English held-out set B) | 6 of the 13 v1.0 calibration items are main-study scenarios, and 1 sample per prompt cannot estimate response consistency (audit) |
 | 2026-11-13 | Body text corrected to match earlier amendments and data: dedup thresholds, realised category counts (14–29), transformation subset n = 70, v0.1 CBRN-item exception, H1 stated two-sided | contradictions found by the protocol audit; no design change |
+| 2026-11-13 (A6) | §10: **primary test changed from the Wilcoxon signed-rank test to the paired t-test** on per-scenario share differences; interval changed from scenario bootstrap to the dual t interval, reported as approximate 95%; signed-rank kept as descriptive only; BH-adjusted exploratory tests use the paired t. §4.3: power with within-unit correlation and rare outcomes. §9: rate intervals labelled approximate. **Supersedes the choice of primary test in amendment 2026-11-12 (b).** | before any variant translation or inference. Second validation round (`statistical_validation_v2.md`): the signed-rank test does not test the mean (CLSG). Under a mean-zero null with many zero differences it rejected 25.5% at α = .05, and it was significant in the wrong direction under mean-positive alternatives. The paired t-test held its level in all 11 nulls and matched or beat signed-rank power except at a 0.5% base rate (0.17 vs 0.19) |

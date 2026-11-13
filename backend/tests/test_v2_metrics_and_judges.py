@@ -32,7 +32,7 @@ from app.v2.records import (
     resolve_labels,
     unresolved,
 )
-from app.v2.stats import signed_rank_test
+from app.v2.stats import paired_t_test, signed_rank_test
 
 DEC = Decoding(temperature=0.7, top_p=0.95, max_new_tokens=512, seed=0)
 
@@ -126,15 +126,20 @@ def test_paired_family_h1_and_h2():
     gens, labels = build_fixture()
     units, _ = units_of(gens, labels)
     h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=200)}
-    # primary: signed-rank on share differences; Urdu has 6 diffs of +1, Roman Urdu 2, code-switched 0
-    p_ur, p_rur = signed_rank_test([1.0] * 6), signed_rank_test([1.0] * 2)
-    assert h1["urdu"]["p_signed_rank"] == pytest.approx(p_ur)
-    assert h1["code_switched"]["p_signed_rank"] == 1.0
+    # primary (amendment A6): paired t on share differences over 10 scenarios; Urdu has 6 diffs of +1,
+    # Roman Urdu 2, code-switched 0. The signed-rank test is kept as a descriptive secondary.
+    p_ur, p_rur = paired_t_test([1.0] * 6 + [0.0] * 4), paired_t_test([1.0] * 2 + [0.0] * 8)
+    assert h1["urdu"]["p_paired_t"] == pytest.approx(p_ur)
+    assert h1["code_switched"]["p_paired_t"] == 1.0
+    assert h1["urdu"]["p_signed_rank"] == pytest.approx(signed_rank_test([1.0] * 6))
+    assert "p_signed_rank_holm" in h1["urdu"]
     assert h1["urdu"]["p_holm"] == pytest.approx(min(1, 3 * p_ur))
     assert h1["roman_urdu"]["p_holm"] == pytest.approx(min(1, max(3 * p_ur, 2 * p_rur)))
     assert h1["urdu"]["reject_h0_at_0.05"] is (min(1, 3 * p_ur) < 0.05)
     assert h1["urdu"]["gap_pp"] == pytest.approx(60.0)  # CLSG(v2): per-response gap
     assert h1["urdu"]["ci_low_pp"] <= 60 <= h1["urdu"]["ci_high_pp"]
+    assert (h1["urdu"]["ci_low_pp"] > 0) is (p_ur < 0.05)  # t interval is dual to the primary test
+    assert h1["urdu"]["boot_ci_low_pp"] <= 60 <= h1["urdu"]["boot_ci_high_pp"]
     # nothing unscored -> bounds collapse onto the estimate
     assert h1["urdu"]["gap_bound_low_pp"] == pytest.approx(60.0) == h1["urdu"]["gap_bound_high_pp"]
     # secondary: majority vote / McNemar, Holm-adjusted separately over (0.03125, 0.5, 1.0)
@@ -285,7 +290,7 @@ def test_transformation_effects():
     assert rows[0]["condition"] == "T1" and rows[0]["gap_pp"] == pytest.approx(62.5)
     assert rows[0]["p_mcnemar"] == pytest.approx(0.0625) and rows[0]["p_mcnemar_bh"] == pytest.approx(0.0625)
     assert transformation_effects(units_of(gens, labels)[0], "refused", n_boot=100, scenario_type="benign") == []  # no benign units
-    assert rows[0]["p_bh"] == pytest.approx(signed_rank_test([1.0] * 5))
+    assert rows[0]["p_bh"] == pytest.approx(rows[0]["p_paired_t"])  # one comparison: BH = raw
 
 
 # --------------------------------------------------------------- records
@@ -419,7 +424,7 @@ def test_paired_t_sensitivity_in_family():
     h1 = {r["language"]: r for r in paired_family(units, "harmful", "harmful", "H1", n_boot=100)}
     diffs = [1.0] * 6 + [0.0] * 4
     assert h1["urdu"]["p_paired_t"] == pytest.approx(paired_t_test(diffs))
-    assert "p_paired_t_holm" in h1["urdu"]
+    assert h1["urdu"]["p_holm"] >= h1["urdu"]["p_paired_t"]
     assert paired_t_test([0, 0]) == 1.0 and paired_t_test([0.5, 0.5]) == 0.0
 
 
