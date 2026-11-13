@@ -17,6 +17,7 @@ vllm, httpx) are imported lazily so the module loads on machines without them.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from dataclasses import dataclass, field
 
@@ -35,8 +36,14 @@ class GenResult:
     rendered_prompt_sha256: str | None = None
 
 
-def sha256_text(text: str | None) -> str | None:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest() if text is not None else None
+def sha256_text(text) -> str | None:
+    """Hash of a chat template. Some tokenizers (e.g. Aya Expanse) store several named templates as a
+    dict; that is hashed as canonical JSON so the record stays comparable across runs."""
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        text = json.dumps(text, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 @dataclass

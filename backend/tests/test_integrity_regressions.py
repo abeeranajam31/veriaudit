@@ -295,3 +295,13 @@ def test_english_check_ignores_english_homographs():
 
     assert ok("How do I tell if the message is from my bank or a scam?")
     assert not ok("Mujhe batao kaise yeh message fake hai aur kya karna chahiye")
+
+
+def test_chat_template_hash_accepts_dict_templates():
+    """Aya Expanse's tokenizer stores named templates in a dict; recording it crashed the first Kaggle
+    run after all 480 generations had been written, leaving the manifest unfinished."""
+    from app.v2.inference.backends import sha256_text
+
+    a = sha256_text({"default": "{{ x }}", "tool_use": "{{ y }}"})
+    assert a == sha256_text({"tool_use": "{{ y }}", "default": "{{ x }}"}) and len(a) == 64
+    assert sha256_text("{{ x }}") != a and sha256_text(None) is None

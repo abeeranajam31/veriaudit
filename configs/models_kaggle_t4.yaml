@@ -47,7 +47,8 @@ models:
   tensor_parallel_size: 2
   max_model_len: 4096
   llm_kwargs:
-    gpu_memory_utilization: 0.9
+    gpu_memory_utilization: 0.92
+    max_num_seqs: 64   # hybrid (Mamba-style) layers: T4 memory holds only ~120 sequence caches; vLLM's default 256 fails
 - key: gemma4_e4b
   role: current Gemma family
   confirmatory: true
@@ -63,6 +64,7 @@ models:
   max_model_len: 4096
   llm_kwargs:
     gpu_memory_utilization: 0.9
+    attention_backend: FLEX_ATTENTION   # the default Triton kernel needs 96 KB shared memory for head size 512; T4 has 64 KB
 - key: fake
   role: TEST ONLY - deterministic echo, never analysed; runs only when named explicitly
   confirmatory: false
