@@ -76,9 +76,9 @@ and fixed:
 - re-export dropped the translator's self-check fields, so re-importing an unchanged sheet failed;
 - the corruption detector missed two-letter words turned into `??` and wrongly flagged `kya???`.
 
-## Clean-checkout run (this commit)
+## Clean-checkout run
 
-`git clone` → `pip install -e backend[dev]` → `pytest -q`: **240 passed**. Then:
+`git clone` of commit 6376640 into a fresh directory → `pytest -q`: **247 passed**. Then:
 
 - `ruff check` / `ruff format --check`: clean;
 - `reconstruct.py`: 191/191 matched;

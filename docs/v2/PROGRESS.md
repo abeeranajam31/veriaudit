@@ -1,6 +1,7 @@
 # VeriAudit v2 — Progress
 
-Last updated 2026-11-13 (session 3). Branch `veriaudit-x-dataset`, draft PR #1 (not merged).
+Last updated 2026-11-13 (session 4: pre-data-collection round; consolidated status in
+**`docs/v2/READINESS_REPORT.md`**). Branch `veriaudit-x-dataset`, draft PR #1 (not merged).
 **No v2 model inference, judging or human annotation has happened.** Every number below is from the
 v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled as such.
 
@@ -11,7 +12,11 @@ v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled a
 | v1 audit | `docs/v2_codebase_audit.md` | claims spot-checked by running code |
 | v0.1 reconstruction | `results/v1_reconstruction/` | **191/191** published numbers reproduced |
 | Research protocol v1.1 | `docs/v2/research_protocol.md` (§15: 11 dated amendments after v1.0, all before data collection) | independent protocol audit; every finding resolved or recorded below |
-| Statistical validation of the primary test | `docs/v2/statistical_validation.md`, `results/stats_validation/` | simulation over 11 data-generating processes; independent statistical review |
+| Statistical validation of the primary test | `docs/v2/statistical_validation_v2.md`, `results/stats_validation/v2/` (round 1, `statistical_validation.md`, superseded in part) | 11 nulls × 20,000 simulations with Monte Carlo intervals; led to amendment A6 (paired t primary; signed-rank does not test the mean) |
+| Safeguard verification | `docs/v2/safeguard_verification.md`, `results/integrity/` | behavioural replay: 13/13 scenarios bypass the pre-fix code, 13/13 blocked now; full-lifecycle test with real Urdu through LibreOffice-saved sheets |
+| Benign-contrast candidates (AI-drafted, **not reviewed**) | `data/candidates/benign_candidates.jsonl`, review sheet, `docs/v2/benign_candidates_review.md` | automated coverage/QC/overlap checks only |
+| Calibration pilot package, judge runner | `docs/v2/calibration_pilot_package.md`, `app.v2.judges.run_judge`, `configs/judges.yaml` | unit and fixture-run tests; GPU paths not run |
+| Model and judge comparison | `docs/v2/model_and_judge_selection.md` | model cards / catalogue pages, 2026-11-13; revisions not pinned (Hugging Face unreachable here) |
 | Power / precision | `results/power/` (noise-free McNemar, two-state and random-effects models, family of 12) | seeded Monte Carlo |
 | VeriAudit-X schema 2.2.0, validator (incl. release mode), leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
 | Human authoring workflow (benign contrasts → translation → review → adjudication) | `docs/v2/translation_guide.md`, `backend/app/veriaudit_x/authoring.py`, `research/dataset/translation_worksheet.py`, `data/annotators.json` | unit tests incl. every refusal path; end-to-end assembler test |
@@ -33,11 +38,11 @@ v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled a
 
 | Item | Blocker |
 |---|---|
-| 140 benign contrasts + their independent checks | people (stage A of the translation guide) |
+| 140 benign contrasts + their independent checks | people (stage A of the translation guide); AI-drafted candidates exist for all 140 |
 | ~1,110 phase-1 and 840 phase-2 variants; independent reviews; adjudication | 1–2 translators + an independent reviewer (ideally a third person) |
 | Calibration pilot | GPU + Hugging Face access; pinned revisions |
 | Main-study inference (4 confirmatory models) | frozen dataset, GPU, Hugging Face (Aya Expanse is gated) |
-| LLM judging + judge validation | choice of two primary judges; GPU; human validation sample |
+| LLM judging + judge validation | PI to confirm the recommended judges; GPU; J0 human check on the pilot; human validation sample |
 | Encoder classifiers | GPU + Hugging Face |
 | Vercel preview/production deploys | project Root Directory must be set to `frontend` (`docs/v2/vercel_deployment.md`) |
 
