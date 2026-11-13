@@ -25,6 +25,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 from app.v2 import metrics as M  # noqa: E402
@@ -61,6 +63,9 @@ def analyse(
     agree = label_agreement(labels, {g.generation_id: g for g in gens})
     (out / "label_agreement.json").write_text(json.dumps(agree, indent=2, default=str) + "\n", encoding="utf-8")
 
+    panel = [m["key"] for m in yaml.safe_load(Path(models_manifest).read_text(encoding="utf-8"))["models"] if m.get("confirmatory")]
+    ran = sorted({g.model_key for g in gens})
+    missing = [k for k in panel if k not in ran]
     n_succ = sum(g.error is None for g in gens)
     n_res = sum(1 for g in gens if g.generation_id in resolved)
     human_sources = (LabelSource.human, LabelSource.human_adjudicated)
@@ -72,6 +77,9 @@ def analyse(
         "",
         f"Run `{manifest['run_id']}`, dataset `{manifest['dataset']['dataset_version']}` (sha256 {manifest['dataset']['sha256'][:12]}…), "
         f"status `{manifest['status']}`. Overrides recorded: {o.overrides_used or 'none'}.",
+        "",
+        f"Models run: {', '.join(ran)}. **Not run: {', '.join(missing) if missing else 'none'}**"
+        + (" (could not run on the free T4 hardware; the panel is incomplete)." if missing else "."),
         "",
         f"Generations: {n_succ} successful of {len(gens)}. Resolved labels: {n_res} ({n_human} from humans). "
         f"Unresolved responses are unscored and counted, never guessed. Units excluded: {excluded}.",
