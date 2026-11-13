@@ -186,8 +186,10 @@ def run(
     out_file = out_dir / "generations.jsonl"
     config_sha = hashlib.sha256(config_path.read_bytes()).hexdigest()
     old_manifest = out_dir / RUN_MANIFEST
+    prev_models: dict[str, dict] = {}
     if old_manifest.exists():
         prev = json.loads(old_manifest.read_text(encoding="utf-8"))
+        prev_models = {m["key"]: m for m in prev.get("models", []) if "key" in m}
         if prev.get("dataset", {}).get("sha256") != ds["sha256"] or prev.get("config_sha256") != config_sha:
             raise RunConfigError(f"run {run_id} already exists with a different dataset or config; resuming would mix generations. Use a new run_id.")
     max_attempts = int(config.get("max_attempts", 3))
@@ -288,7 +290,10 @@ def run(
                     append_jsonl(out_file, gens)  # raw output persisted before any evaluation
                 pending = [r for r in pending if gid_of[r.record_id] not in succeeded and attempts[gid_of[r.record_id]] < max_attempts]
             failed_final += sum(gid_of[r.record_id] not in succeeded for r in records)
-        manifest["models"].append({"key": spec["key"], "spec": {k: v for k, v in spec.items() if k != "key"}, **backend.describe()})
+        entry = {"key": spec["key"], "spec": {k: v for k, v in spec.items() if k != "key"}, **backend.describe()}
+        # A resumed call that skips every generation never loads the model, so its description lacks the
+        # chat-template hash and tokenizer recorded when the model actually ran: keep those.
+        manifest["models"].append({**prev_models.get(spec["key"], {}), **{k: v for k, v in entry.items() if v is not None}})
 
     manifest["n_planned"] = planned
     manifest["n_succeeded"] = planned - failed_final

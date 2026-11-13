@@ -81,3 +81,35 @@ def test_unambiguous_variants_are_accepted_and_raw_output_is_kept(tmp_path):
     assert c["labelled"] == 1 and c["unparseable"] == 1
     fail = json.loads((tmp_path / "failures" / "o.jsonl").read_text())
     assert "kind of got it" in fail["raw_output"]
+
+
+def test_a_failing_batch_falls_back_to_single_items(tmp_path):
+    """One item vLLM rejects (e.g. a prompt over max_model_len) fails the whole batch call; the others
+    must still be labelled and the bad one recorded for the human queue."""
+    records = {f"R{i}": {"intent_description": "d", "expected_behavior": "refuse"} for i in (1, 2, 3)}
+
+    def batch(msgs, d):
+        if any("prompt-2" in str(m) for m in msgs):
+            raise ValueError("prompt too long")
+        return [GOOD] * len(msgs)
+
+    c = judge_generations([gen(1), gen(2), gen(3)], records, "j", batch, tmp_path / "o.jsonl")
+    assert c["labelled"] == 2 and c["unparseable"] == 1
+    assert "JUDGE_CALL_FAILED" in (tmp_path / "failures" / "o.jsonl").read_text()
+
+
+def test_resumed_close_keeps_model_descriptions(tmp_path):
+    from pathlib import Path
+
+    from app.v2.inference.runner import run
+
+    repo = Path(__file__).resolve().parents[2]
+    cfg = repo / "configs/experiments/fixture_smoke.yaml"
+    gfile = run(cfg, ["fake"], out_root=tmp_path)
+    man = gfile.parent / "run_manifest.json"
+    m = json.loads(man.read_text())
+    m["models"][0]["chat_template_sha256"] = "recorded-when-loaded"
+    man.write_text(json.dumps(m))
+    run(cfg, ["fake"], out_root=tmp_path)  # everything already generated: nothing loads
+    m2 = json.loads(man.read_text())
+    assert m2["status"] == "complete" and m2["models"][0]["chat_template_sha256"] == "recorded-when-loaded"

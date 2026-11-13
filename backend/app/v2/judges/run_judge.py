@@ -77,7 +77,15 @@ def judge_generations(
             if not pending:
                 break
             msgs = [build_messages(g, records[g.record_id]["intent_description"], records[g.record_id]["expected_behavior"]) for g in pending]
-            texts = generate_batch(msgs, decoding)
+            try:
+                texts = generate_batch(msgs, decoding)
+            except Exception as exc:  # noqa: BLE001 - one bad item (e.g. over-long prompt) must not stop the judge
+                texts = []
+                for m in msgs:
+                    try:
+                        texts.extend(generate_batch([m], decoding))
+                    except Exception as item_exc:  # noqa: BLE001
+                        texts.append(f"JUDGE_CALL_FAILED: {type(item_exc).__name__}: {item_exc} (batch error: {type(exc).__name__})")
             retry = []
             for g, text in zip(pending, texts, strict=True):
                 try:
