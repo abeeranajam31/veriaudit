@@ -45,10 +45,10 @@ models:
     role: EXPLORATORY larger model (only if compute permits; not in the confirmatory families)
     confirmatory: false
     backend: vllm
-    model_id: google/gemma-4-31B-it   # NOT YET VERIFIED - confirm repo id and licence before running
+    model_id: google/gemma-4-31B-it   # repo id confirmed via the NVIDIA model catalog 2026-11-13 (links to this HF repo); HF card not read directly
     revision: null
     chat_template_kwargs: {enable_thinking: false}
-    licence: "Apache-2.0 per the Gemma 4 announcement; repo not checked"
+    licence: "Apache-2.0 (per the Gemma 4 announcement and the NVIDIA catalog's licence note); confirm on the HF card at download"
     declared_urdu_support: "unclear"
   - key: fake
     role: TEST ONLY - deterministic echo, never analysed; runs only when named explicitly

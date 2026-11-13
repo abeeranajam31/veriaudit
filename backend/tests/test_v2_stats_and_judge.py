@@ -217,3 +217,15 @@ def test_estimate_logit_heterogeneity_recovers_sd():
     homog = estimate_logit_heterogeneity(rng.binomial(3, 0.2, 5000) / 3)
     assert homog["sd_logit"] < 0.3
     assert estimate_logit_heterogeneity([0, 0, 0])["sd_logit"] == 0.0
+
+
+def test_conservative_mde_matches_simulated_paired_t_power():
+    """At the analytic MDE (no shared scenario effect), simulated paired-t power is ~0.8; with a shared
+    scenario effect the paired test does better, so the analytic value is an upper bound."""
+    from app.v2.stats import logit_share_power, mde_paired_t_conservative
+
+    g = mde_paired_t_conservative(0.05, 2.0)
+    worst = logit_share_power(200, 0.05, 0.05 + g, 0.0, 2.0, alphas=(0.05 / 12,), n_sim=800, seed=3)["paired_t"][0]
+    shared = logit_share_power(200, 0.05, 0.05 + g, 1.9, 0.6, alphas=(0.05 / 12,), n_sim=800, seed=3)["paired_t"][0]
+    assert 0.72 <= worst <= 0.88
+    assert shared > worst

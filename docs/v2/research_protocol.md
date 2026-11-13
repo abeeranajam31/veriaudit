@@ -340,7 +340,13 @@ Each response gets four labels:
 where possible, each prompted with the rubric in English plus the original
 prompt and response; disagreements go to a third judge and to the human
 review queue. (c) Response classifiers from RQ5. The two primary judges
-must be named and pinned before the main study (not yet chosen).
+must be named and pinned before the main study. Recommended (not yet
+confirmed by the PI): gpt-oss-120b and Mistral Small 3.2 24B as primary
+judges, Llama 4 Scout as tie-breaker (`configs/judges.yaml`,
+`docs/v2/model_and_judge_selection.md`). None documents Urdu support, so
+the judges are checked against human labels on the calibration pilot (J0)
+before their labels are used. `app.v2.judges.run_judge` refuses unpinned
+judges and judges from an organisation whose models are under test.
 
 **Label resolution** (`app.v2.records.resolve_labels`). A human-adjudicated,
 human or AI-panel label resolves a response (several labels in the top tier
@@ -504,12 +510,23 @@ near-duplicate overlap; zero found).
   near-duplicate thresholds applied against the 200 selected scenarios.
 - All confirmatory models, 1 greedy + 3 sampled generations
   (`configs/experiments/calibration_pilot.yaml`).
-- Analysis: `run_analysis.py --calibration` estimates the rate and the
-  logit-scale heterogeneity per model and re-runs power for the 12-test
-  family. The form-specific variance component is not identified from
-  English-only data, so power is reported for form-specific SDs of 0.25,
-  0.5 and 1.0, with the minimum detectable effect at 80% power for each.
-  These are reported before the main study runs.
+- Analysis: `run_analysis.py --calibration` estimates, per model and
+  intent type, the rate, the agreement among the 3 samples and the
+  logit-scale heterogeneity, and computes the paired-t minimum detectable
+  effect (MDE) for the 12-test family. Because set A has a single harmful
+  scenario, the shared (cross-form) scenario component is not identified.
+  The decision quantity is therefore a conservative MDE that assumes no
+  shared component, evaluated at the bootstrap 90th percentile of the
+  heterogeneity (`mde_pp_conservative_upper`). Simulated MDEs for
+  form-specific SDs of 0.25, 0.5 and 1.0 are reported as sensitivity.
+- Decision rule (amendment A7): n = 200 is adequate if
+  `mde_pp_conservative_upper` ≤ 10 pp for every confirmatory model in H1
+  and H2. It is adequate with a stated limitation if only the point
+  conservative MDE is ≤ 10 pp. Otherwise the PI chooses, by amendment
+  before the main study, between pre-registering the MDE, more samples
+  per prompt and more scenarios
+  (`docs/v2/calibration_pilot_package.md`). All MDEs are reported before
+  the main study runs.
 - Limitations: heterogeneity is estimated mostly on English and on a held-out
   pool skewed towards cybercrime and violence.
 
@@ -560,3 +577,4 @@ near-duplicate overlap; zero found).
 | 2026-11-13 | §12: calibration pilot redesigned (disjoint from the main study, 3 samples, English held-out set B) | 6 of the 13 v1.0 calibration items are main-study scenarios, and 1 sample per prompt cannot estimate response consistency (audit) |
 | 2026-11-13 | Body text corrected to match earlier amendments and data: dedup thresholds, realised category counts (14–29), transformation subset n = 70, v0.1 CBRN-item exception, H1 stated two-sided | contradictions found by the protocol audit; no design change |
 | 2026-11-13 (A6) | §10: **primary test changed from the Wilcoxon signed-rank test to the paired t-test** on per-scenario share differences; interval changed from scenario bootstrap to the dual t interval, reported as approximate 95%; signed-rank kept as descriptive only; BH-adjusted exploratory tests use the paired t. §4.3: power with within-unit correlation and rare outcomes. §9: rate intervals labelled approximate. **Supersedes the choice of primary test in amendment 2026-11-12 (b).** | before any variant translation or inference. Second validation round (`statistical_validation_v2.md`): the signed-rank test does not test the mean (CLSG). Under a mean-zero null with many zero differences it rejected 25.5% at α = .05, and it was significant in the wrong direction under mean-positive alternatives. The paired t-test held its level in all 11 nulls and matched or beat signed-rank power except at a 0.5% base rate (0.17 vs 0.19) |
+| 2026-11-13 (A7) | §12: calibration decision rule for n = 200 based on the paired-t MDE (conservative bound, no shared scenario effect, bootstrap upper heterogeneity), for H1 and H2; options if inadequate fixed in advance. §8: recommended judges named; J0 human check of judges on the pilot | before the pilot runs. The earlier §12 analysis computed signed-rank power and did not state how the pilot decides adequacy; set A has one harmful scenario, so a cross-form estimate is not available for H1 |

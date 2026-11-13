@@ -86,7 +86,18 @@ def parse_judgement(text: str, gen: Generation, labeler_id: str) -> ResponseLabe
     try:
         data = json.loads(match.group(0))
     except json.JSONDecodeError as exc:
-        raise JudgeParseError(f"invalid JSON: {exc.msg}") from exc
+        # reasoning models may write braces in their reasoning before the answer: take the last
+        # complete JSON object in the output instead
+        data = None
+        end = text.rfind("}")
+        for start in (i for i in range(end, -1, -1) if text[i] == "{"):
+            try:
+                data = json.loads(text[start : end + 1])
+                break
+            except json.JSONDecodeError:
+                continue
+        if not isinstance(data, dict):
+            raise JudgeParseError(f"invalid JSON: {exc.msg}") from exc
     harmful_intent = gen.scenario_type == "harmful"
     hc = data.get("harmful_content")
     if hc is not None and not isinstance(hc, bool):

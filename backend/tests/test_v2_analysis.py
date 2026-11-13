@@ -113,3 +113,25 @@ def test_calibration_mode_runs(fixture_run):
     analyse(opts(run_dir, labels, tmp, allow_fixtures=True, calibration=True))
     assert (tmp / "analysis" / "calibration_parameters.csv").exists()
     assert (tmp / "analysis" / "calibration_power.csv").exists()
+
+
+def test_calibration_reports_paired_t_mde(tmp_path):
+    import numpy as np
+
+    from app.v2.analysis import Options, calibration
+    from app.v2.metrics import Unit
+
+    rng = np.random.default_rng(1)
+    units = []
+    for i in range(40):
+        p = 1 / (1 + np.exp(-(-3 + 2 * rng.normal())))
+        for lang in ("english", "urdu") if i < 7 else ("english",):
+            share = rng.binomial(3, p) / 3
+            units.append(Unit("m", f"S{i}", f"S{i}-H", "harmful", lang, "base", "ok", 3, harmful=share))
+    o = Options(run_dir=tmp_path, label_files=[], out_dir=tmp_path, model_manifest=tmp_path / "x", seed=1, calibration_sims=20)
+    params = calibration(units, o)["calibration_parameters"]
+    row = params[0]
+    assert row["n_pairs_urdu"] == 7 and row["sd_diff_urdu"] is not None
+    if 0 < row["rate"] < 0.9:
+        assert row["mde_pp_conservative_upper"] is None or row["mde_pp_conservative_upper"] >= row["mde_pp_conservative"]
+        assert "power_paired_t" in (tmp_path / "calibration_power.csv").read_text().splitlines()[0]

@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 from app.v2 import metrics as M
@@ -36,7 +37,7 @@ from app.v2.inference.runner import RUN_MANIFEST, load_generations
 from app.v2.judges.llm_judge import agreement_report
 from app.v2.records import Generation, LabelSource, ResponseLabel, resolve_labels
 from app.v2.regression import model_based_effects
-from app.v2.stats import cohen_kappa, estimate_logit_heterogeneity, logit_share_power
+from app.v2.stats import cohen_kappa, estimate_logit_heterogeneity, logit_share_power, mde_paired_t_conservative
 from app.veriaudit_x.validation import ValidationConfig, validate_file
 
 FIXTURE_BANNER = "TEST FIXTURE OUTPUT - synthetic data, NOT research results. Never cite."
@@ -59,6 +60,7 @@ class Options:
     allow_candidate_dataset: bool = False
     registry: Path | None = None
     n_boot: int = 5000
+    calibration_sims: int = 600  # per (sigma_form, gap) cell of the calibration power grid
     seed: int = 20261113
     overrides_used: list[str] = field(default_factory=list)
 
@@ -416,25 +418,57 @@ def _safe_families(units, models, o):
 
 
 def calibration(units, o: Options) -> dict:
-    """Nuisance parameters per model and intent type (English units), then power for the
-    confirmatory family (12 tests) across assumed form-specific SDs; reports the minimum detectable
-    per-response gap at 80% power."""
+    """Nuisance parameters per model and intent type, and the minimum detectable effect (MDE) of the
+    primary paired t-test for the 12-test family (docs/v2/calibration_pilot_package.md).
+
+    English units give the rate, the within-unit agreement of the 3 samples and the logit SD of
+    unit probabilities. The empirical share variance already contains any within-unit correlation,
+    so nothing extra is assumed about it. Reported per model and intent type (H1 harmful, H2 benign):
+      mde_pp_conservative       paired-t MDE at 80% power, alpha .05/12, n = 200, assuming no
+                                scenario effect shared between forms (worst case for a paired test);
+      mde_pp_conservative_upper the same at the bootstrap 90th percentile of the logit SD;
+      mde_pp_sigma_form_<s>     simulated MDE when the logit SD splits into a shared scenario part
+                                and a form-specific part of SD s (sensitivity; not identified here);
+      sd_diff_<form>, n_pairs_<form>  observed SD of per-scenario share differences on the
+                                multilingual items (set A; very few scenarios - descriptive only).
+    """
     params, power = [], []
+    rng = np.random.default_rng(o.seed)
+    gaps = (0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20)
     for model in sorted({u.model for u in units}):
         for stype, outcome in (("harmful", "harmful"), ("benign", "refused")):
-            shares = [getattr(u, outcome) for u in units if u.model == model and u.scenario_type == stype and u.language == "english" and u.ok]
+            eng = {u.scenario_id: getattr(u, outcome) for u in units if u.model == model and u.scenario_type == stype and u.language == "english" and u.ok}
+            shares = list(eng.values())
             if len(shares) < 10:
                 continue
             est = estimate_logit_heterogeneity(shares)
-            params.append({"model": model, "intent_type": stype, "outcome": outcome, **est})
-            if stype != "harmful" or not 0 < est["rate"] < 0.9:
+            row = {"model": model, "intent_type": stype, "outcome": outcome, **est, "var_share": float(np.var(shares, ddof=1))}
+            for lang in M.BASE_LANGS[1:]:
+                tgt = {u.scenario_id: getattr(u, outcome) for u in units if u.model == model and u.scenario_type == stype and u.language == lang and u.ok}
+                d = [tgt[s] - eng[s] for s in sorted(set(tgt) & set(eng))]
+                row[f"n_pairs_{lang}"] = len(d)
+                row[f"sd_diff_{lang}"] = float(np.std(d, ddof=1)) if len(d) >= 2 else None
+            params.append(row)
+            if not 0 < est["rate"] < 0.9:
                 continue
+            mde = mde_paired_t_conservative(est["rate"], est["sd_logit"])
+            row["mde_pp_conservative"] = None if mde is None else 100 * mde
+            boot_sd = []
+            arr = np.asarray(shares)
+            for _ in range(min(500, 10 * o.calibration_sims)):
+                b = arr[rng.integers(0, len(arr), len(arr))]
+                if 0 < b.mean() < 1:
+                    boot_sd.append(estimate_logit_heterogeneity(b)["sd_logit"])
+            sd_hi = float(np.quantile(boot_sd, 0.9)) if boot_sd else est["sd_logit"]
+            mde_hi = mde_paired_t_conservative(est["rate"], sd_hi)
+            row["sd_logit_boot_p90"] = sd_hi
+            row["mde_pp_conservative_upper"] = None if mde_hi is None else 100 * mde_hi
             for sigma_f in (0.25, 0.5, 1.0):
                 sigma_u = math.sqrt(max(est["sd_logit"] ** 2 - sigma_f**2, 0.0))
-                mde = None
-                for gap in (0.02, 0.04, 0.06, 0.08, 0.10, 0.15):
+                found = None
+                for gap in gaps:
                     target = min(est["rate"] + gap, 0.99)
-                    res = logit_share_power(200, max(est["rate"], 0.001), target, sigma_u, sigma_f, alphas=(0.05 / 12,), n_sim=600, seed=o.seed)
+                    res = logit_share_power(200, max(est["rate"], 0.001), target, sigma_u, sigma_f, alphas=(0.05 / 12,), n_sim=o.calibration_sims, seed=o.seed)
                     power.append(
                         {
                             "model": model,
@@ -442,13 +476,14 @@ def calibration(units, o: Options) -> dict:
                             "sigma_scenario": sigma_u,
                             "sigma_form": sigma_f,
                             "gap_pp": 100 * gap,
+                            "power_paired_t": res["paired_t"][0],
                             "power_signed_rank": res["signed_rank"][0],
                             "power_mcnemar_majority": res["mcnemar_majority"][0],
                         }
                     )
-                    if mde is None and res["signed_rank"][0] >= 0.8:
-                        mde = 100 * gap
-                params[-1][f"mde_pp_sigma_form_{sigma_f}"] = mde
+                    if found is None and res["paired_t"][0] >= 0.8:
+                        found = 100 * gap
+                row[f"mde_pp_sigma_form_{sigma_f}"] = found
     write_csv(o.out_dir / "calibration_parameters.csv", params)
     write_csv(o.out_dir / "calibration_power.csv", power)
     return {"calibration_parameters": params}

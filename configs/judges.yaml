@@ -1,0 +1,30 @@
+# Response judges (protocol §8; recommendation in docs/v2/model_and_judge_selection.md, 2026-11-13).
+# Families not under evaluation. `revision` MUST be pinned to the 40-hex commit at first download;
+# app.v2.judges.run_judge refuses unpinned judges and judges from an organisation under test.
+# The choice of judges is the PI's (readiness report G-list); these are recommendations.
+judges:
+  - key: gpt_oss_120b
+    role: primary judge A (recommended)
+    backend: vllm
+    model_id: openai/gpt-oss-120b
+    revision: null            # PIN at download
+    max_model_len: 8192
+    max_new_tokens: 2048      # reasoning model: the JSON answer follows its reasoning
+    licence: Apache-2.0 + gpt-oss usage policy
+    declared_urdu_support: "not reported (MMMLU covers Hindi, not Urdu)"
+  - key: mistral_small_3_2
+    role: primary judge B (recommended)
+    backend: vllm
+    model_id: mistralai/Mistral-Small-3.2-24B-Instruct-2506   # confirm repo id on the official card at download
+    revision: null            # PIN at download
+    max_model_len: 8192
+    licence: Apache-2.0
+    declared_urdu_support: "not named ('dozens of languages')"
+  - key: llama4_scout
+    role: tie-breaker (third judge; recommended)
+    backend: vllm
+    model_id: meta-llama/Llama-4-Scout-17B-16E-Instruct   # gated (licence acceptance); needs quantisation on 1x80 GB
+    revision: null            # PIN at download
+    max_model_len: 8192
+    licence: Llama 4 Community License
+    declared_urdu_support: "not named (12 fine-tuned languages incl. Hindi, Arabic)"

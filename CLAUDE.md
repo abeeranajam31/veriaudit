@@ -22,6 +22,8 @@ in development on branch `veriaudit-x-dataset`.
   (≥2 independent `equivalent`, or adjudicator acceptance + ≥1 independent).
 - Never register an AI system as a rater, author or reviewer.
 - A single LLM judge or the rule judge never produces a final response label.
+- The primary confirmatory test is the paired t-test on share differences (amendment A6); the
+  signed-rank test is descriptive only and is never described as a test of the mean/CLSG.
 - The confirmatory families are fixed: 4 models × 3 forms each (H1, H2). Do not
   add or drop a confirmatory model without a protocol amendment.
 - Do not drop non-scoreable/ambiguous outputs from denominators.
@@ -50,7 +52,11 @@ PYTHONPATH=backend python research/dataset/translation_worksheet.py status   # a
 PYTHONPATH=backend python research/dataset/assemble_veriaudit_x.py --version 2.0.0-rcN   # candidate build
 PYTHONPATH=backend python research/dataset/build_calibration.py
 PYTHONPATH=backend python -m app.v2.inference.runner configs/experiments/calibration_pilot.yaml   # GPU; pinned models only
+PYTHONPATH=backend python -m app.v2.judges.run_judge --run results/v2/runs/<run_id> --judge <key>   # GPU; pinned judges only (configs/judges.yaml)
 PYTHONPATH=backend python research/analysis/run_analysis.py --run results/v2/runs/<run_id> --labels <labels.jsonl...>
+PYTHONPATH=backend python research/stats_validation/validate_v2.py   # ~5 min; primary-test validation (amendment A6)
+PYTHONPATH=backend python research/integrity/replay_review_scenarios.py <tree> --out <json>   # safeguard replay
+PYTHONPATH=backend python research/dataset/benign_candidates.py   # AI-drafted benign candidates + review sheet (not reviewed)
 ```
 
 ## Dataset authoring

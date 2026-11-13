@@ -305,9 +305,12 @@ def simulate_paired_shares_logit(
     return rng.binomial(n_samples, pe) / n_samples, rng.binomial(n_samples, pt) / n_samples
 
 
+_GH_X, _GH_W = np.polynomial.hermite_e.hermegauss(80)
+_GH_W = _GH_W / _GH_W.sum()  # probabilists' Gauss-Hermite nodes/weights for E[f(Z)], Z ~ N(0, 1)
+
+
 def _gh_mean(a: float, sd: float) -> float:
-    x, w = np.polynomial.hermite_e.hermegauss(80)
-    return float(np.sum((w / w.sum()) / (1 + np.exp(-(a + sd * x)))))
+    return float(np.sum(_GH_W / (1 + np.exp(-(a + sd * _GH_X)))))
 
 
 def estimate_logit_heterogeneity(shares: Sequence[float], n_samples: int = 3) -> dict:
@@ -328,8 +331,7 @@ def estimate_logit_heterogeneity(shares: Sequence[float], n_samples: int = 3) ->
     within_agreement = float(np.mean((s == 0) | (s == 1)))
     if not 0 < rate < 1 or var_p <= 0:
         return {"rate": rate, "var_p": var_p, "sd_logit": 0.0, "within_unit_agreement": within_agreement, "n_units": len(s)}
-    x, w = np.polynomial.hermite_e.hermegauss(80)
-    w = w / w.sum()
+    x, w = _GH_X, _GH_W
 
     def var_for(sd: float) -> float:
         a = logit_intercept_for_marginal(rate, sd)
@@ -345,6 +347,36 @@ def estimate_logit_heterogeneity(shares: Sequence[float], n_samples: int = 3) ->
     return {"rate": rate, "var_p": var_p, "sd_logit": sd, "within_unit_agreement": within_agreement, "n_units": len(s)}
 
 
+def share_variance(rate: float, sd_logit: float, n_samples: int = 3) -> float:
+    """Variance of a unit's sample share when unit probabilities are logit-normal with the given
+    marginal rate and logit SD: Var(p) + E[p(1-p)] / n_samples."""
+    if not 0 < rate < 1:
+        return 0.0
+    x, w = _GH_X, _GH_W
+    a = logit_intercept_for_marginal(rate, sd_logit) if sd_logit > 0 else math.log(rate / (1 - rate))
+    p = 1 / (1 + np.exp(-(a + sd_logit * x)))
+    return float(np.sum(w * p**2) - rate**2 + np.sum(w * p * (1 - p)) / n_samples)
+
+
+def mde_paired_t_conservative(
+    rate: float, sd_logit: float, n_pairs: int = 200, alpha: float = 0.05 / 12, power: float = 0.8, n_samples: int = 3
+) -> float | None:
+    """Smallest increase g in the per-response rate that the two-sided paired t-test detects with the
+    given power, assuming NO scenario effect shared between forms (Cov(S_eng, S_target) = 0). That is
+    the worst case for a paired test given the per-form share variances, so the result is an upper
+    bound on the MDE under the logit model. The per-form logit SD is taken as equal in both forms.
+    Normal approximation (n_pairs >= 100). Returns None if no g <= 0.5 reaches the power."""
+    z = float(_st.norm.ppf(1 - alpha / 2) + _st.norm.ppf(power))
+    v_e = share_variance(rate, sd_logit, n_samples)
+    for k in range(1, 501):
+        g = k / 1000
+        if rate + g >= 1:
+            return None
+        if g >= z * math.sqrt((v_e + share_variance(rate + g, sd_logit, n_samples)) / n_pairs):
+            return g
+    return None
+
+
 def power_from_shares(
     eng: np.ndarray,
     tgt: np.ndarray,
@@ -354,7 +386,8 @@ def power_from_shares(
     seed: int = 0,
 ) -> dict[str, list[float]]:
     """Power, on the same simulated (n_sim, n_pairs) share arrays, of:
-    - "signed_rank": PRIMARY test (protocol §10) - Wilcoxon signed-rank on share differences;
+    - "paired_t": PRIMARY test (protocol §10, amendment A6) - paired t on share differences;
+    - "signed_rank": descriptive secondary (before A6 the primary) - Wilcoxon signed-rank;
     - "mcnemar_majority": secondary - exact McNemar on majority-vote (> half of samples) outcomes;
     - "sign_flip": robustness - sign-flip permutation test on the mean share difference
       (exact but conservative here because the statistic is discrete).
@@ -372,6 +405,7 @@ def power_from_shares(
     p_sf = (1 + np.sum(t_perm >= t_obs[None, :], axis=0)) / (1 + n_perm)
     p_sf = np.where(np.all(diffs == 0, axis=1), 1.0, p_sf)
     p_sr = np.array([signed_rank_test(row) for row in diffs])
+    p_t = np.array([paired_t_test(row) for row in diffs])
     me, mt = eng > 0.5, tgt > 0.5
     b = np.sum(mt & ~me, axis=1)
     c = np.sum(me & ~mt, axis=1)
@@ -380,6 +414,7 @@ def power_from_shares(
         "sign_flip": [float(np.mean(p_sf < a)) for a in alphas],
         "mcnemar_majority": [float(np.mean(p_mc < a)) for a in alphas],
         "signed_rank": [float(np.mean(p_sr < a)) for a in alphas],
+        "paired_t": [float(np.mean(p_t < a)) for a in alphas],
         "mean_gap": [float(diffs.mean())],
         "mc_se": [math.sqrt(0.8 * 0.2 / n_sim)],
     }
