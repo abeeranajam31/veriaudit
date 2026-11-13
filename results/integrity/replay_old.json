@@ -1,0 +1,80 @@
+[
+  {
+    "scenario": "s01_adjudicated_variant_validates",
+    "unsafe_outcome": "Unsafe outcome: a correctly adjudicated variant makes the dataset fail validation (release blocked).",
+    "outcome": "BYPASSED",
+    "detail": "exit=1 status=verified"
+  },
+  {
+    "scenario": "s02_edited_source_keeps_old_translation",
+    "unsafe_outcome": "Unsafe outcome: after the English benign contrast is rewritten, translations of the OLD text stay in the dataset.",
+    "outcome": "BYPASSED",
+    "detail": "stale Urdu translation of old source present=True"
+  },
+  {
+    "scenario": "s03_reviewer_adjudicates_own_row",
+    "unsafe_outcome": "Unsafe outcome: the person who reviewed a variant also adjudicates it, through the worksheet CLI.",
+    "outcome": "BYPASSED",
+    "detail": "CLI accepted alice adjudicating a row she reviewed"
+  },
+  {
+    "scenario": "s04_excel_cp1252_destroys_urdu",
+    "unsafe_outcome": "Unsafe outcome: a sheet saved by Excel as plain CSV (Urdu -> '???') is imported.",
+    "outcome": "BYPASSED",
+    "detail": "imported text '?? ??? ???? ?? ???? '"
+  },
+  {
+    "scenario": "s05_resume_mixes_datasets",
+    "unsafe_outcome": "Unsafe outcome: re-running a run_id after the dataset changed appends generations from a different dataset.",
+    "outcome": "BYPASSED",
+    "detail": "resumed on changed dataset (112 -> 112 lines, mixed hashes)"
+  },
+  {
+    "scenario": "s06_revision_drops_mt_disclosure",
+    "unsafe_outcome": "Unsafe outcome: a machine-translated variant revised by a second translator loses its drafting-aid disclosure.",
+    "outcome": "BYPASSED",
+    "detail": "revised variant ai_generated=False, method=human"
+  },
+  {
+    "scenario": "s07_unfinished_run_without_hash",
+    "unsafe_outcome": "Unsafe outcome: a run whose manifest has no generations hash (never finished) is analysed.",
+    "outcome": "BYPASSED",
+    "detail": "analysed"
+  },
+  {
+    "scenario": "s08_limited_run_counts_as_complete",
+    "unsafe_outcome": "Unsafe outcome: a run made with --limit (a subset of the dataset) is analysed as complete, without any override.",
+    "outcome": "BYPASSED",
+    "detail": "analysed a partial run as complete"
+  },
+  {
+    "scenario": "s09_family_size_not_enforced",
+    "unsafe_outcome": "Unsafe outcome: a model manifest with fewer confirmatory models silently shrinks the Holm family.",
+    "outcome": "BYPASSED",
+    "detail": "family built from ['x']"
+  },
+  {
+    "scenario": "s10_self_declared_panel_label",
+    "unsafe_outcome": "Unsafe outcome: one judge's label written with label_source=ai_panel resolves on its own.",
+    "outcome": "BYPASSED",
+    "detail": "single self-declared panel label"
+  },
+  {
+    "scenario": "s11_non_release_dataset_analysed",
+    "unsafe_outcome": "Unsafe outcome: a main-study analysis runs on a dataset that is not a frozen release (here: the test fixture).",
+    "outcome": "BYPASSED",
+    "detail": "analysed a non-release dataset as the main study"
+  },
+  {
+    "scenario": "s12_unregistered_human_labels",
+    "unsafe_outcome": "Unsafe outcome: labels claiming to be human, from an ID not in the rater registry, override AI labels.",
+    "outcome": "BYPASSED",
+    "detail": "analysed with an unregistered 'human' label overriding the AI labels"
+  },
+  {
+    "scenario": "s13_orphan_generations",
+    "unsafe_outcome": "Unsafe outcome: generations for records that are not in the dataset enter the analysis.",
+    "outcome": "BYPASSED",
+    "detail": "analysed generations for a record not in the dataset"
+  }
+]

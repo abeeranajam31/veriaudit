@@ -187,10 +187,11 @@ def build(selection: list[dict], subset: set[str], release: bool) -> tuple[list[
                     rec["quality"]["translator_self_assessment"] = v["self_assessment"]
                 if ratings.get(rid):
                     model = VeriAuditXRecord.model_validate(rec)
-                    model = apply_equivalence_ratings(
-                        model,
-                        [EquivalenceRating.model_validate({k: x for k, x in r.items() if k not in ("record_id", "english_sha256")}) for r in ratings[rid]],
-                    )
+                    rated = [EquivalenceRating.model_validate({k: x for k, x in r.items() if k not in ("record_id", "english_sha256")}) for r in ratings[rid]]
+                    try:
+                        model = apply_equivalence_ratings(model, rated)
+                    except ValueError as exc:  # e.g. a hand-written ratings file with a role conflict
+                        raise SystemExit(f"ratings for {rid} refused: {exc}") from exc
                     rec = model.model_dump(mode="json")
                     stats["variants_with_human_ratings"] += 1
                 records.append(rec)

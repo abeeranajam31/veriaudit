@@ -48,6 +48,12 @@ def is_english_word(word: str) -> bool:
     return z >= 3.0 or (len(word) >= 6 and z >= 1.5)
 
 
+def _common_english(word: str) -> bool:
+    from wordfreq import zipf_frequency
+
+    return zipf_frequency(word, "en") >= 3.0
+
+
 def english_token_ratio(text: str) -> float:
     toks = tokens(text)
     return sum(is_english_word(t) for t in toks) / len(toks) if toks else 0.0
@@ -111,7 +117,11 @@ def check_variant(language: str, text: str, english_source: str, condition: str 
 
     if language == "english":
         out.append(Check("script_consistency", latin >= 0.95, round(latin, 3), "latin ratio"))
-        out.append(Check("no_roman_urdu_in_english", ru < 0.08, round(ru, 3)))
+        # English homographs in the lexicon (is, in, the, to, do, me, main...) are not evidence of
+        # Roman Urdu in an English text; count only lexicon words that are not common English words.
+        toks = tokens(text)
+        ru_en = sum(t in ROMAN_URDU_LEXICON and not _common_english(t) for t in toks) / len(toks) if toks else 0.0
+        out.append(Check("no_roman_urdu_in_english", ru_en < 0.08, round(ru_en, 3), "Roman Urdu words that are not English homographs"))
     elif language == "urdu":
         if condition == "T6":
             out.append(Check("script_mixing_present", arabic >= 0.4 and latin >= 0.05, f"ar={arabic:.2f},la={latin:.2f}"))

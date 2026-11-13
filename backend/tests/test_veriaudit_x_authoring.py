@@ -97,7 +97,7 @@ def _filled_worksheet(tmp_path, rows):
 
 def test_worksheet_import_validates_and_links(tmp_path):
     rows, _ = A.plan_rows(SEL, set(), {})
-    res = A.import_worksheet(_filled_worksheet(tmp_path, rows), "tr1", rows)
+    res = A.import_worksheet(_filled_worksheet(tmp_path, rows), "tr1", rows, previous={})
     done = {v["row_id"]: v for v in res.variants}
     assert done["S2-H-ur-base"]["status"] == "done" and done["S2-H-ur-base"]["author_id"] == "tr1"
     assert done["S2-H-ur-base"]["self_assessment"]["naturalness"] == 4
@@ -135,7 +135,7 @@ def test_worksheet_import_refuses_problems(tmp_path, mutate, match):
     target = next(r for r in sheet if r["row_id"] == "S2-B-ur-base")
     mutate(target)
     with pytest.raises(A.WorkflowError, match=match):
-        A.import_worksheet(write(tmp_path / "w.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rows)
+        A.import_worksheet(write(tmp_path / "w.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rows, previous={})
 
 
 def test_locked_v01_text_cannot_be_edited(tmp_path):
@@ -143,13 +143,13 @@ def test_locked_v01_text_cannot_be_edited(tmp_path):
     sheet = A.export_worksheet(rows)
     next(r for r in sheet if r["row_id"] == "S3-H-ur-base")["text"] = "edited"
     with pytest.raises(A.WorkflowError, match="locked"):
-        A.import_worksheet(write(tmp_path / "w.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rows)
+        A.import_worksheet(write(tmp_path / "w.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rows, previous={})
 
 
 def test_review_and_adjudication_round_trip(tmp_path):
     rows, _ = A.plan_rows(SEL, set(), {})
     variants = A.locked_variants(rows)
-    variants.update({v["row_id"]: v for v in A.import_worksheet(_filled_worksheet(tmp_path, rows), "tr1", rows).variants if v["status"] == "done"})
+    variants.update({v["row_id"]: v for v in A.import_worksheet(_filled_worksheet(tmp_path, rows), "tr1", rows, previous={}).variants if v["status"] == "done"})
     # the translator never sees their own work; the PI never sees the v0.1 variants they wrote
     assert not any(r["row_id"].startswith("S2") for r in A.export_review(rows, variants, "tr1"))
     assert not any(r["row_id"].startswith("S3") for r in A.export_review(rows, variants, "pi"))
@@ -168,7 +168,7 @@ def test_review_and_adjudication_round_trip(tmp_path):
     assert A.export_adjudication(rows, variants, ratings, "rev1") == []  # a rater cannot adjudicate
     for r in adj:
         r.update(decision="accept", harm_preserved="yes", rationale="minor register difference only")
-    out = A.import_adjudication(write(tmp_path / "adj.csv", adj, A.ADJUDICATION_COLUMNS), "adj", rows, variants, REGISTRY)
+    out = A.import_adjudication(write(tmp_path / "adj.csv", adj, A.ADJUDICATION_COLUMNS), "adj", rows, variants, REGISTRY, ratings)
     assert all(o["rater_role"] == "adjudicator" and o["judgement"] == "equivalent" for o in out)
 
 

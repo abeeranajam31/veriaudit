@@ -18,8 +18,9 @@ Stage C - independent review and adjudication
   import-adjudication FILE --adjudicator ID -> ratings_<time>_<ID>.jsonl
 status                                   -> authoring/STATUS.md
 
-Run from the repo root with PYTHONPATH=backend. An import with any problem writes nothing and
-lists every problem; fix the sheet and import again.
+Run from the repo root with PYTHONPATH=backend. Every export writes a UTF-8 .csv and an .xlsx
+(use the .xlsx in Excel: plain-CSV saves destroy Urdu). Imports accept either. An import with any
+problem writes nothing and lists every problem; fix the sheet and import again.
 """
 
 from __future__ import annotations
@@ -88,6 +89,14 @@ def registered(person: str) -> None:
     A._check_registered(person, A.load_registry(REGISTRY))
 
 
+def emit(path: Path, columns: list[str], rows: list[dict]) -> str:
+    """Write the sheet as UTF-8 CSV (canonical, diffable) and as .xlsx (for people: locked read-only
+    columns, dropdowns, right-to-left Urdu) next to each other."""
+    csv_path = A.write_csv(Path(path).with_suffix(".csv"), columns, rows)
+    xlsx_path = A.write_xlsx(SHEETS / (Path(path).stem + ".xlsx"), columns, rows)
+    return f"{csv_path}\n{xlsx_path}"
+
+
 def status() -> Path:
     rows, waiting = plan()
     v = variants(rows)
@@ -144,7 +153,7 @@ def main(argv=None) -> int:
 
     try:
         if args.cmd == "export-benign":
-            out = A.write_csv(SHEETS / "benign_authoring.csv", A.BENIGN_COLUMNS, A.export_benign_authoring(selection(), authored_benign()))
+            out = emit(SHEETS / "benign_authoring.csv", A.BENIGN_COLUMNS, A.export_benign_authoring(selection(), authored_benign()))
         elif args.cmd == "import-benign":
             registered(args.person)
             rows = A.import_benign_authoring(args.path, args.person, selection())
@@ -152,7 +161,7 @@ def main(argv=None) -> int:
             out = f"{len(rows)} benign contrasts imported (each now needs a review by someone else)"
         elif args.cmd == "export-benign-review":
             registered(args.person)
-            out = A.write_csv(
+            out = emit(
                 SHEETS / f"benign_review_{args.person}.csv", A.BENIGN_REVIEW_COLUMNS, A.export_benign_review(selection(), authored_benign(), args.person)
             )
         elif args.cmd == "import-benign-review":
@@ -168,8 +177,19 @@ def main(argv=None) -> int:
             for r in sheet:  # show already-imported work so translators do not redo it
                 if r["locked"] == "no" and r["row_id"] in done:
                     d = done[r["row_id"]]
-                    r.update(text=d["text"], status="done", drafting_aid=d.get("drafting_aid") or "", comments=f"imported from {d['author_id']}")
-            out = A.write_csv(CAND / "translation_worksheet.csv", A.WORKSHEET_COLUMNS, sheet)
+                    sa = d.get("self_assessment") or {}
+                    hp = sa.get("harm_preserved")
+                    r.update(
+                        text=d["text"],
+                        status="done",
+                        drafting_aid=d.get("drafting_aid") or "",
+                        self_equivalence=sa.get("equivalence") or "",
+                        self_harm_preserved={True: "yes", False: "no"}.get(hp, "unsure" if sa else ""),
+                        naturalness=str(sa.get("naturalness") or ""),
+                        ambiguity=sa.get("ambiguity") or "",
+                        comments=sa.get("comments") or f"imported from {d['author_id']}",
+                    )
+            out = emit(CAND / "translation_worksheet.csv", A.WORKSHEET_COLUMNS, sheet)
             if waiting:
                 print(f"note: benign rows for {len(waiting)} scenarios appear after their benign contrast is written (stage A)", file=sys.stderr)
         elif args.cmd == "import":
@@ -192,7 +212,7 @@ def main(argv=None) -> int:
             rows, _ = plan()
             v = variants(rows)
             rated = {(r["record_id"], r.get("text_sha256")) for r in ratings() if r["annotator_id"] == args.person}
-            out = A.write_csv(SHEETS / f"review_{args.person}.csv", A.REVIEW_COLUMNS, A.export_review(rows, v, args.person, rated))
+            out = emit(SHEETS / f"review_{args.person}.csv", A.REVIEW_COLUMNS, A.export_review(rows, v, args.person, rated))
         elif args.cmd == "import-review":
             rows, _ = plan()
             rs = A.import_review(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY))
@@ -201,9 +221,7 @@ def main(argv=None) -> int:
         elif args.cmd == "export-adjudication":
             registered(args.person)
             rows, _ = plan()
-            out = A.write_csv(
-                SHEETS / f"adjudication_{args.person}.csv", A.ADJUDICATION_COLUMNS, A.export_adjudication(rows, variants(rows), ratings(), args.person)
-            )
+            out = emit(SHEETS / f"adjudication_{args.person}.csv", A.ADJUDICATION_COLUMNS, A.export_adjudication(rows, variants(rows), ratings(), args.person))
         elif args.cmd == "import-adjudication":
             rows, _ = plan()
             rs = A.import_adjudication(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY), ratings())

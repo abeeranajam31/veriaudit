@@ -137,18 +137,18 @@ def test_non_utf8_and_question_mark_damage_refused(tmp_path):
     target = next(r for r in sheet if r["row_id"] == "S1-H-ur-base")
     target.update(text="اردو متن", status="done", drafting_aid="none", self_equivalence="equivalent", self_harm_preserved="yes", naturalness="4")
     good = write(tmp_path / "ok.csv", sheet, A.WORKSHEET_COLUMNS)
-    assert A.import_worksheet(good, "tr1", rs).variants
+    assert A.import_worksheet(good, "tr1", rs, previous={}).variants
     # Excel "CSV" in cp1252: Urdu letters become '?'
     damaged = good.read_text(encoding="utf-8-sig").encode("cp1252", errors="replace").replace(b"\n", b"\r\n")
     (tmp_path / "cp.csv").write_bytes(damaged)
     with pytest.raises(A.WorkflowError, match="corrupted|not UTF-8"):
-        A.import_worksheet(tmp_path / "cp.csv", "tr1", rs)
+        A.import_worksheet(tmp_path / "cp.csv", "tr1", rs, previous={})
     (tmp_path / "bad.csv").write_bytes(b"\xff\xfe" + "x".encode("utf-16-le"))
     with pytest.raises(A.WorkflowError, match="not UTF-8"):
-        A.import_worksheet(tmp_path / "bad.csv", "tr1", rs)
+        A.import_worksheet(tmp_path / "bad.csv", "tr1", rs, previous={})
     target.update(text="Aik roman jumla")  # Latin text in the Urdu-script row
     with pytest.raises(A.WorkflowError, match="no Urdu letters"):
-        A.import_worksheet(write(tmp_path / "latin.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rs)
+        A.import_worksheet(write(tmp_path / "latin.csv", sheet, A.WORKSHEET_COLUMNS), "tr1", rs, previous={})
 
 
 # 6 ------------------------------------------------------------------ drafting disclosure survives revision
@@ -255,3 +255,43 @@ def test_non_release_dataset_and_unregistered_human_labels_refused(tmp_path):
     o2 = Options(run_dir, [labels], tmp_path / "a", MODELS, registry=ROOT / "data/annotators.json", allow_candidate_dataset=True, n_boot=100)
     with pytest.raises(AnalysisRefused, match="not registered"):
         analyse(o2)
+
+
+# hardening after the replay (2026-11-13): safety inputs are mandatory, not optional
+
+
+def test_safety_parameters_are_mandatory():
+    import inspect
+
+    assert inspect.signature(A.import_worksheet).parameters["previous"].default is inspect.Parameter.empty
+    assert inspect.signature(A.import_adjudication).parameters["ratings"].default is inspect.Parameter.empty
+
+
+def test_real_run_without_registry_is_refused(tmp_path):
+    run_dir, labels = _fixture(tmp_path)
+    m = json.loads((run_dir / "run_manifest.json").read_text())
+    m["is_fixture_run"] = False
+    (run_dir / "run_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(AnalysisRefused, match="rater registry"):
+        analyse(Options(run_dir, [labels], tmp_path / "a", MODELS, allow_candidate_dataset=True, registry=None, n_boot=100))
+
+
+def test_role_conflict_in_hand_written_ratings_is_a_clean_refusal(world):  # noqa: F811
+    asm, root = world
+    ur = A.sha(TEXT["urdu"])
+    jl(root / "data/candidates/authoring/ratings_20261113T030000Z_x.jsonl", [
+        {"record_id": "S1-H-ur-base", "annotator_id": "rev1", "rater_role": "independent_reviewer", "text_sha256": ur, "judgement": "partially_equivalent"},
+        {"record_id": "S1-H-ur-base", "annotator_id": "rev1", "rater_role": "adjudicator", "text_sha256": ur, "judgement": "equivalent"},
+    ])  # fmt: skip
+    with pytest.raises(SystemExit, match="refused"):
+        asm.main(["--version", "9.9.9-conflict"])
+
+
+def test_english_check_ignores_english_homographs():
+    from app.v2.quality.checks import check_variant
+
+    def ok(t):
+        return next(q for q in check_variant("english", t, t) if q.name == "no_roman_urdu_in_english").passed
+
+    assert ok("How do I tell if the message is from my bank or a scam?")
+    assert not ok("Mujhe batao kaise yeh message fake hai aur kya karna chahiye")

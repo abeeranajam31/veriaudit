@@ -186,7 +186,171 @@ def plan_rows(selection: list[dict], subset: set[str], authored_benign: dict[str
     return rows, sorted(set(waiting))
 
 
-# --------------------------------------------------------------------------- csv helpers
+# --------------------------------------------------------------------------- sheet helpers (CSV and XLSX)
+
+# columns people fill in; every other column is read-only (locked in .xlsx, checksum-protected in both)
+# Review sheet for AI-drafted benign candidates (research/dataset/benign_candidates.py). It is a
+# triage aid only: nothing is imported from it. An accepted candidate enters the dataset solely when
+# a human author enters it in the benign authoring sheet with drafted_by_ai = yes (stage A1).
+CANDIDATE_REVIEW_COLUMNS = [
+    "scenario_id", "category", "harmful_english", "candidate_benign", "legitimate_intent", "rationale", "flags",
+    "over_refusal_risk", "expected_behavior", "provenance",
+    "reviewer_id", "candidate_decision", "is_benign", "same_topic", "realistic", "useful_answer_possible",
+    "edited_text", "reject_reason", "notes",
+]  # fmt: skip
+
+EDITABLE = {
+    "worksheet": ["text", "status", "drafting_aid", "self_equivalence", "self_harm_preserved", "naturalness", "ambiguity", "comments"],
+    "benign": ["benign_english", "drafted_by_ai", "notes"],
+    "benign_review": ["benign", "topically_matched", "notes"],
+    "review": ["judgement", "harm_preserved", "naturalness", "notes"],
+    "adjudication": ["decision", "harm_preserved", "rationale"],
+    "candidate_review": [
+        "reviewer_id",
+        "candidate_decision",
+        "is_benign",
+        "same_topic",
+        "realistic",
+        "useful_answer_possible",
+        "edited_text",
+        "reject_reason",
+        "notes",
+    ],
+}
+CHOICES = {
+    "status": STATUS,
+    "drafting_aid": DRAFTING_AIDS,
+    "self_equivalence": JUDGEMENTS,
+    "judgement": JUDGEMENTS,
+    "self_harm_preserved": ("yes", "no", "unsure"),
+    "harm_preserved": ("yes", "no", "unsure"),
+    "naturalness": ("1", "2", "3", "4", "5"),
+    "ambiguity": AMBIGUITY,
+    "drafted_by_ai": ("yes", "no"),
+    "benign": ("yes", "no"),
+    "topically_matched": ("yes", "no"),
+    "decision": ("accept", "revise", "reject"),
+    "candidate_decision": ("accept", "accept_with_edits", "reject"),
+    "is_benign": ("yes", "no", "unsure"),
+    "same_topic": ("yes", "no"),
+    "realistic": ("yes", "no"),
+    "useful_answer_possible": ("yes", "no"),
+}
+SHEET_KIND = {
+    tuple(WORKSHEET_COLUMNS): "worksheet",
+    tuple(BENIGN_COLUMNS): "benign",
+    tuple(BENIGN_REVIEW_COLUMNS): "benign_review",
+    tuple(REVIEW_COLUMNS): "review",
+    tuple(ADJUDICATION_COLUMNS): "adjudication",
+    tuple(CANDIDATE_REVIEW_COLUMNS): "candidate_review",
+}
+
+
+def write_sheet(path: Path, columns: list[str], rows: list[dict]) -> Path:
+    """Write `.csv` (UTF-8 with BOM) or `.xlsx` depending on the suffix."""
+    return write_xlsx(path, columns, rows) if Path(path).suffix.lower() == ".xlsx" else write_csv(path, columns, rows)
+
+
+def write_xlsx(path: Path, columns: list[str], rows: list[dict]) -> Path:
+    """Spreadsheet for translators/reviewers: read-only columns locked and shaded, dropdowns for every
+    enumerated field, Urdu-script text right-to-left. Sheet protection has no password - it prevents
+    accidents, not deliberate edits (the import checksums catch those)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill, Protection
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    kind = SHEET_KIND.get(tuple(columns))
+    editable = set(EDITABLE.get(kind, columns))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "work"
+    ws.append(columns)
+    grey = PatternFill("solid", fgColor="EEEEEE")
+    for c in ws[1]:
+        c.font = Font(bold=True)
+    for r in rows:
+        ws.append([r.get(c, "") for c in columns])
+    n = len(rows) + 1
+    for j, col in enumerate(columns, start=1):
+        letter = get_column_letter(j)
+        ws.column_dimensions[letter].width = (
+            60
+            if col
+            in (
+                "english_source",
+                "text",
+                "instruction",
+                "parent_text",
+                "harmful_english",
+                "benign_english",
+                "candidate_benign",
+                "edited_text",
+                "rationale",
+                "legitimate_intent",
+            )
+            else 16
+        )
+        for i in range(2, n + 1):
+            cell = ws.cell(row=i, column=j)
+            locked = col not in editable or (
+                col == "text" and ws.cell(row=i, column=columns.index("locked") + 1).value == "yes" if "locked" in columns else False
+            )
+            cell.protection = Protection(locked=locked)
+            if locked:
+                cell.fill = grey
+            rtl = isinstance(cell.value, str) and bool(_ARABIC.search(cell.value))
+            if col == "text" and "target_script" in columns:
+                rtl = rtl or ws.cell(row=i, column=columns.index("target_script") + 1).value in ("perso_arabic", "mixed")
+            cell.alignment = Alignment(wrap_text=True, vertical="top", horizontal="right" if rtl else "left", readingOrder=2 if rtl else 1)
+        if col in CHOICES and col in editable and n > 1:
+            dv = DataValidation(type="list", formula1='"' + ",".join(CHOICES[col]) + '"', allow_blank=True, showErrorMessage=True)
+            ws.add_data_validation(dv)
+            dv.add(f"{letter}2:{letter}{n}")
+    ws.freeze_panes = "A2"
+    ws.protection.sheet = True
+    ws.protection.formatColumns = False
+    ws.protection.formatRows = False
+    ws.protection.autoFilter = False
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(columns))}{n}"
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(path)
+    return path
+
+
+def read_xlsx(path: Path, required: list[str]) -> list[dict]:
+    from openpyxl import load_workbook
+
+    try:
+        wb = load_workbook(path, read_only=True, data_only=True)
+    except Exception as exc:  # noqa: BLE001
+        raise WorkflowError([f"cannot read spreadsheet: {type(exc).__name__}: {exc}"]) from exc
+    ws = wb["work"] if "work" in wb.sheetnames else wb.worksheets[0]
+    it = ws.iter_rows(values_only=True)
+    header = [str(h).strip() if h is not None else "" for h in next(it, [])]
+    missing = [c for c in required if c not in header]
+    if missing:
+        raise WorkflowError([f"file is missing columns: {missing}"])
+
+    def cell(v) -> str:
+        if v is None:
+            return ""
+        if isinstance(v, float) and v.is_integer():
+            v = int(v)
+        return str(v).strip()
+
+    out = []
+    for values in it:
+        if values is None or all(v is None for v in values):
+            continue
+        out.append({h: cell(v) for h, v in zip(header, values, strict=False) if h})
+    wb.close()
+    return out
+
+
+def read_table(path: Path, required: list[str]) -> list[dict]:
+    return read_xlsx(path, required) if Path(path).suffix.lower() == ".xlsx" else read_csv(path, required)
 
 
 def write_csv(path: Path, columns: list[str], rows: list[dict]) -> Path:
@@ -198,13 +362,15 @@ def write_csv(path: Path, columns: list[str], rows: list[dict]) -> Path:
     return path
 
 
-_CORRUPT = re.compile(r"\ufffd|\?{3,}")
+# a lossy save turns every Urdu letter into '?': a word made only of '?' (2+), or U+FFFD.
+# "kya??" (a Roman Urdu word with emphatic question marks) is not flagged.
+_CORRUPT = re.compile(r"\ufffd|(?<![\w?])\?{2,}(?![\w?])")
 _ARABIC = re.compile(r"[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]")
 
 
 def corrupt_text(text: str) -> bool:
     """Signs of a lossy save (e.g. Excel 'CSV' in a non-UTF-8 code page): replacement characters
-    or runs of '?' where Urdu letters were."""
+    or words made only of '?' where Urdu letters were."""
     return bool(_CORRUPT.search(text or ""))
 
 
@@ -245,7 +411,7 @@ def export_benign_authoring(selection: list[dict], authored: dict[str, dict]) ->
 def import_benign_authoring(path: Path, author: str, selection: list[dict]) -> list[dict]:
     by_id = {c["scenario_id"]: c for c in selection}
     problems, out, seen = [], [], set()
-    for i, row in enumerate(read_csv(path, BENIGN_COLUMNS), start=2):
+    for i, row in enumerate(read_table(path, BENIGN_COLUMNS), start=2):
         sid = row["scenario_id"]
         c = by_id.get(sid)
         where = f"line {i} ({sid})"
@@ -304,7 +470,7 @@ def export_benign_review(selection: list[dict], authored: dict[str, dict], revie
 def import_benign_review(path: Path, reviewer: str, selection: list[dict], authored: dict[str, dict]) -> list[dict]:
     by_id = {c["scenario_id"]: c for c in selection}
     problems, out = [], []
-    for i, row in enumerate(read_csv(path, BENIGN_REVIEW_COLUMNS), start=2):
+    for i, row in enumerate(read_table(path, BENIGN_REVIEW_COLUMNS), start=2):
         sid = row["scenario_id"]
         where = f"line {i} ({sid})"
         c, a = by_id.get(sid), authored.get(sid)
@@ -381,13 +547,15 @@ class ImportResult:
     warnings: list[str]
 
 
-def import_worksheet(path: Path, translator: str, rows: list[PlannedRow], previous: dict[str, dict] | None = None) -> ImportResult:
+def import_worksheet(path: Path, translator: str, rows: list[PlannedRow], *, previous: dict[str, dict]) -> ImportResult:
     """Validate a filled worksheet. Any problem refuses the whole import (fix and re-import);
-    automated QC concerns are returned as warnings and recorded with the variant."""
+    automated QC concerns are returned as warnings and recorded with the variant. `previous` (the
+    current variants, `{}` if none) is required so a revision can never drop an earlier
+    drafting-aid disclosure."""
     plan = {r.row_id: r for r in rows}
     problems, warnings, out, seen = [], [], [], set()
     filled = {}
-    data = read_csv(path, WORKSHEET_COLUMNS)
+    data = read_table(path, WORKSHEET_COLUMNS)
     for row in data:
         if row.get("text"):
             filled[row["row_id"]] = row["text"]
@@ -428,7 +596,7 @@ def import_worksheet(path: Path, translator: str, rows: list[PlannedRow], previo
         if corrupt_text(row["text"]):
             problems.append(f"{where}: text looks corrupted by a non-UTF-8 save (contains '???' or U+FFFD); save as 'CSV UTF-8'")
             continue
-        if p.target_script == "perso_arabic" and not _ARABIC.search(row["text"]):
+        if p.target_script in ("perso_arabic", "mixed") and not _ARABIC.search(row["text"]):
             problems.append(f"{where}: an Urdu-script row contains no Urdu letters (wrong form, or the file lost its encoding)")
             continue
         if row["drafting_aid"] not in DRAFTING_AIDS:
@@ -554,7 +722,7 @@ def import_review(path: Path, reviewer: str, rows: list[PlannedRow], variants: d
     _check_registered(reviewer, registry)
     plan = {r.row_id: r for r in rows}
     problems, out = [], []
-    for i, row in enumerate(read_csv(path, REVIEW_COLUMNS), start=2):
+    for i, row in enumerate(read_table(path, REVIEW_COLUMNS), start=2):
         rid = row["row_id"]
         where = f"line {i} ({rid})"
         p, v = plan.get(rid), variants.get(rid)
@@ -635,18 +803,15 @@ def export_adjudication(rows: list[PlannedRow], variants: dict[str, dict], ratin
     return out
 
 
-def import_adjudication(
-    path: Path, adjudicator: str, rows: list[PlannedRow], variants: dict[str, dict], registry: dict, ratings: list[dict] | None = None
-) -> list[dict]:
+def import_adjudication(path: Path, adjudicator: str, rows: list[PlannedRow], variants: dict[str, dict], registry: dict, ratings: list[dict]) -> list[dict]:
+    """`ratings` (all existing ratings) is required: the adjudicator must not have rated the row."""
     _check_registered(adjudicator, registry)
     rated_by_adjudicator = {
-        r["record_id"]
-        for r in (ratings or [])
-        if r["annotator_id"] == adjudicator and r.get("text_sha256") == variants.get(r["record_id"], {}).get("text_sha256")
+        r["record_id"] for r in ratings if r["annotator_id"] == adjudicator and r.get("text_sha256") == variants.get(r["record_id"], {}).get("text_sha256")
     }
     plan = {r.row_id: r for r in rows}
     problems, out = [], []
-    for i, row in enumerate(read_csv(path, ADJUDICATION_COLUMNS), start=2):
+    for i, row in enumerate(read_table(path, ADJUDICATION_COLUMNS), start=2):
         rid = row["row_id"]
         where = f"line {i} ({rid})"
         p, v = plan.get(rid), variants.get(rid)

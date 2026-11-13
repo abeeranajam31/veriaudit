@@ -118,6 +118,8 @@ def load_inputs(o: Options):
             if line.strip():
                 labels.append(ResponseLabel.model_validate_json(line))
     registered = None
+    if not manifest.get("is_fixture_run") and (o.registry is None or not o.registry.exists()):
+        raise AnalysisRefused("a real run needs the rater registry (Options.registry, default data/annotators.json)")
     if o.registry is not None and o.registry.exists():
         reg = json.loads(o.registry.read_text(encoding="utf-8"))
         registered = frozenset(r["id"] for r in reg.get("raters", []) if r.get("human") is True)
@@ -535,13 +537,14 @@ def summary_md(repro, outputs, agreement, fixture: bool, o: Options) -> str:
         lines += [
             f"## {fam}",
             "",
-            "| Model | Form | n pairs | gap pp [95% CI] | bounds pp | p (signed-rank) | Holm p | McNemar Holm p |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Model | Form | n pairs | gap pp [approx. 95% t CI] | bounds pp | p (paired t) | Holm p | signed-rank p (descriptive) | McNemar Holm p |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
         for r in rows:
             lines.append(
                 f"| {r['model']} | {r['language']} | {r['n_pairs']} | {r['gap_pp']:.1f} [{r['ci_low_pp']:.1f}, {r['ci_high_pp']:.1f}] | "
-                f"[{r['gap_bound_low_pp']:.1f}, {r['gap_bound_high_pp']:.1f}] | {r['p_signed_rank']:.3g} | {r['p_holm']:.3g} | {r['p_mcnemar_holm']:.3g} |"
+                f"[{r['gap_bound_low_pp']:.1f}, {r['gap_bound_high_pp']:.1f}] | {r['p_paired_t']:.3g} | {r['p_holm']:.3g} | "
+                f"{r['p_signed_rank']:.3g} | {r['p_mcnemar_holm']:.3g} |"
             )
         lines.append("")
     if outputs.get("calibration_parameters"):
