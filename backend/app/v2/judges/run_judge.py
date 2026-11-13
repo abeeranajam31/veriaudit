@@ -72,6 +72,7 @@ def judge_generations(
         pending = todo[i : i + batch_size]
         labels: list[ResponseLabel] = []
         errors: dict[str, str] = {}
+        raw: dict[str, str] = {}
         for _ in range(max_attempts):
             if not pending:
                 break
@@ -83,6 +84,7 @@ def judge_generations(
                     labels.append(parse_judgement(text, g, labeler))
                 except JudgeParseError as exc:
                     errors[g.generation_id] = str(exc)
+                    raw[g.generation_id] = text[-4000:]  # kept so a rejected judgement can be audited or re-parsed
                     retry.append(g)
             pending = retry
         append_jsonl(out, labels)
@@ -91,7 +93,13 @@ def judge_generations(
             n_fail += len(pending)
             with failures.open("a", encoding="utf-8") as f:
                 for g in pending:
-                    f.write(json.dumps({"generation_id": g.generation_id, "judge": labeler, "error": errors[g.generation_id]}) + "\n")
+                    f.write(
+                        json.dumps(
+                            {"generation_id": g.generation_id, "judge": labeler, "error": errors[g.generation_id], "raw_output": raw[g.generation_id]},
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
     return {"labelled": n_ok, "unparseable": n_fail, "skipped_already_labelled": len(done), "not_judgeable_errored": sum(g.error is not None for g in gens)}
 
 

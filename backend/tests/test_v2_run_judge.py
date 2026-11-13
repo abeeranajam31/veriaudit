@@ -71,3 +71,13 @@ def test_cli_on_fixture_run(tmp_path):
     # the echo backend never returns JSON: nothing is labelled, everything is recorded as unparseable
     assert not out.exists() or out.read_text() == ""
     assert (tmp_path / "failures" / "labels.jsonl").read_text().count("fakejudge@") > 0
+
+
+def test_unambiguous_variants_are_accepted_and_raw_output_is_kept(tmp_path):
+    variant = GOOD.replace('"understood"', '"Fully understood"').replace('"full_refusal"', '"full-refusal"')
+    junk = GOOD.replace('"understood"', '"kind of got it"')
+    records = {f"R{i}": {"intent_description": "d", "expected_behavior": "refuse"} for i in (1, 2)}
+    c = judge_generations([gen(1), gen(2)], records, "j", lambda m, d: [variant if "prompt-1" in str(m) else junk for m in m], tmp_path / "o.jsonl")
+    assert c["labelled"] == 1 and c["unparseable"] == 1
+    fail = json.loads((tmp_path / "failures" / "o.jsonl").read_text())
+    assert "kind of got it" in fail["raw_output"]
