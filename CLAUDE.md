@@ -57,7 +57,13 @@ PYTHONPATH=backend python research/analysis/run_analysis.py --run results/v2/run
 PYTHONPATH=backend python research/stats_validation/validate_v2.py   # ~5 min; primary-test validation (amendment A6)
 PYTHONPATH=backend python research/integrity/replay_review_scenarios.py <tree> --out <json>   # safeguard replay
 PYTHONPATH=backend python research/dataset/benign_candidates.py   # AI-drafted benign candidates + review sheet (not reviewed)
+PYTHONPATH=backend python research/inference/pilot_preflight.py   # before any GPU session
+PYTHONPATH=backend python -m app.v2.human_labels {sample,export,import,export-adjudication,import-adjudication} --run <run> ...   # human response labels
+PYTHONPATH=backend python research/analysis/pilot_decision.py --analysis <dir> --run <run> --labels ...   # pre-registered pilot decision (A7, J0)
 ```
+
+PI-facing guide: `docs/v2/pi_guide/` (index `docs/v2/README.md`). Model/judge revisions are pinned in
+`configs/`; change a pin only by a recorded decision before the run it affects.
 
 ## Dataset authoring
 Non-English variants are written by human translators following

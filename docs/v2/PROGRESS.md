@@ -16,7 +16,10 @@ v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled a
 | Safeguard verification | `docs/v2/safeguard_verification.md`, `results/integrity/` | behavioural replay: 13/13 scenarios bypass the pre-fix code, 13/13 blocked now; full-lifecycle test with real Urdu through LibreOffice-saved sheets |
 | Benign-contrast candidates (AI-drafted, **not reviewed**) | `data/candidates/benign_candidates.jsonl`, review sheet, `docs/v2/benign_candidates_review.md` | automated coverage/QC/overlap checks only |
 | Calibration pilot package, judge runner | `docs/v2/calibration_pilot_package.md`, `app.v2.judges.run_judge`, `configs/judges.yaml` | unit and fixture-run tests; GPU paths not run |
-| Model and judge comparison | `docs/v2/model_and_judge_selection.md` | model cards / catalogue pages, 2026-11-13; revisions not pinned (Hugging Face unreachable here) |
+| Model and judge comparison | `docs/v2/model_and_judge_selection.md` | model cards / catalogue pages, 2026-11-13; all 8 revisions pinned to `main` commits verified via the HF API |
+| Human response labelling (J0, validation sample) | `app.v2.human_labels`, `pi_guide/` | fixed blind sample, two annotators + third-person adjudication, end-to-end test on a fixture run |
+| Pilot preflight and pre-registered decision script | `research/inference/pilot_preflight.py`, `research/analysis/pilot_decision.py` | unit tests on synthetic inputs |
+| PI guide | `docs/v2/pi_guide/` (index: `docs/v2/README.md`) | — |
 | Power / precision | `results/power/` (noise-free McNemar, two-state and random-effects models, family of 12) | seeded Monte Carlo |
 | VeriAudit-X schema 2.2.0, validator (incl. release mode), leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
 | Human authoring workflow (benign contrasts → translation → review → adjudication) | `docs/v2/translation_guide.md`, `backend/app/veriaudit_x/authoring.py`, `research/dataset/translation_worksheet.py`, `data/annotators.json` | unit tests incl. every refusal path; end-to-end assembler test |

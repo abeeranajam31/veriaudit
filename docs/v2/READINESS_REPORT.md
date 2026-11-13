@@ -1,5 +1,15 @@
 # VeriAudit v2: pre-data-collection readiness report
 
+> **Update 2026-11-13 (later the same day).** The step-by-step guide for the PI is now
+> `docs/v2/pi_guide/`. Since this report was written:
+> - model and judge revisions are pinned to verified commits;
+> - human response-labelling tooling exists (`app.v2.human_labels`);
+> - a preflight check and the post-pilot decision script have been added;
+> - a pilot gap is documented: only one harmful scenario in non-English forms. Options P1 and P2
+>   are in `calibration_pilot_package.md`.
+>
+> Section G is superseded by `pi_guide/02_pre_pilot_checklist.md`.
+
 Date: 2026-11-13. Branch `veriaudit-x-dataset`, draft PR #1 (not merged).
 
 **No v2 inference, judging, translation or human annotation has happened.** Every number in this

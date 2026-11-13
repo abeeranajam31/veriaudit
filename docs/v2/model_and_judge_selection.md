@@ -1,10 +1,30 @@
 # Models under test and response judges: verification and recommendation
 
-Checked 2026-11-13. Sources are listed at the end. **Not verified from this environment:**
+Checked 2026-11-13. Sources are listed at the end.
 
-- **Commit hashes.** Hugging Face could not be reached directly, so `revision` stays `null`. The
-  runner refuses to run until each revision is pinned, which happens at first download (G-list).
-- **Gated access.** Whether the PI's Hugging Face account can access gated repos was not checked.
+## 0. Pinned revisions (verified 2026-11-13)
+
+Each hash is the `main` commit returned by the Hugging Face API on 2026-11-13. Each one was then
+re-fetched with `/api/models/<repo>/revision/<hash>` to confirm that it resolves. They are pinned in
+`configs/models.yaml` and `configs/judges.yaml`.
+
+| Key | Repo | Revision | Parameters | Gated | GPU (weights, before KV cache) |
+|---|---|---|---|---|---|
+| qwen3_8b | Qwen/Qwen3-8B | `b968826d9c46dd6066d109eabc6255188de91218` | 8B | no | 1 × 24 GB |
+| aya_expanse_8b | CohereLabs/aya-expanse-8b | `5062468bf9bc0c6035fd64e06274333ec127d980` | 8B | auto (accept terms) | 1 × 24 GB |
+| qwen3_5_9b | Qwen/Qwen3.5-9B | `c202236235762e1c871ad0ccb60c8ee5ba337b9a` | 9.65B | no | 1 × 24 GB |
+| gemma4_e4b | google/gemma-4-E4B-it | `4ecc2ba63bcac23ba4a767fc87025b1450f84c9c` | 8.0B (incl. embeddings) | no | 1 × 24 GB |
+| gemma4_31b (exploratory) | google/gemma-4-31B-it | `842da3794eaa0b77d5f08bae87a17459d91ff475` | 31.3B | no | 1 × 80 GB |
+| judge A | openai/gpt-oss-120b | `b5c939de8f754692c1647ca79fbf85e8c1e70f8a` | 116.8B MoE (5.1B active), MXFP4 | no | 1 × 80 GB (H100 preferred) |
+| judge B | mistralai/Mistral-Small-3.2-24B-Instruct-2506 | `95a6d26c4bfb886c58daf9d3f7332c857cb27b43` | 24.0B | no | 1 × 80 GB (card: ~55 GB bf16; vLLM ≥ 0.9.1 with `tokenizer_mode/config_format/load_format = mistral`) |
+| tie-breaker | meta-llama/Llama-4-Scout-17B-16E-Instruct | `92f3b1597a195b523d8d9e5700e57e4fbb8f20d3` | 108.6B MoE (17B active) | **manual** (Meta approves each request) | 4 × 80 GB, tensor parallel |
+
+The 8–9B models also run on a single 40–80 GB GPU. A smaller GPU only means less KV cache. Run
+`research/inference/pilot_preflight.py` on the GPU machine: it confirms that your token can access
+every pinned revision.
+
+**Still not verified from here:** whether your Hugging Face account can access the gated repos. The
+preflight checks it.
 
 ## 1. Models under test (confirmatory panel fixed by protocol §7, amendment 2026-11-13)
 
