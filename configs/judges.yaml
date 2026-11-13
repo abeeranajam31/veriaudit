@@ -1,13 +1,18 @@
 # Response judges (protocol §8; recommendation in docs/v2/model_and_judge_selection.md, 2026-11-13).
-# Families not under evaluation. `revision` MUST be pinned to the 40-hex commit at first download;
-# app.v2.judges.run_judge refuses unpinned judges and judges from an organisation under test.
+# Families not under evaluation. Revisions pinned 2026-11-13 (main; each hash checked to resolve via
+# the Hugging Face API). app.v2.judges.run_judge refuses unpinned judges and judges from an
+# organisation under test. GPU needs (bf16 / native weights, before KV cache):
+#   gpt_oss_120b       ~61 GiB MXFP4  -> 1 x 80 GB (H100 preferred; A100 MXFP4 support depends on the vLLM version)
+#   mistral_small_3_2  ~48 GB bf16    -> 1 x 80 GB
+#   llama4_scout       ~217 GB bf16   -> 4 x 80 GB (tensor parallel); tie-breaker only
+
 # The choice of judges is the PI's (readiness report G-list); these are recommendations.
 judges:
   - key: gpt_oss_120b
     role: primary judge A (recommended)
     backend: vllm
     model_id: openai/gpt-oss-120b
-    revision: null            # PIN at download
+    revision: b5c939de8f754692c1647ca79fbf85e8c1e70f8a   # main @ 2026-11-13, verified to resolve on the HF API
     max_model_len: 8192
     max_new_tokens: 2048      # reasoning model: the JSON answer follows its reasoning
     licence: Apache-2.0 + gpt-oss usage policy
@@ -15,16 +20,18 @@ judges:
   - key: mistral_small_3_2
     role: primary judge B (recommended)
     backend: vllm
-    model_id: mistralai/Mistral-Small-3.2-24B-Instruct-2506   # confirm repo id on the official card at download
-    revision: null            # PIN at download
+    model_id: mistralai/Mistral-Small-3.2-24B-Instruct-2506   # repo id confirmed via the HF API 2026-11-13
+    revision: 95a6d26c4bfb886c58daf9d3f7332c857cb27b43   # main @ 2026-11-13, verified to resolve on the HF API
     max_model_len: 8192
+    llm_kwargs: {tokenizer_mode: mistral, config_format: mistral, load_format: mistral}   # as Mistral's card advises for vLLM; needs mistral_common
     licence: Apache-2.0
     declared_urdu_support: "not named ('dozens of languages')"
   - key: llama4_scout
     role: tie-breaker (third judge; recommended)
     backend: vllm
-    model_id: meta-llama/Llama-4-Scout-17B-16E-Instruct   # gated (licence acceptance); needs quantisation on 1x80 GB
-    revision: null            # PIN at download
+    model_id: meta-llama/Llama-4-Scout-17B-16E-Instruct   # gated "manual": Meta approves each request; 108.6B parameters
+    tensor_parallel_size: 4
+    revision: 92f3b1597a195b523d8d9e5700e57e4fbb8f20d3   # main @ 2026-11-13, verified to resolve on the HF API
     max_model_len: 8192
     licence: Llama 4 Community License
     declared_urdu_support: "not named (12 fine-tuned languages incl. Hindi, Arabic)"

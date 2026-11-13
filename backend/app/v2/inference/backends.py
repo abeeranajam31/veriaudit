@@ -102,6 +102,8 @@ class VLLMBackend:
     dtype: str = "bfloat16"
     chat_template_kwargs: dict = field(default_factory=dict)
     max_model_len: int = 4096
+    tensor_parallel_size: int = 1  # GPUs per model (e.g. a 109B judge in bf16 needs 4 x 80 GB)
+    llm_kwargs: dict = field(default_factory=dict)  # extra vllm.LLM arguments, e.g. {"tokenizer_mode": "mistral"}; recorded in describe()
     _llm: object = None
     name: str = "vllm"
 
@@ -109,7 +111,14 @@ class VLLMBackend:
         if self._llm is None:
             from vllm import LLM
 
-            self._llm = LLM(model=self.model_id, revision=self.revision, dtype=self.dtype, max_model_len=self.max_model_len)
+            self._llm = LLM(
+                model=self.model_id,
+                revision=self.revision,
+                dtype=self.dtype,
+                max_model_len=self.max_model_len,
+                tensor_parallel_size=self.tensor_parallel_size,
+                **self.llm_kwargs,
+            )
         return self._llm
 
     def generate_batch_full(self, batch: list[list[dict]], decoding: Decoding) -> list[GenResult]:
@@ -131,6 +140,7 @@ class VLLMBackend:
 
     def describe(self) -> dict:
         d = {"backend": self.name, "model_id": self.model_id, "revision": self.revision, "dtype": self.dtype}
+        d |= {"tensor_parallel_size": self.tensor_parallel_size, "llm_kwargs": self.llm_kwargs}
         if self._llm is not None:
             tok = self._llm.get_tokenizer()
             d["chat_template_sha256"] = sha256_text(getattr(tok, "chat_template", None))

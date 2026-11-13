@@ -1,8 +1,9 @@
 # Model manifest for VeriAudit v2 (protocol §7, amended 2026-11-13).
 # `confirmatory: true` models form the H1/H2 test families (4 models x 3 forms = 12 tests each);
 # the family is fixed in advance and the analysis refuses to run if a confirmatory model is missing.
-# `revision` MUST be pinned to the 40-hex commit hash on first download; the runner refuses
-# unpinned Hugging Face models. Repo ids / licences below were checked on the model cards on
+# `revision` is pinned to the 40-hex commit of `main` on 2026-11-13 (each hash checked to resolve via
+# the Hugging Face API); the runner refuses unpinned Hugging Face models. Change a pin only by a
+# recorded decision before the run it affects. Repo ids / licences below were checked on the model cards on
 # 2026-11-13 unless marked otherwise.
 models:
   - key: qwen3_8b
@@ -10,7 +11,7 @@ models:
     confirmatory: true
     backend: vllm
     model_id: Qwen/Qwen3-8B
-    revision: null            # PIN at download
+    revision: b968826d9c46dd6066d109eabc6255188de91218   # main @ 2026-11-13, verified to resolve on the HF API
     chat_template_kwargs: {enable_thinking: false}
     licence: Apache-2.0
     declared_urdu_support: "unclear - 119 languages/dialects claimed; Urdu not confirmed in the report text read"
@@ -19,7 +20,7 @@ models:
     confirmatory: true
     backend: vllm
     model_id: CohereLabs/aya-expanse-8b
-    revision: null            # PIN at download
+    revision: 5062468bf9bc0c6035fd64e06274333ec127d980   # main @ 2026-11-13, verified to resolve on the HF API
     licence: CC-BY-NC-4.0 (non-commercial; gated on Hugging Face)
     hf_gated: true
     declared_urdu_support: "no - 23 languages, Hindi yes, Urdu no"
@@ -28,7 +29,7 @@ models:
     confirmatory: true
     backend: vllm
     model_id: Qwen/Qwen3.5-9B   # post-trained (chat) model; card checked 2026-11-13
-    revision: null            # PIN at download
+    revision: c202236235762e1c871ad0ccb60c8ee5ba337b9a   # main @ 2026-11-13, verified to resolve on the HF API
     chat_template_kwargs: {enable_thinking: false}   # thinking is ON by default for Qwen3.5
     licence: Apache-2.0
     declared_urdu_support: "unclear - 201 languages/dialects claimed; Urdu not named on the card"
@@ -37,7 +38,7 @@ models:
     confirmatory: true
     backend: vllm
     model_id: google/gemma-4-E4B-it   # card checked 2026-11-13; not gated
-    revision: null            # PIN at download
+    revision: 4ecc2ba63bcac23ba4a767fc87025b1450f84c9c   # main @ 2026-11-13, verified to resolve on the HF API
     chat_template_kwargs: {enable_thinking: false}   # Gemma 4 has a configurable reasoning mode
     licence: Apache-2.0
     declared_urdu_support: "unclear - 140+ pre-training languages, 35+ supported; Urdu not named on the card"
@@ -46,7 +47,7 @@ models:
     confirmatory: false
     backend: vllm
     model_id: google/gemma-4-31B-it   # repo id confirmed via the NVIDIA model catalog 2026-11-13 (links to this HF repo); HF card not read directly
-    revision: null
+    revision: 842da3794eaa0b77d5f08bae87a17459d91ff475   # main @ 2026-11-13, verified to resolve on the HF API
     chat_template_kwargs: {enable_thinking: false}
     licence: "Apache-2.0 (per the Gemma 4 announcement and the NVIDIA catalog's licence note); confirm on the HF card at download"
     declared_urdu_support: "unclear"
