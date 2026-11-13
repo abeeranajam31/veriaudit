@@ -20,6 +20,8 @@ v0.1 reconstruction, a planning simulation, or a test fixture, and is labelled a
 | Human response labelling (J0, validation sample) | `app.v2.human_labels`, `pi_guide/` | fixed blind sample, two annotators + third-person adjudication, end-to-end test on a fixture run |
 | Pilot preflight and pre-registered decision script | `research/inference/pilot_preflight.py`, `research/analysis/pilot_decision.py` | unit tests on synthetic inputs |
 | PI guide | `docs/v2/pi_guide/` (index: `docs/v2/README.md`) | — |
+| Exploratory v0.1 panel (amendment A8, approved by the PI 2026-11-13) | `research/inference/kaggle_exploratory_v01.ipynb` and related files | ready to run on Kaggle's free tier; **not yet run** |
+| Preprint: v0.1 re-analysis | `paper/v01_reanalysis/main.pdf` | built only from `results/v1_reconstruction/`; not submitted |
 | Power / precision | `results/power/` (noise-free McNemar, two-state and random-effects models, family of 12) | seeded Monte Carlo |
 | VeriAudit-X schema 2.2.0, validator (incl. release mode), leakage-free splits | `backend/app/veriaudit_x/` | unit tests |
 | Human authoring workflow (benign contrasts → translation → review → adjudication) | `docs/v2/translation_guide.md`, `backend/app/veriaudit_x/authoring.py`, `research/dataset/translation_worksheet.py`, `data/annotators.json` | unit tests incl. every refusal path; end-to-end assembler test |
