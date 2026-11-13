@@ -12,7 +12,8 @@ Stage B - translation
   export [--phase 1|2|all]               -> data/candidates/translation_worksheet.csv
   import FILE --translator ID            -> variants_<time>_<ID>.jsonl
 Stage C - independent review and adjudication
-  export-review --reviewer ID            -> sheets/review_<ID>.csv          (never your own variants)
+  export-review --reviewer ID [--qc-sample 0.2] -> sheets/review_<ID>.csv  (never your own variants;
+                                            --qc-sample: only the fixed third-person QC sample)
   import-review FILE --reviewer ID       -> ratings_<time>_<ID>.jsonl
   export-adjudication --adjudicator ID   -> sheets/adjudication_<ID>.csv
   import-adjudication FILE --adjudicator ID -> ratings_<time>_<ID>.jsonl
@@ -146,7 +147,10 @@ def main(argv=None) -> int:
         p.add_argument("path", type=Path)
         p.add_argument(who, required=True, dest="person")
     for name, who in (("export-benign-review", "--reviewer"), ("export-review", "--reviewer"), ("export-adjudication", "--adjudicator")):
-        sub.add_parser(name).add_argument(who, required=True, dest="person")
+        p = sub.add_parser(name)
+        p.add_argument(who, required=True, dest="person")
+        if name == "export-review":
+            p.add_argument("--qc-sample", type=float, metavar="FRACTION", help="only the fixed QC sample of scenarios (e.g. 0.2)")
     sub.add_parser("export").add_argument("--phase", choices=["1", "2", "all"], default="all")
     sub.add_parser("status")
     args = ap.parse_args(argv)
@@ -212,7 +216,11 @@ def main(argv=None) -> int:
             rows, _ = plan()
             v = variants(rows)
             rated = {(r["record_id"], r.get("text_sha256")) for r in ratings() if r["annotator_id"] == args.person}
-            out = emit(SHEETS / f"review_{args.person}.csv", A.REVIEW_COLUMNS, A.export_review(rows, v, args.person, rated))
+            items = A.export_review(rows, v, args.person, rated)
+            if args.qc_sample:
+                sample = A.qc_sample({c["scenario_id"] for c in selection()}, args.qc_sample)
+                items = [r for r in items if A.scenario_of(r["row_id"]) in sample]
+            out = emit(SHEETS / f"review_{args.person}.csv", A.REVIEW_COLUMNS, items)
         elif args.cmd == "import-review":
             rows, _ = plan()
             rs = A.import_review(args.path, args.person, rows, variants(rows), A.load_registry(REGISTRY))

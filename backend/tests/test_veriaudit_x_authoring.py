@@ -198,3 +198,13 @@ def test_review_sheet_rejects_edited_text_cell(tmp_path):
     sheet[0].update(judgement="equivalent", harm_preserved="yes", text="reviewer rewrote it")
     with pytest.raises(A.WorkflowError, match="read-only"):
         A.import_review(write(tmp_path / "r.csv", sheet, A.REVIEW_COLUMNS), "rev1", rows, variants, REGISTRY)
+
+
+def test_qc_sample_is_fixed_size_and_reproducible():
+    from app.veriaudit_x.authoring import qc_sample, scenario_of
+
+    ids = [f"VX-S{i:04d}" for i in range(1, 201)]
+    s = qc_sample(ids, 0.2)
+    assert len(s) == 40 and s == qc_sample(list(reversed(ids)), 0.2)
+    assert qc_sample(ids, 0.1) <= s  # nested: a smaller sample is a subset of a larger one
+    assert scenario_of("VX-S0014-B-rur-t1") == "VX-S0014"

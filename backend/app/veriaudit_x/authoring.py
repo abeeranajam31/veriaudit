@@ -24,7 +24,9 @@ import csv
 import hashlib
 import io
 import json
+import math
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -715,6 +717,21 @@ def export_review(rows: list[PlannedRow], variants: dict[str, dict], reviewer: s
             }
         )
     return out
+
+
+def scenario_of(row_id: str) -> str:
+    return "-".join(row_id.split("-")[:-3])
+
+
+def qc_sample(scenario_ids: Iterable[str], fraction: float) -> set[str]:
+    """Fixed, reproducible scenario-level sample for third-person quality control: the
+    ceil(fraction x n) scenarios with the smallest sha256("veriaudit-qc|<scenario>"). It depends only
+    on the scenario IDs, so it cannot be steered by who translated a row or by what the text says,
+    and all forms of a sampled scenario are rated together."""
+    if not 0 < fraction <= 1:
+        raise ValueError("fraction must be in (0, 1]")
+    ids = sorted(set(scenario_ids), key=lambda s: hashlib.sha256(f"veriaudit-qc|{s}".encode()).hexdigest())
+    return set(ids[: math.ceil(fraction * len(ids))])
 
 
 def import_review(path: Path, reviewer: str, rows: list[PlannedRow], variants: dict[str, dict], registry: dict) -> list[dict]:

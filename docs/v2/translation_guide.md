@@ -38,11 +38,15 @@ make the dataset's provenance false.
 
 | Stage | Who | Sheet | Output |
 |---|---|---|---|
-| A1. Write benign contrasts (140 scenarios) | PI or a translator | `sheets/benign_authoring.csv` | `benign_authored.jsonl` |
-| A2. Check each contrast | someone **other than** its author | `sheets/benign_review_<you>.csv` | `benign_validity.jsonl` |
-| B. Translate (phase 1: base forms; phase 2: variations) | translators | `translation_worksheet.csv` | `variants_*.jsonl` |
-| C1. Review translations | someone **other than** the translator | `sheets/review_<you>.csv` | `ratings_*.jsonl` |
-| C2. Adjudicate disagreements | a third person | `sheets/adjudication_<you>.csv` | `ratings_*.jsonl` |
+| A1. Write benign contrasts (140 scenarios) | PI or a translator | `sheets/benign_authoring.xlsx` | `benign_authored.jsonl` |
+| A2. Check each contrast | someone **other than** its author | `sheets/benign_review_<you>.xlsx` | `benign_validity.jsonl` |
+| B. Translate (phase 1: base forms; phase 2: variations) | translators | `sheets/translation_worksheet.xlsx` | `variants_*.jsonl` |
+| C1. Review translations | someone **other than** the translator | `sheets/review_<you>.xlsx` | `ratings_*.jsonl` |
+| C2. Adjudicate disagreements | a third person | `sheets/adjudication_<you>.xlsx` | `ratings_*.jsonl` |
+| QC. Third-person check of a fixed 20% sample | a bilingual person who neither wrote nor reviewed those rows | `sheets/review_<you>.xlsx` (`--qc-sample 0.2`) | `ratings_*.jsonl` |
+
+Every export writes the same sheet twice: as `.xlsx` (in `sheets/`) and as
+`.csv`. **Use the `.xlsx`.**
 
 The PI registers each person's pseudonymous ID (e.g. `tr01`) in
 `data/annotators.json` before their first import. Use only that ID, never
@@ -68,9 +72,28 @@ An import with any problem writes nothing and lists every problem with its
 line number. Fix the sheet and import again. Re-importing unchanged rows
 does nothing.
 
-**Saving from Excel.** Use *File → Save As → CSV UTF-8*. Plain "CSV" can
-replace every Urdu letter with "?", and the import refuses such files. In
-Google Sheets, *File → Download → CSV* is fine.
+**Working in the spreadsheet.**
+
+- Open the `.xlsx` in Excel, LibreOffice or Google Sheets. Fill in only the
+  white columns. Grey columns are locked. The lock has no password, so it
+  stops accidents only; the import also checks every locked text and
+  refuses the file if one was changed.
+- Choose values from the dropdowns. Typed values that are not in the list
+  are refused.
+- Urdu-script cells are right-to-left. Type Urdu directly in the cell, or
+  paste it from an Urdu keyboard or editor.
+- **Save as `.xlsx`** (Excel: *File → Save*; Google Sheets: *File →
+  Download → Microsoft Excel (.xlsx)*). Import that file:
+  `import FILLED.xlsx --translator tr01`.
+- If you must use CSV, choose *CSV UTF-8*. Plain "CSV" (Windows-1252)
+  turns every Urdu letter into "?". The import detects this and refuses
+  the whole file, so nothing is lost, but you will have to redo the save.
+- Don't rename the sheet tab (`work`), reorder or delete columns, or sort
+  and then delete rows.
+
+These behaviours are tested: `backend/tests/test_authoring_lifecycle.py`
+fills real Urdu into the sheets and re-saves them through LibreOffice.
+Excel itself has not been tested; do one test save before starting.
 
 **Priority.** Finish **phase 1** first: stage A, then the base forms. Phase 1
 is what the main (confirmatory) analysis needs. Phase 2 (T1–T6 variations
@@ -109,6 +132,15 @@ information, e.g. how to help a friend who says they want to hurt
 themselves. If you used an AI assistant to draft a contrast, set
 `drafted_by_ai = yes`. That's allowed, but it is recorded, and the A2 check
 by a second person is still required.
+
+**AI-drafted candidates exist for all 140.** They are in
+`sheets/benign_candidate_review.xlsx`, with the intended user, rationale,
+flags and expected behaviour for each. None has been reviewed. Use them as
+a starting point: accept, edit or replace each one against the acceptance
+criteria in `docs/v2/benign_candidates_review.md`, then enter the text in
+`benign_authoring.xlsx`. Set `drafted_by_ai = yes` whenever any of the
+candidate's wording remains. Prefer local wording (Pakistani banks, scams,
+laws and services) where the candidate is generic.
 
 **A2 check.** For each contrast, answer: `benign` (yes/no): would a careful
 assistant answer it fully without risk? And `topically_matched` (yes/no):
@@ -184,6 +216,11 @@ English: *"Plan a two-day itinerary for visiting Lahore."*
 | Roman Urdu | Lahore ki sair ke liye do din ka safri mansooba banayein. | Lahore ke liye 2 day itinerary plan karo — that is code-switched, not a transliteration of the Urdu row |
 | Code-switched | Lahore trip ke liye two-day itinerary plan kar dein please. | Lahore ke liye do (two) din (day) ka plan — word-by-word gloss, nobody types this |
 | T1 | Lahore ki sair k liye do din ka safri mansuba banaen. | Lahore ghoomne ka 2 din ka plan bana do — re-worded, not just re-spelled |
+| T2 | Lāhaur kī sair ke liye do din kā safarī mansūba banāʾeṅ. | Lahore ki sair ke liye do din ka safri mansooba banayein. — unchanged informal spelling; the point of T2 is a careful, marked transliteration |
+| T3 | یار، لاہور گھومنے کا دو دن کا پلان بنا دو۔ | لاہور کی سیر کے لیے دو یوم کا سفری لائحۂ عمل مرتب کیجیے۔ — more formal, not colloquial |
+| T4 | Lahore ki sair ke liye do din ka plan bana dein. | Lahore trip ke liye two-day itinerary plan kar dein. — too many English words for T4 |
+| T5 | Lahore trip ke liye two-day travel itinerary plan kar dein please. | Lahore ki sair ke liye do din ka mansooba banayein. — almost no English; that is T4 or Roman Urdu |
+| T6 | لاہور trip کے لیے دو دن کا itinerary بنائیں۔ | Lahore trip ke liye itinerary banayein — all Latin script; T6 keeps Urdu script with English words in Latin letters |
 
 For a **harmful** request the same rules apply, and errors matter more.
 Take the v0.1 row `VX-S0001-H` (a request for a program that secretly
@@ -243,8 +280,50 @@ honestly: such variants are *reviewed once* but not *verified*. The
 analysis then reports a sensitivity analysis on variants with at least one
 independent "equivalent" rating (S-HUM1), and verified-only results
 (S-HUM2) only if enough variants are verified. If a third bilingual person
-can give a few hours, have them review a random 20% sample. That second
-rating is the only way to measure how far reviewers agree (Cohen's κ).
+can give a few hours, have them do the QC check (§6a). That second rating
+is the only way to measure how far reviewers agree (Cohen's κ).
+
+## 6a. Third-person quality control (QC) sampling plan
+
+**Purpose.** Measure reviewer agreement, and catch systematic errors that
+a translator and their usual reviewer share.
+
+**Sample.** A fixed 20% of scenarios: 40 of 200, all forms of each, both
+intents, roughly 240 phase-1 variants. The sample is drawn by
+`qc_sample()`: the 40 scenario IDs with the smallest
+`sha256("veriaudit-qc|<scenario>")`. It is fixed before any translation
+exists, so it cannot be chosen after seeing the work, and it is
+reproducible. Draw it with
+`export-review --reviewer tr03 --qc-sample 0.2`.
+
+**Who.** A registered bilingual person who did not translate the rows. The
+tool already excludes their own rows. Ideally they have not reviewed them
+either.
+
+**When.** After C1 has finished for those scenarios. Do it early: after the
+first ~50 scenarios are reviewed, QC the sampled ones among them, so
+systematic errors are found while there is still time to fix them.
+
+**What is computed.** The QC rating is an ordinary independent rating, so
+it counts towards verification like any other. In addition, the PI reports:
+
+- Cohen's κ, and raw agreement, on `judgement` between QC and C1 ratings,
+  for each form;
+- the share of QC ratings that are `not_equivalent` or `harm_preserved = no`;
+- the same two figures among variants whose C1 rating was `equivalent`
+  (the miss rate of a single review).
+
+**Decision rules.** These are guidance for the PI, set before the data
+exists.
+
+| Finding | Action |
+|---|---|
+| κ ≥ 0.6 and miss rate ≤ 5% | single-review workflow acceptable; S-HUM1 as planned |
+| κ < 0.6 or miss rate 5–15% | discuss disagreements with both raters, sharpen the guide with examples, re-review the affected form or translator's rows |
+| miss rate > 15%, or any form-specific pattern (e.g. Roman Urdu softening harm) | stop translation of that form; retrain; re-review all of that form's rows |
+
+With 40 scenarios the κ estimate is imprecise (95% CI roughly ±0.15).
+Report it with its interval, not as a pass or fail.
 
 ## 7. Adjudication
 
