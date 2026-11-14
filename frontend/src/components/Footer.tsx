@@ -5,12 +5,12 @@ import { GithubIcon } from "./ui/GithubIcon";
 
 const columns = [
   {
-    title: "Platform",
+    title: "Research",
     links: [
-      { href: "/platform", label: "Platform" },
+      { href: "/results", label: "Results" },
       { href: "/research", label: "Research" },
       { href: "/benchmark", label: "Benchmark" },
-      { href: "/leaderboard", label: "Leaderboard" },
+      { href: "/platform", label: "Interactive demo" },
     ],
   },
   {
@@ -18,14 +18,13 @@ const columns = [
     links: [
       { href: "/open-source", label: "Open Source" },
       { href: "/methodology", label: "Methodology" },
-      { href: "/pricing", label: "Pricing" },
       { href: "/about", label: "About" },
     ],
   },
   {
     title: "Contact",
     links: [
-      { href: "/contact", label: "Request an Audit" },
+      { href: "/contact", label: "Get in touch" },
       { href: "mailto:veriiaudit@gmail.com", label: "veriiaudit@gmail.com" },
     ],
   },

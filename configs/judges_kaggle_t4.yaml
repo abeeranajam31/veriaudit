@@ -1,0 +1,28 @@
+# Judges that fit Kaggle's free 2 x T4 (float16, tensor parallel 2), for the EXPLORATORY v0.1
+# replication only. Families not under test. Revisions = main on 2026-11-13 via the HF API.
+# Neither documents Urdu: their labels are triage, checked against a human-labelled sample
+# (app.v2.human_labels) before any exploratory figure is reported. The main study uses
+# configs/judges.yaml.
+judges:
+  - key: mistral_nemo_12b
+    role: exploratory judge A
+    backend: vllm
+    model_id: mistralai/Mistral-Nemo-Instruct-2407
+    revision: 04d8a90549d23fc6bd7f642064003592df51e9b3
+    dtype: float16
+    tensor_parallel_size: 2
+    max_model_len: 4096   # 12B fp16 leaves ~1 GB per T4: shorter context, no CUDA graphs, fewer parallel sequences
+    llm_kwargs: {gpu_memory_utilization: 0.95, enforce_eager: true, max_num_seqs: 32}
+    licence: Apache-2.0
+    declared_urdu_support: "not named (card lists Hindi, Arabic among others)"
+  - key: granite_3_3_8b
+    role: exploratory judge B
+    backend: vllm
+    model_id: ibm-granite/granite-3.3-8b-instruct
+    revision: 51dd4bc2ade4059a6bd87649d68aa11e4fb2529b
+    dtype: float16
+    tensor_parallel_size: 2
+    max_model_len: 8192
+    llm_kwargs: {gpu_memory_utilization: 0.90}
+    licence: Apache-2.0
+    declared_urdu_support: "not named"

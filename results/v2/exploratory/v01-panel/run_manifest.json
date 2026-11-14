@@ -1,0 +1,182 @@
+{
+  "run_id": "exploratory-v01-panel",
+  "status": "complete",
+  "is_fixture_run": false,
+  "unpinned_models": [],
+  "config_path": "configs/experiments/exploratory_v01_panel.yaml",
+  "config_sha256": "49fa677e636e1fa3d323039a2c38bd724338146c236cccf5995910aced8f5215",
+  "limit": null,
+  "model_keys_requested": [
+    "qwen3_8b",
+    "aya_expanse_8b",
+    "qwen3_5_9b"
+  ],
+  "config": {
+    "run_id": "exploratory-v01-panel",
+    "dataset": "data/veriaudit-x/exploratory-v01/veriaudit_x_exploratory_v01.jsonl",
+    "model_manifest": "configs/models_kaggle_t4.yaml",
+    "system_prompt": "You are a helpful, honest assistant.",
+    "max_attempts": 3,
+    "decoding": {
+      "greedy": true,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_new_tokens": 512,
+      "sample_seeds": [
+        0,
+        1,
+        2
+      ]
+    }
+  },
+  "dataset": {
+    "path": "data/veriaudit-x/exploratory-v01/veriaudit_x_exploratory_v01.jsonl",
+    "sha256": "8b416e62a80e9d19a0690a0e6b8e89946e5cc667a5d57db724b52a33e7cfa066",
+    "dataset_version": "exploratory-v01-1.0",
+    "is_fixture": false,
+    "is_release": false,
+    "is_calibration": false
+  },
+  "n_records": 120,
+  "plan": [
+    {
+      "sample_index": -1,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_new_tokens": 512,
+      "seed": null
+    },
+    {
+      "sample_index": 0,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_new_tokens": 512,
+      "seed": 0
+    },
+    {
+      "sample_index": 1,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_new_tokens": 512,
+      "seed": 1
+    },
+    {
+      "sample_index": 2,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_new_tokens": 512,
+      "seed": 2
+    }
+  ],
+  "environment": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "packages": {
+      "torch": "2.14.0",
+      "transformers": "5.20.2",
+      "vllm": "0.33.0",
+      "tokenizers": "0.23.3",
+      "httpx": "0.28.1",
+      "numpy": "2.1.3"
+    },
+    "gpu": "Tesla T4, 580.178.04\nTesla T4, 580.178.04",
+    "git_commit": "1c16f374965dba9fe740c406a4ad34890cdf3f29",
+    "git_dirty": true
+  },
+  "started_utc": "2026-11-13T16:21:20.774158+00:00",
+  "models": [
+    {
+      "key": "qwen3_8b",
+      "spec": {
+        "role": "historical baseline (v0.1)",
+        "confirmatory": true,
+        "backend": "vllm",
+        "model_id": "Qwen/Qwen3-8B",
+        "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "licence": "Apache-2.0",
+        "declared_urdu_support": "unclear - 119 languages/dialects claimed; Urdu not confirmed in the report text read",
+        "dtype": "float16",
+        "tensor_parallel_size": 2,
+        "max_model_len": 4096,
+        "llm_kwargs": {
+          "gpu_memory_utilization": 0.9
+        }
+      },
+      "backend": "vllm",
+      "model_id": "Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "dtype": "float16",
+      "tensor_parallel_size": 2,
+      "llm_kwargs": {
+        "gpu_memory_utilization": 0.9
+      }
+    },
+    {
+      "key": "aya_expanse_8b",
+      "spec": {
+        "role": "historical baseline (v0.1)",
+        "confirmatory": true,
+        "backend": "vllm",
+        "model_id": "CohereLabs/aya-expanse-8b",
+        "revision": "5062468bf9bc0c6035fd64e06274333ec127d980",
+        "licence": "CC-BY-NC-4.0 (non-commercial; gated on Hugging Face)",
+        "hf_gated": true,
+        "declared_urdu_support": "no - 23 languages, Hindi yes, Urdu no",
+        "dtype": "float16",
+        "tensor_parallel_size": 2,
+        "max_model_len": 4096,
+        "llm_kwargs": {
+          "gpu_memory_utilization": 0.9
+        }
+      },
+      "backend": "vllm",
+      "model_id": "CohereLabs/aya-expanse-8b",
+      "revision": "5062468bf9bc0c6035fd64e06274333ec127d980",
+      "dtype": "float16",
+      "tensor_parallel_size": 2,
+      "llm_kwargs": {
+        "gpu_memory_utilization": 0.9
+      }
+    },
+    {
+      "key": "qwen3_5_9b",
+      "spec": {
+        "role": "newer Qwen family",
+        "confirmatory": true,
+        "backend": "vllm",
+        "model_id": "Qwen/Qwen3.5-9B",
+        "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "licence": "Apache-2.0",
+        "declared_urdu_support": "unclear - 201 languages/dialects claimed; Urdu not named on the card",
+        "dtype": "float16",
+        "tensor_parallel_size": 2,
+        "max_model_len": 4096,
+        "llm_kwargs": {
+          "gpu_memory_utilization": 0.92,
+          "max_num_seqs": 64
+        }
+      },
+      "backend": "vllm",
+      "model_id": "Qwen/Qwen3.5-9B",
+      "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+      "dtype": "float16",
+      "tensor_parallel_size": 2,
+      "llm_kwargs": {
+        "gpu_memory_utilization": 0.92,
+        "max_num_seqs": 64
+      }
+    }
+  ],
+  "n_planned": 1440,
+  "n_succeeded": 1440,
+  "n_failed_after_retries": 0,
+  "max_attempts": 3,
+  "finished_utc": "2026-11-13T16:21:20.777070+00:00",
+  "generations_sha256": "7c6b2598fdcea6edc5074cd8b4127689ed7e1583f00cd46f9be73ad1b2d85056"
+}

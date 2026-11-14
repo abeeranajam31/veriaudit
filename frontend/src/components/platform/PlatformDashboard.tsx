@@ -55,7 +55,7 @@ export function PlatformDashboard() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
             TEST → COMPARE → SCORE → ANALYZE → REPORT. This static deployment runs entirely in your
-            browser against the VERIAUDIT-500 pilot dataset. Connect the EquivEngine / GapEvaluator
+            browser against the VERIAUDIT sample intents. Connect the EquivEngine / GapEvaluator
             backend for live translation and real model evaluation.
           </p>
           <p className="mt-2 text-xs text-ink-faint">
@@ -90,7 +90,7 @@ export function PlatformDashboard() {
 
           <div className="mt-6">
             <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-              Pilot intents (VERIAUDIT-500 sample)
+              Sample intents
             </p>
             <div className="mt-3 space-y-1.5 max-h-80 overflow-y-auto pr-1">
               {options.map((o) => (

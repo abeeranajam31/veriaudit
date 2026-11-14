@@ -1,0 +1,245 @@
+"""Generation backends for VeriAudit v2.
+
+Every backend implements `generate(messages, decoding) -> str` (used by judges),
+`generate_full(messages, decoding) -> GenResult` (used by the runner: text plus finish reason,
+output-token count and a hash of the exact rendered prompt) and `describe() -> dict`
+(model id, pinned revision, backend name, chat-template hash once loaded). Heavy dependencies (torch, transformers,
+vllm, httpx) are imported lazily so the module loads on machines without them.
+
+- TransformersBackend: Hugging Face Transformers, local GPU/CPU or Colab.
+- VLLMBackend: vLLM offline engine for batched GPU inference.
+- OpenAICompatibleBackend: any OpenAI-compatible HTTP server (vLLM serve, TGI, Ollama,
+  hosted APIs). Requires an explicit base_url; never defaults to a paid endpoint.
+- FakeBackend: deterministic echo for tests only; its outputs are marked as test fixtures
+  by the runner and must never be analysed as results.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from dataclasses import dataclass, field
+
+from app.v2.records import Decoding
+
+
+class BackendError(RuntimeError):
+    pass
+
+
+@dataclass
+class GenResult:
+    text: str
+    finish_reason: str | None = None  # "stop" | "length" | backend-specific; "length" = truncated
+    n_output_tokens: int | None = None
+    rendered_prompt_sha256: str | None = None
+
+
+def sha256_text(text) -> str | None:
+    """Hash of a chat template. Some tokenizers (e.g. Aya Expanse) store several named templates as a
+    dict; that is hashed as canonical JSON so the record stays comparable across runs."""
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        text = json.dumps(text, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+@dataclass
+class TransformersBackend:
+    model_id: str
+    revision: str | None = None
+    dtype: str = "bfloat16"
+    device_map: str = "auto"
+    chat_template_kwargs: dict = field(default_factory=dict)
+    _model: object = None
+    _tok: object = None
+    name: str = "transformers"
+
+    def _load(self):
+        if self._model is None:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+
+            self._tok = AutoTokenizer.from_pretrained(self.model_id, revision=self.revision)
+            self._model = AutoModelForCausalLM.from_pretrained(
+                self.model_id, revision=self.revision, torch_dtype=getattr(torch, self.dtype), device_map=self.device_map
+            )
+        return self._model, self._tok
+
+    def generate_full(self, messages: list[dict], decoding: Decoding) -> GenResult:
+        import torch
+
+        model, tok = self._load()
+        prompt = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, **self.chat_template_kwargs)
+        inputs = tok(prompt, return_tensors="pt", add_special_tokens=False).to(model.device)
+        if decoding.seed is not None:
+            torch.manual_seed(decoding.seed)
+        do_sample = decoding.temperature > 0
+        out = model.generate(
+            **inputs,
+            max_new_tokens=decoding.max_new_tokens,
+            do_sample=do_sample,
+            temperature=decoding.temperature if do_sample else None,
+            top_p=decoding.top_p if do_sample else None,
+        )
+        new = out[0][inputs["input_ids"].shape[1] :]
+        n = int(new.shape[0])
+        eos = tok.eos_token_id if isinstance(tok.eos_token_id, list) else [tok.eos_token_id]
+        hit_eos = n > 0 and int(new[-1]) in eos
+        finish = "length" if (n >= decoding.max_new_tokens and not hit_eos) else "stop"
+        return GenResult(tok.decode(new, skip_special_tokens=True), finish, n, sha256_text(prompt))
+
+    def generate(self, messages: list[dict], decoding: Decoding) -> str:
+        return self.generate_full(messages, decoding).text
+
+    def describe(self) -> dict:
+        d = {"backend": self.name, "model_id": self.model_id, "revision": self.revision, "dtype": self.dtype}
+        if self._tok is not None:
+            d["chat_template_sha256"] = sha256_text(getattr(self._tok, "chat_template", None))
+            d["tokenizer_class"] = type(self._tok).__name__
+        return d
+
+
+@dataclass
+class VLLMBackend:
+    model_id: str
+    revision: str | None = None
+    dtype: str = "bfloat16"
+    chat_template_kwargs: dict = field(default_factory=dict)
+    max_model_len: int = 4096
+    tensor_parallel_size: int = 1  # GPUs per model (e.g. a 109B judge in bf16 needs 4 x 80 GB)
+    llm_kwargs: dict = field(default_factory=dict)  # extra vllm.LLM arguments, e.g. {"tokenizer_mode": "mistral"}; recorded in describe()
+    _llm: object = None
+    name: str = "vllm"
+
+    def _load(self):
+        if self._llm is None:
+            from vllm import LLM
+
+            self._llm = LLM(
+                model=self.model_id,
+                revision=self.revision,
+                dtype=self.dtype,
+                max_model_len=self.max_model_len,
+                tensor_parallel_size=self.tensor_parallel_size,
+                **self.llm_kwargs,
+            )
+        return self._llm
+
+    def generate_batch_full(self, batch: list[list[dict]], decoding: Decoding) -> list[GenResult]:
+        from vllm import SamplingParams
+
+        llm = self._load()
+        params = SamplingParams(temperature=decoding.temperature, top_p=decoding.top_p, max_tokens=decoding.max_new_tokens, seed=decoding.seed)
+        outs = llm.chat(batch, params, chat_template_kwargs=self.chat_template_kwargs or None)
+        return [GenResult(o.outputs[0].text, o.outputs[0].finish_reason, len(o.outputs[0].token_ids), sha256_text(getattr(o, "prompt", None))) for o in outs]
+
+    def generate_batch(self, batch: list[list[dict]], decoding: Decoding) -> list[str]:
+        return [r.text for r in self.generate_batch_full(batch, decoding)]
+
+    def generate_full(self, messages: list[dict], decoding: Decoding) -> GenResult:
+        return self.generate_batch_full([messages], decoding)[0]
+
+    def generate(self, messages: list[dict], decoding: Decoding) -> str:
+        return self.generate_full(messages, decoding).text
+
+    def describe(self) -> dict:
+        d = {"backend": self.name, "model_id": self.model_id, "revision": self.revision, "dtype": self.dtype}
+        d |= {"tensor_parallel_size": self.tensor_parallel_size, "llm_kwargs": self.llm_kwargs}
+        if self._llm is not None:
+            tok = self._llm.get_tokenizer()
+            d["chat_template_sha256"] = sha256_text(getattr(tok, "chat_template", None))
+            d["tokenizer_class"] = type(tok).__name__
+        return d
+
+
+@dataclass
+class OpenAICompatibleBackend:
+    model_id: str
+    base_url: str
+    api_key_env: str | None = None
+    timeout_s: float = 120.0
+    extra_body: dict = field(default_factory=dict)
+    name: str = "openai_compatible"
+
+    def generate(self, messages: list[dict], decoding: Decoding) -> str:
+        return self.generate_full(messages, decoding).text
+
+    def generate_full(self, messages: list[dict], decoding: Decoding) -> GenResult:
+        import httpx
+
+        headers = {}
+        if self.api_key_env:
+            key = os.environ.get(self.api_key_env)
+            if not key:
+                raise BackendError(f"environment variable {self.api_key_env} is not set")
+            headers["Authorization"] = f"Bearer {key}"
+        body = {
+            "model": self.model_id,
+            "messages": messages,
+            "temperature": decoding.temperature,
+            "top_p": decoding.top_p,
+            "max_tokens": decoding.max_new_tokens,
+            **({"seed": decoding.seed} if decoding.seed is not None else {}),
+            **self.extra_body,
+        }
+        r = httpx.post(f"{self.base_url.rstrip('/')}/chat/completions", json=body, headers=headers, timeout=self.timeout_s)
+        if r.status_code != 200:
+            raise BackendError(f"HTTP {r.status_code}: {r.text[:200]}")
+        try:
+            data = r.json()
+            choice = data["choices"][0]
+            usage = data.get("usage") or {}
+            # the server renders the chat template, so only the request messages can be hashed
+            return GenResult(choice["message"]["content"], choice.get("finish_reason"), usage.get("completion_tokens"), sha256_text(str(messages)))
+        except (KeyError, IndexError, TypeError) as exc:
+            raise BackendError(f"unexpected response shape: {str(r.json())[:200]}") from exc
+
+    def describe(self) -> dict:
+        return {"backend": self.name, "model_id": self.model_id, "base_url": self.base_url}
+
+
+@dataclass
+class FakeBackend:
+    """Deterministic test double. Never use for results."""
+
+    model_id: str = "fake/echo"
+    fail_on: str | None = None
+    name: str = "fake"
+    calls: int = 0
+    _failures: int = 0
+
+    fail_times: int = 0  # fail the first N calls matching fail_on, then succeed (retry tests)
+
+    def generate_full(self, messages: list[dict], decoding: Decoding) -> GenResult:
+        self.calls += 1
+        last = messages[-1]["content"]
+        if self.fail_on and self.fail_on in last:
+            if self.fail_times == 0 or self._failures < self.fail_times:
+                self._failures += 1
+                raise BackendError("simulated failure")
+        h = hashlib.sha256(f"{last}|{decoding.seed}|{decoding.temperature}".encode()).hexdigest()[:8]
+        text = f"[FAKE {h}] {last[:40]}"
+        return GenResult(text, "stop", len(text.split()), sha256_text(str(messages)))
+
+    def generate(self, messages: list[dict], decoding: Decoding) -> str:
+        return self.generate_full(messages, decoding).text
+
+    def describe(self) -> dict:
+        return {"backend": self.name, "model_id": self.model_id, "revision": "test", "chat_template_sha256": None}
+
+
+def build_backend(spec: dict):
+    kind = spec["backend"]
+    kwargs = {k: v for k, v in spec.items() if k not in ("backend", "key", "role", "notes", "licence", "hf_gated", "confirmatory", "declared_urdu_support")}
+    if kind == "transformers":
+        return TransformersBackend(**kwargs)
+    if kind == "vllm":
+        return VLLMBackend(**kwargs)
+    if kind == "openai_compatible":
+        return OpenAICompatibleBackend(**kwargs)
+    if kind == "fake":
+        return FakeBackend(**kwargs)
+    raise ValueError(f"unknown backend {kind!r}")

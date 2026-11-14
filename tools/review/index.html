@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VeriAudit-X Review</title>
+<style>
+  :root { --bg:#fbfaf8; --ink:#1d1d1b; --muted:#6b6a66; --line:#e3e1dc; --accent:#2f5d50; --warn:#9a5b13; --danger:#9b2c2c; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161615; --ink:#ecebe7; --muted:#a3a19b; --line:#33322f; --accent:#7fb7a4; --warn:#e0a458; --danger:#e48a8a; } }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 80px; }
+  h1 { font-size:20px; margin:0 0 4px } .muted { color:var(--muted); font-size:13px }
+  .card { border:1px solid var(--line); border-radius:10px; padding:16px; margin-top:16px }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+  .pill { font:11px/1 ui-monospace, monospace; padding:4px 8px; border:1px solid var(--line); border-radius:99px; text-transform:uppercase }
+  .flag { color:var(--danger); border-color:var(--danger) } .warn { color:var(--warn); border-color:var(--warn) }
+  .text { font-size:18px; margin:8px 0; white-space:pre-wrap } .ur { direction:rtl; font-size:22px; font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq",serif; line-height:2.2 }
+  button, select, input, textarea { font:inherit; color:inherit; background:transparent; border:1px solid var(--line); border-radius:8px; padding:8px 12px }
+  button.on { background:var(--accent); color:var(--bg); border-color:var(--accent) } textarea { width:100% }
+  label { display:block; margin-top:12px; font-weight:600 }
+</style>
+</head>
+<body>
+<main>
+  <h1>VeriAudit-X equivalence review</h1>
+  <p class="muted">Open a VeriAudit-X JSONL file. Records are shown highest-priority first (flagged, failed automated checks, controlled transformations, AI-generated). Ratings stay in this browser tab until you export them; then run <code>research/dataset/merge_human_ratings.py</code>. Two unanimous "equivalent" ratings from different reviewers are required before a variant counts as verified.</p>
+  <div class="row card">
+    <input type="file" id="file" accept=".jsonl,.json">
+    <input id="annotator" placeholder="Your reviewer ID (pseudonymous)" style="flex:1;min-width:200px">
+    <button id="export">Export ratings</button>
+  </div>
+  <p class="muted" id="progress"></p>
+  <div id="item"></div>
+</main>
+<script>
+let records = [], byId = {}, queue = [], i = 0, ratings = {};
+const $ = (id) => document.getElementById(id);
+function priority(r) {
+  if (r.equivalence.status === "flagged") return 0;
+  const checks = Object.values((r.quality || {}).automated_checks || {});
+  if (checks.some(c => !c.passed)) return 1;
+  if (((r.transformation || {}).parameters || {}).condition && r.transformation.parameters.condition !== "base") return 2;
+  if ((r.quality || {}).ai_generated) return 3;
+  return 4;
+}
+$("file").onchange = async (e) => {
+  const text = await e.target.files[0].text();
+  records = text.split("\n").filter(l => l.trim()).map(l => JSON.parse(l));
+  byId = Object.fromEntries(records.map(r => [r.record_id, r]));
+  queue = records.filter(r => ["pending", "flagged"].includes(r.equivalence.status))
+                 .sort((a, b) => priority(a) - priority(b) || a.record_id.localeCompare(b.record_id));
+  i = 0; render();
+};
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function render() {
+  $("progress").textContent = queue.length ? `${Object.keys(ratings).length} rated · item ${i + 1} of ${queue.length}` : "";
+  const r = queue[i]; if (!r) { $("item").innerHTML = ""; return; }
+  const src = byId[r.equivalence.reference_record_id] || {};
+  const failed = Object.entries((r.quality || {}).automated_checks || {}).filter(([, c]) => !c.passed).map(([k]) => k);
+  const cur = ratings[r.record_id] || {};
+  const isUr = /[؀-ۿ]/.test(r.text);
+  $("item").innerHTML = `<div class="card">
+    <div class="row"><span class="pill">${esc(r.record_id)}</span><span class="pill">${esc(r.scenario_type)} · ${esc(r.category)}</span>
+      <span class="pill">${esc(r.language)} · ${esc(r.transformation.parameters.condition || "base")}</span>
+      ${r.equivalence.status === "flagged" ? '<span class="pill flag">flagged</span>' : ""}
+      ${failed.length ? `<span class="pill warn">failed: ${esc(failed.join(", "))}</span>` : ""}</div>
+    <div class="muted" style="margin-top:12px">English source</div><div class="text">${esc(src.text)}</div>
+    <div class="muted">Variant</div><div class="text ${isUr ? "ur" : ""}">${esc(r.text)}</div>
+    <label>Same request as the English source?</label>
+    <div class="row">${["equivalent", "partially_equivalent", "not_equivalent"].map(v => `<button data-j="${v}" class="${cur.judgement === v ? "on" : ""}">${v.replace("_", " ")}</button>`).join("")}</div>
+    <label>Harm level / benignness preserved?</label>
+    <div class="row">${["yes", "no"].map(v => `<button data-h="${v}" class="${(cur.harm_preserved === (v === "yes")) ? "on" : ""}">${v}</button>`).join("")}</div>
+    <label>Notes (e.g. unnatural wording, wrong spelling convention)</label><textarea id="notes" rows="2">${esc(cur.notes)}</textarea>
+    <div class="row" style="margin-top:12px"><button id="prev">Previous</button><button id="next">Save &amp; next</button></div></div>`;
+  document.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { set(r, { judgement: b.dataset.j }); render(); });
+  document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { set(r, { harm_preserved: b.dataset.h === "yes" }); render(); });
+  $("prev").onclick = () => { i = Math.max(0, i - 1); render(); };
+  $("next").onclick = () => { set(r, { notes: $("notes").value }); i = Math.min(queue.length - 1, i + 1); render(); };
+}
+function set(r, patch) { ratings[r.record_id] = { ...(ratings[r.record_id] || {}), ...patch }; }
+$("export").onclick = () => {
+  const who = $("annotator").value.trim();
+  if (!who) { alert("Enter your reviewer ID first."); return; }
+  const lines = Object.entries(ratings).filter(([, v]) => v.judgement)
+    .map(([record_id, v]) => JSON.stringify({ record_id, annotator_id: who, judgement: v.judgement, harm_preserved: v.harm_preserved ?? null, notes: v.notes || null }));
+  const blob = new Blob([lines.join("\n") + "\n"], { type: "application/jsonl" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `ratings_${who}.jsonl`; a.click();
+};
+</script>
+</body>
+</html>

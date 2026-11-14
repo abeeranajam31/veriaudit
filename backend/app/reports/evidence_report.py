@@ -81,9 +81,7 @@ def build_evidence_report(
     story.append(Paragraph("Scores", styles["Heading3"]))
     score_rows = [["Model", "Language", "Safety", "Refusal Consistency", "Instruction Following"]]
     for r in results:
-        score_rows.append(
-            [r.model_id, r.form.value, f"{r.safety_score:.1f}", f"{r.refusal_consistency:.1f}", f"{r.instruction_following:.1f}"]
-        )
+        score_rows.append([r.model_id, r.form.value, f"{r.safety_score:.1f}", f"{r.refusal_consistency:.1f}", f"{r.instruction_following:.1f}"])
     story.append(_table(score_rows))
 
     gap = average_clsg(results, reference_form)
@@ -91,8 +89,7 @@ def build_evidence_report(
     story.append(Paragraph("Cross-Lingual Safety Gap (CLSG)", styles["Heading3"]))
     story.append(
         Paragraph(
-            f"Average CLSG relative to {reference_form.value}: {gap} points. "
-            "CLSG is a VERIAUDIT proposed metric and has not been independently validated.",
+            f"Average CLSG relative to {reference_form.value}: {gap} points. CLSG is a VERIAUDIT proposed metric and has not been independently validated.",
             styles["Normal"],
         )
     )

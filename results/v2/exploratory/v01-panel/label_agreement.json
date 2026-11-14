@@ -1,0 +1,97 @@
+{
+  "n_labels": 2742,
+  "by_source": {
+    "ai_judge": 2742
+  },
+  "judge_pairs": {
+    "granite_3_3_8b@judge-rubric-1.0 vs mistral_nemo_12b@judge-rubric-1.0": {
+      "n": 1326,
+      "all": {
+        "comprehension": {
+          "n": 1326,
+          "accuracy": 0.9479638009049773,
+          "kappa": 0.023970301148911997
+        },
+        "behaviour": {
+          "n": 1326,
+          "accuracy": 0.5030165912518854,
+          "kappa": 0.06056325308976438
+        },
+        "harmful_content": {
+          "n": 1326,
+          "accuracy": 0.9570135746606335,
+          "kappa": 0.4350192109315439
+        }
+      },
+      "code_switched": {
+        "comprehension": {
+          "n": 333,
+          "accuracy": 0.972972972972973,
+          "kappa": 0.0
+        },
+        "behaviour": {
+          "n": 333,
+          "accuracy": 0.5495495495495496,
+          "kappa": 0.059198011037236736
+        },
+        "harmful_content": {
+          "n": 333,
+          "accuracy": 0.978978978978979,
+          "kappa": 0.6847870182555791
+        }
+      },
+      "english": {
+        "comprehension": {
+          "n": 352,
+          "accuracy": 1.0,
+          "kappa": 1.0
+        },
+        "behaviour": {
+          "n": 352,
+          "accuracy": 0.29829545454545453,
+          "kappa": 0.0
+        },
+        "harmful_content": {
+          "n": 352,
+          "accuracy": 0.9971590909090909,
+          "kappa": 0.0
+        }
+      },
+      "roman_urdu": {
+        "comprehension": {
+          "n": 295,
+          "accuracy": 0.847457627118644,
+          "kappa": 0.03010155622123152
+        },
+        "behaviour": {
+          "n": 295,
+          "accuracy": 0.5152542372881356,
+          "kappa": 0.11355565361743247
+        },
+        "harmful_content": {
+          "n": 295,
+          "accuracy": 0.911864406779661,
+          "kappa": 0.4136085626911311
+        }
+      },
+      "urdu": {
+        "comprehension": {
+          "n": 346,
+          "accuracy": 0.9566473988439307,
+          "kappa": -0.005424254165047678
+        },
+        "behaviour": {
+          "n": 346,
+          "accuracy": 0.6560693641618497,
+          "kappa": 0.13672292693154406
+        },
+        "harmful_content": {
+          "n": 346,
+          "accuracy": 0.9335260115606936,
+          "kappa": 0.2684316970031242
+        }
+      }
+    }
+  },
+  "any_human_labels": false
+}

@@ -34,17 +34,11 @@ def compute_clsg_for_model(
     reference_form: LinguisticForm,
     evaluation_form: LinguisticForm,
 ) -> CLSGResult | None:
-    reference = next(
-        (r for r in results if r.model_id == model_id and r.form == reference_form), None
-    )
-    evaluation = next(
-        (r for r in results if r.model_id == model_id and r.form == evaluation_form), None
-    )
+    reference = next((r for r in results if r.model_id == model_id and r.form == reference_form), None)
+    evaluation = next((r for r in results if r.model_id == model_id and r.form == evaluation_form), None)
     if reference is None or evaluation is None:
         return None
-    return compute_clsg(
-        reference.safety_score, evaluation.safety_score, reference_form, evaluation_form
-    )
+    return compute_clsg(reference.safety_score, evaluation.safety_score, reference_form, evaluation_form)
 
 
 def average_clsg(

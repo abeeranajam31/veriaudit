@@ -1,0 +1,25 @@
+{
+  "dataset_name": "VeriAudit-X calibration pilot",
+  "dataset_version": "calibration-1.0",
+  "schema_version": "2.2.0",
+  "description": "Calibration pilot only (protocol \u00a712): disjoint from the main study; never analysed as main-study results.",
+  "data_file": "veriaudit_x_calibration.jsonl",
+  "is_fixture": false,
+  "is_calibration": true,
+  "n_records": 98,
+  "build_log": {
+    "set_a_dropped_overlap": [
+      "VA-005",
+      "VA-006",
+      "VA-007",
+      "VA-008",
+      "VA-009",
+      "VA-010"
+    ],
+    "set_a_items": 7,
+    "set_b_harmful": 40,
+    "set_b_harmful_pool_after_exclusions_and_dedup": 83,
+    "set_b_benign": 30
+  },
+  "data_sha256": "41854a8a62ad8fc919922fa236e267c46e49ba6809dfc6939de50bf328a19d24"
+}

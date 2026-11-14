@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const openItems = [
   "Evaluation framework (EquivEngine, GapEvaluator, model adapter interfaces)",
-  "Pilot dataset and dataset schema, with the full VERIAUDIT-500 to follow after verification",
+  "Released dataset and schema, with the 200-scenario VeriAudit-X benchmark to follow after human verification",
   "CLSG benchmark methodology and scoring framework",
   "Reproducibility documentation (environment, prompts, evaluation configs)",
 ];
@@ -27,16 +27,11 @@ export default function OpenSourcePage() {
     <Container className="py-16 sm:py-24">
       <Eyebrow>Open Source</Eyebrow>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">
-        Open-source core, commercial scale
+        Open research, open code
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-ink-muted">
         VERIAUDIT aims to release its evaluation code, dataset, benchmark methodology, and scoring
         framework openly, so the core measurement can be independently reproduced and scrutinized.
-        Hosted infrastructure and large-scale or proprietary evaluations are commercial — see{" "}
-        <a href="/pricing" className="text-accent hover:underline underline-offset-4">
-          pricing
-        </a>
-        .
       </p>
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2">

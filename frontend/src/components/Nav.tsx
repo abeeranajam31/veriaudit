@@ -7,12 +7,12 @@ import { Container } from "./ui/Container";
 import { Button } from "./ui/Button";
 
 const links = [
-  { href: "/platform", label: "Platform" },
+  { href: "/#findings", label: "Findings" },
+  { href: "/results", label: "Results" },
   { href: "/research", label: "Research" },
+  { href: "/methodology", label: "Methodology" },
   { href: "/benchmark", label: "Benchmark" },
-  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/open-source", label: "Open Source" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
 ];
 
@@ -41,8 +41,8 @@ export function Nav() {
           </nav>
 
           <div className="hidden lg:block">
-            <Button href="/contact" variant="primary">
-              Request an Audit
+            <Button href="https://github.com/abeeranajam31/veriaudit/blob/veriaudit-x-dataset/paper/v01_reanalysis/main.pdf" variant="primary" external>
+              Read the paper
             </Button>
           </div>
 

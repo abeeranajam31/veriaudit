@@ -1,0 +1,80 @@
+[
+  {
+    "scenario": "s01_adjudicated_variant_validates",
+    "unsafe_outcome": "Unsafe outcome: a correctly adjudicated variant makes the dataset fail validation (release blocked).",
+    "outcome": "BLOCKED",
+    "detail": "exit=0 status=verified"
+  },
+  {
+    "scenario": "s02_edited_source_keeps_old_translation",
+    "unsafe_outcome": "Unsafe outcome: after the English benign contrast is rewritten, translations of the OLD text stay in the dataset.",
+    "outcome": "BLOCKED",
+    "detail": "stale Urdu translation of old source present=False"
+  },
+  {
+    "scenario": "s03_reviewer_adjudicates_own_row",
+    "unsafe_outcome": "Unsafe outcome: the person who reviewed a variant also adjudicates it, through the worksheet CLI.",
+    "outcome": "BLOCKED",
+    "detail": "refused by CLI and by the rating layer"
+  },
+  {
+    "scenario": "s04_excel_cp1252_destroys_urdu",
+    "unsafe_outcome": "Unsafe outcome: a sheet saved by Excel as plain CSV (Urdu -> '???') is imported.",
+    "outcome": "BLOCKED",
+    "detail": "WorkflowError"
+  },
+  {
+    "scenario": "s05_resume_mixes_datasets",
+    "unsafe_outcome": "Unsafe outcome: re-running a run_id after the dataset changed appends generations from a different dataset.",
+    "outcome": "BLOCKED",
+    "detail": "run fixture-smoke already exists with a different dataset or config; resuming wo"
+  },
+  {
+    "scenario": "s06_revision_drops_mt_disclosure",
+    "unsafe_outcome": "Unsafe outcome: a machine-translated variant revised by a second translator loses its drafting-aid disclosure.",
+    "outcome": "BLOCKED",
+    "detail": "revised variant ai_generated=True, method=machine_post_edited"
+  },
+  {
+    "scenario": "s07_unfinished_run_without_hash",
+    "unsafe_outcome": "Unsafe outcome: a run whose manifest has no generations hash (never finished) is analysed.",
+    "outcome": "BLOCKED",
+    "detail": "run manifest has no generations hash (run never finished); resume it to completion"
+  },
+  {
+    "scenario": "s08_limited_run_counts_as_complete",
+    "unsafe_outcome": "Unsafe outcome: a run made with --limit (a subset of the dataset) is analysed as complete, without any override.",
+    "outcome": "BLOCKED",
+    "detail": "run used --limit 8"
+  },
+  {
+    "scenario": "s09_family_size_not_enforced",
+    "unsafe_outcome": "Unsafe outcome: a model manifest with fewer confirmatory models silently shrinks the Holm family.",
+    "outcome": "BLOCKED",
+    "detail": "model manifest lists 1 confirmatory models; the protocol fixes 4"
+  },
+  {
+    "scenario": "s10_self_declared_panel_label",
+    "unsafe_outcome": "Unsafe outcome: one judge's label written with label_source=ai_panel resolves on its own.",
+    "outcome": "BLOCKED",
+    "detail": "single self-declared panel label"
+  },
+  {
+    "scenario": "s11_non_release_dataset_analysed",
+    "unsafe_outcome": "Unsafe outcome: a main-study analysis runs on a dataset that is not a frozen release (here: the test fixture).",
+    "outcome": "BLOCKED",
+    "detail": "dataset '0.0.1-fixture' is not a frozen release (assemble --release)"
+  },
+  {
+    "scenario": "s12_unregistered_human_labels",
+    "unsafe_outcome": "Unsafe outcome: labels claiming to be human, from an ID not in the rater registry, override AI labels.",
+    "outcome": "BLOCKED",
+    "detail": "human labels from IDs not registered as human raters: ['gpt-4o']"
+  },
+  {
+    "scenario": "s13_orphan_generations",
+    "unsafe_outcome": "Unsafe outcome: generations for records that are not in the dataset enter the analysis.",
+    "outcome": "BLOCKED",
+    "detail": "1 generations refer to records not in the dataset, e.g. GHOST-H-en-01"
+  }
+]

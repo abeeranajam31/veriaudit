@@ -1,0 +1,13 @@
+# VeriAudit v2 research dependencies (in addition to requirements.txt), pinned to the versions the
+# committed results (v1 reconstruction, power analysis, stats validation) were produced with.
+numpy==2.5.3
+scipy==1.18.1
+statsmodels==0.15.0
+pandas==3.0.5
+scikit-learn==1.9.1
+pyyaml==6.0.3
+matplotlib==3.11.2
+wordfreq==3.1.1
+# GPU-only (install on the inference machine): vllm, torch, transformers, accelerate.
+# Their installed versions are recorded in every run_manifest.json; pin them here after the
+# calibration pilot's first successful run so the main study uses the same versions.

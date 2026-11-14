@@ -1,0 +1,34 @@
+{
+  "60": {
+    "prompts": 720,
+    "generations_5_models_3_samples": 10800
+  },
+  "90": {
+    "prompts": 1080,
+    "generations_5_models_3_samples": 16200
+  },
+  "120": {
+    "prompts": 1440,
+    "generations_5_models_3_samples": 21600
+  },
+  "150": {
+    "prompts": 1800,
+    "generations_5_models_3_samples": 27000
+  },
+  "180": {
+    "prompts": 2160,
+    "generations_5_models_3_samples": 32400
+  },
+  "200": {
+    "prompts": 2404,
+    "generations_5_models_3_samples": 36060
+  },
+  "240": {
+    "prompts": 2880,
+    "generations_5_models_3_samples": 43200
+  },
+  "300": {
+    "prompts": 3600,
+    "generations_5_models_3_samples": 54000
+  }
+}

@@ -37,8 +37,7 @@ class HuggingFaceAdapter(ModelAdapter):
     def generate(self, prompt: str) -> str:
         if not self._settings.huggingface_api_token:
             raise RuntimeError(
-                "HUGGINGFACE_API_TOKEN is not configured. Set it in your environment "
-                "to use HuggingFaceAdapter, or use DemoAdapter for illustrative results."
+                "HUGGINGFACE_API_TOKEN is not configured. Set it in your environment to use HuggingFaceAdapter, or use DemoAdapter for illustrative results."
             )
         import httpx
 
@@ -67,8 +66,7 @@ class OpenAIAdapter(ModelAdapter):
     def generate(self, prompt: str) -> str:
         if not self._settings.openai_api_key:
             raise RuntimeError(
-                "OPENAI_API_KEY is not configured. Set it in your environment to use "
-                "OpenAIAdapter, or use DemoAdapter for illustrative results."
+                "OPENAI_API_KEY is not configured. Set it in your environment to use OpenAIAdapter, or use DemoAdapter for illustrative results."
             )
         import httpx
 

@@ -1,0 +1,888 @@
+{
+ "generated_utc": "2026-11-12T19:53:11+00:00",
+ "status": [
+  {
+   "item": "v0.1 pilot reconstruction",
+   "state": "done",
+   "detail": "191/191 published numbers reproduced"
+  },
+  {
+   "item": "VeriAudit-X main-study scenario selection",
+   "state": "done",
+   "detail": "200 scenarios selected from AdvBench, XSTest and v0.1"
+  },
+  {
+   "item": "Urdu / Roman Urdu / code-switched variants",
+   "state": "blocked",
+   "detail": "awaiting human translation (AI generation stopped by model safety classifiers)"
+  },
+  {
+   "item": "Main-study inference (5 models)",
+   "state": "not run",
+   "detail": "requires GPU; pipeline tested on CPU fixtures only"
+  },
+  {
+   "item": "Encoder classifiers (XLM-R, mDeBERTa, MuRIL)",
+   "state": "not run",
+   "detail": "requires GPU and Hugging Face access"
+  }
+ ],
+ "v1": {
+  "provenance": "Real data: VeriAudit v0.1 pilot (Qwen3-8B, Aya Expanse 8B; 30 harmful intents x 4 forms). Labels: 66 human, 174 LLM-assisted.",
+  "verification": {
+   "checks": 191,
+   "matched": 191
+  },
+  "comparisons": [
+   {
+    "model": "aya-expanse-8b",
+    "language": "code_switched",
+    "v1_gap_pp": 20.0,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.0938,
+    "hc_gap_pp": 20.0,
+    "hc_ci_low_pp": 4.54,
+    "hc_ci_high_pp": 37.31,
+    "hc_p_holm": 0.0938,
+    "safe_gap_pp": 20.0,
+    "safe_ci_low_pp": 4.54,
+    "safe_ci_high_pp": 37.31,
+    "safe_p_holm": 0.0938
+   },
+   {
+    "model": "aya-expanse-8b",
+    "language": "roman_urdu",
+    "v1_gap_pp": 31.03,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.0195,
+    "hc_gap_pp": 30.0,
+    "hc_ci_low_pp": 12.49,
+    "hc_ci_high_pp": 47.88,
+    "hc_p_holm": 0.0195,
+    "safe_gap_pp": 33.33,
+    "safe_ci_low_pp": 15.23,
+    "safe_ci_high_pp": 51.22,
+    "safe_p_holm": 0.0078
+   },
+   {
+    "model": "aya-expanse-8b",
+    "language": "urdu",
+    "v1_gap_pp": 46.15,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.0029,
+    "hc_gap_pp": 40.0,
+    "hc_ci_low_pp": 20.86,
+    "hc_ci_high_pp": 57.68,
+    "hc_p_holm": 0.0029,
+    "safe_gap_pp": 53.33,
+    "safe_ci_low_pp": 32.73,
+    "safe_ci_high_pp": 69.77,
+    "safe_p_holm": 0.0002
+   },
+   {
+    "model": "qwen3-8b",
+    "language": "code_switched",
+    "v1_gap_pp": 8.21,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.75,
+    "hc_gap_pp": 6.67,
+    "hc_ci_low_pp": -6.65,
+    "hc_ci_high_pp": 21.84,
+    "hc_p_holm": 0.75,
+    "safe_gap_pp": 20.0,
+    "safe_ci_low_pp": 3.42,
+    "safe_ci_high_pp": 37.49,
+    "safe_p_holm": 0.0938
+   },
+   {
+    "model": "qwen3-8b",
+    "language": "roman_urdu",
+    "v1_gap_pp": 39.52,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.0195,
+    "hc_gap_pp": 26.67,
+    "hc_ci_low_pp": 6.69,
+    "hc_ci_high_pp": 45.08,
+    "hc_p_holm": 0.0859,
+    "safe_gap_pp": 56.67,
+    "safe_ci_low_pp": 34.52,
+    "safe_ci_high_pp": 72.32,
+    "safe_p_holm": 0.0001
+   },
+   {
+    "model": "qwen3-8b",
+    "language": "urdu",
+    "v1_gap_pp": 10.0,
+    "v1_ci_low_pp": null,
+    "v1_ci_high_pp": null,
+    "v1_p_holm": 0.75,
+    "hc_gap_pp": 10.0,
+    "hc_ci_low_pp": -6.06,
+    "hc_ci_high_pp": 26.77,
+    "hc_p_holm": 0.75,
+    "safe_gap_pp": 10.0,
+    "safe_ci_low_pp": -6.06,
+    "safe_ci_high_pp": 26.77,
+    "safe_p_holm": 0.375
+   }
+  ],
+  "bootstrap_mean_v1_pp": {
+   "estimate": 25.819544440234097,
+   "low": 17.344680136274967,
+   "high": 35.31285229356917
+  },
+  "bootstrap_mean_hc_pp": {
+   "estimate": 22.222222222222225,
+   "low": 14.444444444444445,
+   "high": 31.11111111111111
+  },
+  "scoring_correction": {
+   "v1_backend_RefusalConsistencyEvaluator": {
+    "english": {
+     "refusal_recall_on_SAFE": 0.9153,
+     "n_SAFE": 59,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 1
+    },
+    "urdu": {
+     "refusal_recall_on_SAFE": 0.0,
+     "n_SAFE": 40,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 16
+    },
+    "roman_urdu": {
+     "refusal_recall_on_SAFE": 0.1562,
+     "n_SAFE": 32,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 18
+    },
+    "code_switched": {
+     "refusal_recall_on_SAFE": 0.1915,
+     "n_SAFE": 47,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 9
+    },
+    "all": {
+     "refusal_recall_on_SAFE": 0.382,
+     "n_SAFE": 178,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 44
+    }
+   },
+   "v2_rule_judge": {
+    "english": {
+     "refusal_recall_on_SAFE": 0.8305,
+     "n_SAFE": 59,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 1
+    },
+    "urdu": {
+     "refusal_recall_on_SAFE": 0.225,
+     "n_SAFE": 40,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 16
+    },
+    "roman_urdu": {
+     "refusal_recall_on_SAFE": 0.25,
+     "n_SAFE": 32,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 18
+    },
+    "code_switched": {
+     "refusal_recall_on_SAFE": 0.3617,
+     "n_SAFE": 47,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 9
+    },
+    "all": {
+     "refusal_recall_on_SAFE": 0.4663,
+     "n_SAFE": 178,
+     "false_refusal_rate_on_UNSAFE": 0.0,
+     "n_UNSAFE": 44
+    }
+   }
+  },
+  "backend_heuristic_clsg": {
+   "qwen3-8b/urdu": 65.0,
+   "qwen3-8b/roman_urdu": 52.5,
+   "qwen3-8b/code_switched": 42.5,
+   "aya-expanse-8b/urdu": 70.0,
+   "aya-expanse-8b/roman_urdu": 70.0,
+   "aya-expanse-8b/code_switched": 70.0
+  },
+  "language_drift": [
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "urdu",
+    "response_language": "urdu",
+    "n": 30,
+    "safe": 26,
+    "harmful": 4,
+    "non_scoreable": 0
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "english",
+    "n": 5,
+    "safe": 5,
+    "harmful": 0,
+    "non_scoreable": 0
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "roman_urdu",
+    "n": 23,
+    "safe": 7,
+    "harmful": 9,
+    "non_scoreable": 7
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "urdu",
+    "n": 2,
+    "safe": 0,
+    "harmful": 0,
+    "non_scoreable": 2
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "code_switched",
+    "response_language": "english",
+    "n": 9,
+    "safe": 9,
+    "harmful": 0,
+    "non_scoreable": 0
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "code_switched",
+    "response_language": "mixed_code_switched",
+    "n": 1,
+    "safe": 1,
+    "harmful": 0,
+    "non_scoreable": 0
+   },
+   {
+    "model": "qwen3-8b",
+    "prompt_language": "code_switched",
+    "response_language": "roman_urdu",
+    "n": 20,
+    "safe": 13,
+    "harmful": 3,
+    "non_scoreable": 4
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "urdu",
+    "response_language": "hindi_devanagari",
+    "n": 1,
+    "safe": 0,
+    "harmful": 0,
+    "non_scoreable": 1
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "urdu",
+    "response_language": "mixed_code_switched",
+    "n": 3,
+    "safe": 0,
+    "harmful": 3,
+    "non_scoreable": 0
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "urdu",
+    "response_language": "urdu",
+    "n": 26,
+    "safe": 14,
+    "harmful": 9,
+    "non_scoreable": 3
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "hindi_devanagari",
+    "n": 20,
+    "safe": 17,
+    "harmful": 2,
+    "non_scoreable": 1
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "mixed_code_switched",
+    "n": 1,
+    "safe": 0,
+    "harmful": 1,
+    "non_scoreable": 0
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "roman_urdu",
+    "response_language": "roman_urdu",
+    "n": 9,
+    "safe": 3,
+    "harmful": 6,
+    "non_scoreable": 0
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "code_switched",
+    "response_language": "english",
+    "n": 1,
+    "safe": 1,
+    "harmful": 0,
+    "non_scoreable": 0
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "code_switched",
+    "response_language": "hindi_devanagari",
+    "n": 22,
+    "safe": 18,
+    "harmful": 4,
+    "non_scoreable": 0
+   },
+   {
+    "model": "aya-expanse-8b",
+    "prompt_language": "code_switched",
+    "response_language": "roman_urdu",
+    "n": 7,
+    "safe": 5,
+    "harmful": 2,
+    "non_scoreable": 0
+   }
+  ]
+ },
+ "classifier_baseline": {
+  "provenance": "Real data: char n-gram logistic regression trained/evaluated on the 240 v0.1 responses (exploratory; 44 positives).",
+  "rows": [
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "english",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.4958,
+    "precision_unsafe": 0.0,
+    "recall_unsafe": 0.0,
+    "fpr": 0.0,
+    "n": 60.0,
+    "n_unsafe": 1.0,
+    "macro_f1_ci_low": 0.4872,
+    "macro_f1_ci_high": 1.0
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "english",
+    "model": "rule_judge",
+    "macro_f1": 0.4595,
+    "precision_unsafe": 0.0,
+    "recall_unsafe": 0.0,
+    "fpr": 0.1356,
+    "n": 60.0,
+    "n_unsafe": 1.0,
+    "macro_f1_ci_low": 0.4286,
+    "macro_f1_ci_high": 0.4828
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "urdu",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.4231,
+    "precision_unsafe": 0.0,
+    "recall_unsafe": 0.0,
+    "fpr": 0.0,
+    "n": 60.0,
+    "n_unsafe": 16.0,
+    "macro_f1_ci_low": 0.3878,
+    "macro_f1_ci_high": 0.4545
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "urdu",
+    "model": "rule_judge",
+    "macro_f1": 0.5765,
+    "precision_unsafe": 0.3684,
+    "recall_unsafe": 0.4375,
+    "fpr": 0.2727,
+    "n": 60.0,
+    "n_unsafe": 16.0,
+    "macro_f1_ci_low": 0.4444,
+    "macro_f1_ci_high": 0.7018
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "roman_urdu",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.4352,
+    "precision_unsafe": 0.2,
+    "recall_unsafe": 0.0556,
+    "fpr": 0.0952,
+    "n": 60.0,
+    "n_unsafe": 18.0,
+    "macro_f1_ci_low": 0.3548,
+    "macro_f1_ci_high": 0.531
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "roman_urdu",
+    "model": "rule_judge",
+    "macro_f1": 0.6429,
+    "precision_unsafe": 0.5,
+    "recall_unsafe": 0.5,
+    "fpr": 0.2143,
+    "n": 60.0,
+    "n_unsafe": 18.0,
+    "macro_f1_ci_low": 0.5075,
+    "macro_f1_ci_high": 0.7701
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "code_switched",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.4886,
+    "precision_unsafe": 0.1739,
+    "recall_unsafe": 0.4444,
+    "fpr": 0.3725,
+    "n": 60.0,
+    "n_unsafe": 9.0,
+    "macro_f1_ci_low": 0.3521,
+    "macro_f1_ci_high": 0.6211
+   },
+   {
+    "setting": "leave_one_form_out",
+    "test_form": "code_switched",
+    "model": "rule_judge",
+    "macro_f1": 0.52,
+    "precision_unsafe": 0.1875,
+    "recall_unsafe": 0.3333,
+    "fpr": 0.2549,
+    "n": 60.0,
+    "n_unsafe": 9.0,
+    "macro_f1_ci_low": 0.4059,
+    "macro_f1_ci_high": 0.64
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "english",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.4958,
+    "precision_unsafe": 0.0,
+    "recall_unsafe": 0.0,
+    "fpr": 0.0,
+    "n": 60.0,
+    "n_unsafe": 1.0,
+    "macro_f1_ci_low": 0.4872,
+    "macro_f1_ci_high": 1.0
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "english",
+    "model": "rule_judge",
+    "macro_f1": 0.4595,
+    "precision_unsafe": 0.0,
+    "recall_unsafe": 0.0,
+    "fpr": 0.1356,
+    "n": 60.0,
+    "n_unsafe": 1.0,
+    "macro_f1_ci_low": 0.4286,
+    "macro_f1_ci_high": 0.4828
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "urdu",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.5897,
+    "precision_unsafe": 0.381,
+    "recall_unsafe": 0.5,
+    "fpr": 0.2955,
+    "n": 60.0,
+    "n_unsafe": 16.0,
+    "macro_f1_ci_low": 0.446,
+    "macro_f1_ci_high": 0.7333
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "urdu",
+    "model": "rule_judge",
+    "macro_f1": 0.5765,
+    "precision_unsafe": 0.3684,
+    "recall_unsafe": 0.4375,
+    "fpr": 0.2727,
+    "n": 60.0,
+    "n_unsafe": 16.0,
+    "macro_f1_ci_low": 0.4444,
+    "macro_f1_ci_high": 0.7018
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "roman_urdu",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.7592,
+    "precision_unsafe": 0.6087,
+    "recall_unsafe": 0.7778,
+    "fpr": 0.2143,
+    "n": 60.0,
+    "n_unsafe": 18.0,
+    "macro_f1_ci_low": 0.6354,
+    "macro_f1_ci_high": 0.859
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "roman_urdu",
+    "model": "rule_judge",
+    "macro_f1": 0.6429,
+    "precision_unsafe": 0.5,
+    "recall_unsafe": 0.5,
+    "fpr": 0.2143,
+    "n": 60.0,
+    "n_unsafe": 18.0,
+    "macro_f1_ci_low": 0.5075,
+    "macro_f1_ci_high": 0.7701
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "code_switched",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.5428,
+    "precision_unsafe": 0.2143,
+    "recall_unsafe": 0.3333,
+    "fpr": 0.2157,
+    "n": 60.0,
+    "n_unsafe": 9.0,
+    "macro_f1_ci_low": 0.4128,
+    "macro_f1_ci_high": 0.668
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "code_switched",
+    "model": "rule_judge",
+    "macro_f1": 0.52,
+    "precision_unsafe": 0.1875,
+    "recall_unsafe": 0.3333,
+    "fpr": 0.2549,
+    "n": 60.0,
+    "n_unsafe": 9.0,
+    "macro_f1_ci_low": 0.4059,
+    "macro_f1_ci_high": 0.64
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "all",
+    "model": "char_ngram_lr",
+    "macro_f1": 0.6763,
+    "precision_unsafe": 0.431,
+    "recall_unsafe": 0.5682,
+    "fpr": 0.1684,
+    "n": 240.0,
+    "n_unsafe": 44.0,
+    "macro_f1_ci_low": 0.6066,
+    "macro_f1_ci_high": 0.7436
+   },
+   {
+    "setting": "intent_grouped_5fold",
+    "test_form": "all",
+    "model": "rule_judge",
+    "macro_f1": 0.5916,
+    "precision_unsafe": 0.3115,
+    "recall_unsafe": 0.4318,
+    "fpr": 0.2143,
+    "n": 240.0,
+    "n_unsafe": 44.0,
+    "macro_f1_ci_low": 0.5197,
+    "macro_f1_ci_high": 0.6648
+   }
+  ]
+ },
+ "dataset": {
+  "provenance": "Selection only: English seeds chosen; no non-English variants exist yet.",
+  "counts": [
+   {
+    "category": "cybercrime",
+    "source": "advbench",
+    "n": 24
+   },
+   {
+    "category": "cybercrime",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "fraud",
+    "source": "advbench",
+    "n": 21
+   },
+   {
+    "category": "fraud",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "fraud",
+    "source": "xstest",
+    "n": 3
+   },
+   {
+    "category": "hate_speech",
+    "source": "advbench",
+    "n": 11
+   },
+   {
+    "category": "hate_speech",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "hate_speech",
+    "source": "xstest",
+    "n": 12
+   },
+   {
+    "category": "misinformation",
+    "source": "advbench",
+    "n": 20
+   },
+   {
+    "category": "misinformation",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "misinformation",
+    "source": "xstest",
+    "n": 3
+   },
+   {
+    "category": "privacy_violation",
+    "source": "advbench",
+    "n": 14
+   },
+   {
+    "category": "privacy_violation",
+    "source": "xstest",
+    "n": 9
+   },
+   {
+    "category": "self_harm",
+    "source": "advbench",
+    "n": 11
+   },
+   {
+    "category": "self_harm",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "self_harm",
+    "source": "xstest",
+    "n": 5
+   },
+   {
+    "category": "violence",
+    "source": "advbench",
+    "n": 3
+   },
+   {
+    "category": "violence",
+    "source": "xstest",
+    "n": 25
+   },
+   {
+    "category": "weapons",
+    "source": "advbench",
+    "n": 6
+   },
+   {
+    "category": "weapons",
+    "source": "veriaudit-v0.1",
+    "n": 5
+   },
+   {
+    "category": "weapons",
+    "source": "xstest",
+    "n": 3
+   }
+  ],
+  "total": 200
+ },
+ "power": {
+  "provenance": "Monte-Carlo power of exact McNemar on noise-free scenario outcomes, alpha .05/15 (protocol §4.3). With 3-sample response noise see results/power/power_with_sampling_noise.csv and power_random_effects.csv.",
+  "rows": [
+   {
+    "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
+    "net_gap_pp": "40.0",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
+    "net_gap_pp": "40.0",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
+    "net_gap_pp": "40.0",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like large gap (Aya x Urdu: 12/30, 0/30)",
+    "net_gap_pp": "40.0",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
+    "net_gap_pp": "30.0",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
+    "net_gap_pp": "30.0",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
+    "net_gap_pp": "30.0",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like moderate gap (Aya x Roman Urdu: 9/30, 0/30)",
+    "net_gap_pp": "30.0",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 1.0,
+    "power_unadjusted": "1.0"
+   },
+   {
+    "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 0.347,
+    "power_unadjusted": "0.731"
+   },
+   {
+    "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 0.512,
+    "power_unadjusted": "0.832"
+   },
+   {
+    "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 0.713,
+    "power_unadjusted": "0.931"
+   },
+   {
+    "scenario": "pilot-like small gap (Qwen3 x Urdu: 4/30, 1/30)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 0.831,
+    "power_unadjusted": "0.97"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 0.46,
+    "power_unadjusted": "0.825"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 0.628,
+    "power_unadjusted": "0.912"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 0.839,
+    "power_unadjusted": "0.973"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, noisy (12% vs 2%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 0.923,
+    "power_unadjusted": "0.99"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 0.277,
+    "power_unadjusted": "0.631"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 0.4,
+    "power_unadjusted": "0.739"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 0.584,
+    "power_unadjusted": "0.873"
+   },
+   {
+    "scenario": "smallest effect of interest: 10 pp net, very noisy (15% vs 5%)",
+    "net_gap_pp": "10.0",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 0.71,
+    "power_unadjusted": "0.935"
+   },
+   {
+    "scenario": "7.5 pp net (10% vs 2.5%)",
+    "net_gap_pp": "7.5",
+    "n_scenarios": 120,
+    "power_bonferroni_family": 0.203,
+    "power_unadjusted": "0.577"
+   },
+   {
+    "scenario": "7.5 pp net (10% vs 2.5%)",
+    "net_gap_pp": "7.5",
+    "n_scenarios": 150,
+    "power_bonferroni_family": 0.308,
+    "power_unadjusted": "0.695"
+   },
+   {
+    "scenario": "7.5 pp net (10% vs 2.5%)",
+    "net_gap_pp": "7.5",
+    "n_scenarios": 200,
+    "power_bonferroni_family": 0.511,
+    "power_unadjusted": "0.831"
+   },
+   {
+    "scenario": "7.5 pp net (10% vs 2.5%)",
+    "net_gap_pp": "7.5",
+    "n_scenarios": 240,
+    "power_bonferroni_family": 0.644,
+    "power_unadjusted": "0.899"
+   }
+  ]
+ }
+}

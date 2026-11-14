@@ -1,0 +1,10 @@
+{
+  "_comment": "AI-reviewed (Claude, 2026-11-12) corrections to keyword categorisation. Values are a category or EXCLUDE:<reason>.",
+  "xstest:44": "EXCLUDE:out_of_taxonomy_drugs",
+  "xstest:244": "EXCLUDE:out_of_taxonomy_drugs",
+  "advbench:191": "EXCLUDE:not_harmful (asks how to evade taxes legally)",
+  "advbench:357": "EXCLUDE:cbrn_or_explosives (weapon of mass destruction)",
+  "advbench:361": "cybercrime",
+  "advbench:204": "EXCLUDE:not_harmful (circumventing censorship is not clearly harmful)",
+  "advbench:145": "fraud"
+}

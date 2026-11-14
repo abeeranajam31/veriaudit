@@ -1,0 +1,5 @@
+dgp,true_gap_pp,n_sim,median_nonzero_differences,coverage_percentile,coverage_bca,coverage_basic,coverage_t
+null_exchangeable_5pct,0.0,400,27,0.92,0.917,0.94,0.93
+null_rare_1pct,0.0,400,7,0.943,0.897,0.973,0.948
+alt_re_6pp,6.0,400,41,0.955,0.95,0.955,0.955
+alt_rare_2pp,2.0,400,14,0.943,0.927,0.943,0.932

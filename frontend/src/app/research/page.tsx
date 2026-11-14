@@ -1,183 +1,134 @@
 import type { Metadata } from "next";
+import { FileText } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { PAPER_PDF, REPO, EXPLORATORY_DIR, PROTOCOL, STATS_VALIDATION, findings } from "@/data/research";
 
 export const metadata: Metadata = {
   title: "Research",
   description:
-    "The research question, hypothesis, methodology, and limitations behind VERIAUDIT's cross-lingual AI safety evaluation.",
+    "Comprehension, Not Only Compliance: how denominators and detectors shape cross-lingual safety gaps for Urdu, Roman Urdu and code-switched prompts.",
 };
 
-const limitations = [
-  "Translation artifacts — automated and human translation can shift connotation, formality, or intensity independent of the model being evaluated.",
-  "Semantic similarity limitations — embedding-based similarity is a screening signal, not proof of equivalence; low-resource language embeddings are less reliable.",
-  "Evaluator bias — automated safety scoring (model-graded or rule-based) can itself be biased or inconsistent across languages.",
-  "Model randomness — sampling temperature and non-determinism mean a single run is not a stable estimate of behavior.",
-  "Incomplete language coverage — the pilot covers Urdu, Roman Urdu, and code-switched forms only; findings should not be generalized to unrelated languages.",
-  "Benchmark contamination — public test items may leak into model training data over time, inflating apparent safety.",
-  "Limited sample size — the current pilot dataset is far smaller than the planned VERIAUDIT-500 and is not yet human-verified at scale.",
-  "Difficulty defining safety universally — \"safety\" is context- and culture-dependent; VERIAUDIT's scoring rubric reflects specific operational definitions, not a universal standard.",
+const questions = [
+  { q: "Safety failure", a: "The model understood the request and produced harmful content." },
+  { q: "Comprehension failure", a: "The model did not understand, and produced loops, off-topic text or an answer in another language." },
+  { q: "Measurement failure", a: "The evaluator cannot read the response's language or script, and misclassifies it." },
 ];
+
+const limitations = [
+  "Findings 1–3 rest on 30 harmful requests in four forms, written by one author, with two models.",
+  "The multi-model results are labelled by automated judges that do not document Urdu support; human validation is under way.",
+  "Open-weight models of 8–9B parameters only; results may not transfer to larger or proprietary models.",
+  "\"Safety\" follows an operational rubric (harmful compliance, refusal type, comprehension), not a universal definition.",
+];
+
+const citation = `@misc{najam2026veriaudit,
+  author = {Najam, Abeera},
+  title  = {Comprehension, Not Only Compliance: How Denominators and Detectors
+            Shape Cross-Lingual Safety Gaps for Urdu, Roman Urdu and
+            Code-Switched Prompts},
+  year   = {2026},
+  url    = {${REPO}}
+}`;
 
 export default function ResearchPage() {
   return (
     <Container className="py-16 sm:py-24">
       <Eyebrow>Research</Eyebrow>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">
-        Does safety behavior transfer across linguistic boundaries?
+      <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-ink text-balance">
+        Comprehension, Not Only Compliance
       </h1>
+      <p className="mt-3 max-w-3xl text-lg text-ink-muted">
+        How denominators and detectors shape cross-lingual safety gaps for Urdu, Roman Urdu and code-switched prompts
+      </p>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button href={PAPER_PDF} variant="primary" external>
+          <FileText className="h-4 w-4" /> Read the paper (PDF)
+        </Button>
+        <Button href={REPO} variant="secondary" external>Code &amp; reproduction</Button>
+        <Badge>Preprint · Abeera Najam · 2026</Badge>
+      </div>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-3">
-        <section className="lg:col-span-2 space-y-10">
+      <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_300px]">
+        <section className="space-y-12">
           <div>
-            <h2 className="text-lg font-semibold text-ink">Research Question</h2>
-            <p className="mt-2 text-base leading-7 text-ink-muted">
-              Does an AI system remain equally safe when the same underlying intent is expressed in
-              different languages, including low-resource and code-switched forms?
+            <h2 className="text-lg font-semibold text-ink">The question</h2>
+            <p className="mt-3 text-sm leading-7 text-ink-muted">
+              Multilingual safety evaluations usually summarise a model with one number: the gap between its safety in
+              English and in another language. For Urdu, which people mostly type as Roman Urdu or mix with English,
+              a measured gap can come from three very different sources:
             </p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              {questions.map((x) => (
+                <div key={x.q} className="rounded-lg border border-border bg-bg-raised p-4">
+                  <div className="font-medium text-ink">{x.q}</div>
+                  <p className="mt-1 text-sm leading-6 text-ink-muted">{x.a}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-ink">Hypothesis</h2>
-            <p className="mt-2 text-base leading-7 text-ink-muted">
-              Safety behavior may degrade under linguistic distribution shift, particularly in
-              low-resource settings that are underrepresented in model training and alignment data.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-ink">Methodology</h2>
-            <ul className="mt-3 space-y-2.5 text-base leading-7 text-ink-muted list-disc list-inside">
-              <li>Intent-level test case construction, independent of any one language.</li>
-              <li>Generation of semantically equivalent multilingual variants (EquivEngine).</li>
-              <li>Screening for semantic equivalence via embedding similarity, with human verification.</li>
-              <li>Model evaluation against each variant under identical conditions (GapEvaluator).</li>
-              <li>Structured behavioral scoring across refusal consistency, instruction following, and safety.</li>
-              <li>Aggregation into the Cross-Lingual Safety Gap (CLSG) metric.</li>
+            <h2 className="text-lg font-semibold text-ink">Findings</h2>
+            <ul className="mt-4 space-y-4">
+              {findings.map((f) => (
+                <li key={f.label} className="rounded-lg border border-border bg-bg-raised p-5">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <span className="font-mono text-xl font-semibold text-accent">{f.stat}</span>
+                    <span className="font-medium text-ink">{f.label}</span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-ink-muted">{f.body}</p>
+                </li>
+              ))}
+              <li className="rounded-lg border border-border bg-bg-raised p-5">
+                <div className="font-medium text-ink">Multi-model evaluation with independent judges</div>
+                <p className="mt-2 text-sm leading-6 text-ink-muted">
+                  Across Qwen3-8B, Aya Expanse 8B and Qwen3.5-9B (1,440 generations), two automated judges agree on
+                  harmfulness for 96% of responses but on refusal type for only 50%. Both find gaps for Aya Expanse in
+                  Urdu script (+11 to +12 points) and Qwen3-8B in Roman Urdu (+10 to +20 points), and none for Qwen3.5-9B.{" "}
+                  <a href={EXPLORATORY_DIR} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                    Tables ↗
+                  </a>
+                </p>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-ink">
-              Pilot Benchmark: 240 evaluations across 4 linguistic variants
-            </h2>
-            <p className="mt-2 text-sm text-ink-muted">
-              These are preliminary pilot results from VeriAudit v0.1 — a 30-intent,
-              2-model pilot benchmark, not a validated general-purpose safety
-              evaluation.
+            <h2 className="text-lg font-semibold text-ink">Method</h2>
+            <p className="mt-3 text-sm leading-7 text-ink-muted">
+              Every published number of the original evaluation is recomputed from raw outputs (191 of 191 match). Gaps
+              are re-estimated on the full set of scenario pairs, with bounds that count non-scoreable outputs as safe and
+              as unsafe. Refusal detectors are scored against human-reviewed labels in each language form, and the language
+              and script of every response are recorded. The follow-up study is pre-registered, and its primary test was
+              chosen by simulation.{" "}
+              <a href={PROTOCOL} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Protocol ↗</a>{" "}
+              <a href={STATS_VALIDATION} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Statistical validation ↗</a>
             </p>
-
-            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {[
-                ["Evaluations", "240"],
-                ["Intents", "30"],
-                ["Models", "2"],
-                ["Linguistic variants", "4"],
-                ["Safety categories", "6"],
-                ["Ambiguous cases", "18"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-border bg-bg-raised p-3">
-                  <dt className="font-mono text-xs uppercase tracking-wide text-ink-faint">{label}</dt>
-                  <dd className="mt-1 text-lg font-semibold text-ink">{value}</dd>
-                </div>
-              ))}
-            </dl>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-bg-raised p-4">
-                <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Overall mean observed CLSG</div>
-                <div className="mt-1 text-2xl font-semibold text-ink">25.8 pp</div>
-              </div>
-              <div className="rounded-lg border border-border bg-bg-raised p-4">
-                <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Largest observed gap</div>
-                <div className="mt-1 text-2xl font-semibold text-ink">46.2 pp</div>
-                <div className="mt-1 text-xs text-ink-muted">Aya Expanse 8B × Urdu</div>
-              </div>
-            </div>
-
-            <p className="mt-4 text-sm text-ink-muted">
-              Roman Urdu shows the highest observed failure rate (36.0%) and the
-              largest concentration of ambiguous/undecidable outputs among the
-              variants tested.
-            </p>
-
-            <p className="mt-4 text-xs text-ink-faint">
-              Primary safety rates exclude ambiguous cases. SAFE = safe_refusal /
-              safe_completion; UNSAFE = partial_compliance / unsafe_compliance.
-            </p>
-            <p className="mt-2 text-xs text-ink-faint">
-              This is a 30-intent pilot across two models. Results are descriptive
-              and require replication with more models, intents, languages, and
-              independent human annotation.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-4 text-sm">
-              <a href="https://github.com/abeeranajam31/veriaudit/blob/main/docs/veriaudit_pilot_report.md"
-                 target="_blank" rel="noopener noreferrer"
-                 className="font-medium text-accent hover:underline underline-offset-4">
-                Read the technical report →
-              </a>
-              <a href="https://github.com/abeeranajam31/veriaudit/blob/main/docs/results_table.md"
-                 target="_blank" rel="noopener noreferrer"
-                 className="font-medium text-accent hover:underline underline-offset-4">
-                Full results table →
-              </a>
-              <a href="https://github.com/abeeranajam31/veriaudit"
-                 target="_blank" rel="noopener noreferrer"
-                 className="font-medium text-accent hover:underline underline-offset-4">
-                View on GitHub →
-              </a>
-              <a href="https://huggingface.co/datasets/abeeranajam31/veriaudit-pilot-v0.1"
-                 target="_blank" rel="noopener noreferrer"
-                 className="font-medium text-accent hover:underline underline-offset-4">
-                Dataset on Hugging Face →
-              </a>
-            </div>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-ink">Limitations</h2>
-            <p className="mt-2 text-sm text-ink-muted">
-              We list these deliberately and in detail — acknowledging limitations is part of making
-              this project credible, not a weakness to hide.
-            </p>
-            <ul className="mt-4 space-y-3">
-              {limitations.map((l) => (
-                <li key={l} className="rounded-lg border border-border bg-bg-raised p-4 text-sm leading-6 text-ink-muted">
-                  {l}
-                </li>
-              ))}
+            <h2 className="text-lg font-semibold text-ink">Scope</h2>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-ink-muted list-disc pl-5">
+              {limitations.map((l) => <li key={l}>{l}</li>)}
             </ul>
           </div>
         </section>
 
         <aside className="space-y-4">
           <div className="rounded-xl border border-border bg-bg-raised p-5">
-            <Badge tone="warn">Status</Badge>
-            <p className="mt-3 text-sm leading-6 text-ink-muted">
-              This is an active, early-stage research prototype. No claims here should be read as
-              peer-reviewed or independently validated findings.
-            </p>
+            <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Cite</div>
+            <pre className="mt-3 overflow-x-auto whitespace-pre text-[11px] leading-5 text-ink-muted">{citation}</pre>
           </div>
           <div className="rounded-xl border border-border bg-bg-raised p-5">
             <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">See also</div>
             <ul className="mt-3 space-y-2 text-sm">
-              <li>
-                <a href="/methodology" className="text-accent hover:underline underline-offset-4">
-                  Full CLSG methodology
-                </a>
-              </li>
-              <li>
-                <a href="/benchmark" className="text-accent hover:underline underline-offset-4">
-                  Dataset &amp; benchmark
-                </a>
-              </li>
-              <li>
-                <a href="/open-source" className="text-accent hover:underline underline-offset-4">
-                  Open-source release plan
-                </a>
-              </li>
+              <li><a href="/results" className="text-accent hover:underline underline-offset-4">All results</a></li>
+              <li><a href="/methodology" className="text-accent hover:underline underline-offset-4">Methodology</a></li>
+              <li><a href="/benchmark" className="text-accent hover:underline underline-offset-4">VeriAudit-X benchmark</a></li>
             </ul>
           </div>
         </aside>
