@@ -1,5 +1,5 @@
 ---
-pretty_name: VERIAUDIT CLSG-Benchmark (pilot)
+pretty_name: VeriAudit CLSG-Benchmark (starter set)
 license: mit
 language:
   - en
@@ -23,19 +23,25 @@ configs:
         path: data/pilot.jsonl
 ---
 
-# CLSG-Benchmark (pilot)
+# CLSG-Benchmark (starter set)
 
-Part of [VERIAUDIT](https://veriaudit.vercel.app) — an open-source
-red-teaming platform measuring whether AI safety, robustness, and
-instruction-following behavior remain consistent when equivalent inputs
-are translated across linguistic boundaries.
+Part of [VeriAudit](https://veriiaudit.vercel.app), independent research and an open-source framework on
+whether multilingual AI safety evaluations measure what they claim. When a model looks less safe in
+Urdu, is it producing harmful content, failing to understand the request, or being misjudged by an
+evaluator built for English?
 
-> **Status: pilot subset.** This release contains **13 of the planned 125
-> core intents** (× 4 linguistic variants = 500 test cases). The full
-> **VERIAUDIT-500** dataset is under development and will be published here
-> after independent bilingual human verification. Do not cite this pilot
-> as a validated benchmark — it exists to make the evaluation pipeline
-> runnable end-to-end, not as a finished scientific artifact.
+Findings so far ([paper](https://github.com/abeeranajam31/veriaudit/blob/main/paper/v01_reanalysis/main.pdf), [code](https://github.com/abeeranajam31/veriaudit)):
+
+- **Refusal detection collapses outside English.** An English-pattern detector caught 92% of English
+  refusals but 0 of 40 Urdu-script refusals.
+- **Denominator choices move the headline gap.** Qwen3-8B's Roman Urdu gap changes from 39.5 to 26.7
+  points when non-scoreable outputs are counted rather than dropped.
+- **Script drift.** Aya Expanse 8B answers 71% of Roman Urdu prompts in Hindi script.
+
+> **This repository is the starter set:** 13 intents × 4 linguistic forms, used to make the evaluation
+> pipeline runnable end to end. The research benchmark, **VeriAudit-X**, has 200 scenarios with
+> matched benign contrasts. It is translated and reviewed by independent bilingual annotators, and
+> will be published here after human verification. Cite the paper for findings, not this starter set.
 
 ## ⚠️ Content warning
 
@@ -84,7 +90,7 @@ the [methodology doc](https://github.com/abeeranajam31/veriaudit/blob/main/docs/
    is never treated as automatic proof of equivalence.**
 5. A human reviewer promotes a case to `verified` after manual comparison.
 
-The pilot cases here were translated by the project's lead researcher as a
+The cases here were translated by the project's lead researcher as a
 first pass; most are marked `pending` for exactly this reason.
 
 ## Loading
@@ -92,14 +98,14 @@ first pass; most are marked `pending` for exactly this reason.
 ```python
 from datasets import load_dataset
 
-ds = load_dataset("abeeranajam31/CLSG-Benchmark", split="pilot")
+ds = load_dataset("abeeranajam31/CLSG-Benchmark", split="pilot")  # split name kept for compatibility
 print(ds[0])
 ```
 
 ## Limitations
 
 Small sample size (13 intents), single-annotator translation pass for this
-pilot release, embedding-based (not human-validated) similarity screening,
+starter release, embedding-based (not human-validated) similarity screening,
 and coverage limited to Urdu / Roman Urdu / code-switched Urdu-English.
 See [`docs/research.md`](https://github.com/abeeranajam31/veriaudit/blob/main/docs/research.md#limitations)
 for the full limitations discussion.
@@ -117,7 +123,7 @@ please reach out to a local crisis line.
 ```bibtex
 @dataset{veriaudit_clsg_benchmark,
   author = {Najam, Abeera},
-  title = {VERIAUDIT CLSG-Benchmark (pilot)},
+  title = {VeriAudit CLSG-Benchmark (starter set)},
   year = {2026},
   url = {https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark}
 }
@@ -129,4 +135,4 @@ MIT — see [LICENSE](https://github.com/abeeranajam31/veriaudit/blob/main/LICEN
 
 ## Contact
 
-Abeera Najam — Founder & Lead Researcher, VERIAUDIT — veriiaudit@gmail.com
+Abeera Najam — Lead Researcher, VeriAudit — veriiaudit@gmail.com

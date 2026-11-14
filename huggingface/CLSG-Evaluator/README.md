@@ -12,7 +12,7 @@ tags:
 # CLSG-Evaluator
 
 The reproducible Python evaluation framework behind
-[VERIAUDIT](https://veriaudit.vercel.app) — measures the **Cross-Lingual
+[VERIAUDIT](https://veriiaudit.vercel.app) — measures the **Cross-Lingual
 Safety Gap (CLSG)** between a model's safety behavior in a reference
 language and in an evaluated language, on the same underlying intent.
 
@@ -82,7 +82,7 @@ specification, assumptions, and limitations:
 - Dataset: [`abeeranajam31/CLSG-Benchmark`](https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark)
 - Interactive demo: [`abeeranajam31/veriaudit-clsg-demo`](https://huggingface.co/spaces/abeeranajam31/veriaudit-clsg-demo) (Space)
 - Full methodology: [`docs/methodology.md`](https://github.com/abeeranajam31/veriaudit/blob/main/docs/methodology.md)
-- Web platform: [veriaudit.vercel.app/platform](https://veriaudit.vercel.app/platform)
+- Web platform: [veriiaudit.vercel.app/platform](https://veriiaudit.vercel.app/platform)
 
 ## Limitations
 
