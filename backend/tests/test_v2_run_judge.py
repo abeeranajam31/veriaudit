@@ -113,3 +113,21 @@ def test_resumed_close_keeps_model_descriptions(tmp_path):
     run(cfg, ["fake"], out_root=tmp_path)  # everything already generated: nothing loads
     m2 = json.loads(man.read_text())
     assert m2["status"] == "complete" and m2["models"][0]["chat_template_sha256"] == "recorded-when-loaded"
+
+
+def test_per_model_calls_keep_each_models_provenance(tmp_path):
+    """One model per process (as on Kaggle T4s): a later call must not erase an earlier model's record."""
+    from pathlib import Path
+
+    from app.v2.inference.runner import run
+
+    repo = Path(__file__).resolve().parents[2]
+    cfg = repo / "configs/experiments/fixture_smoke.yaml"
+    gfile = run(cfg, ["fake"], out_root=tmp_path)
+    man = gfile.parent / "run_manifest.json"
+    m = json.loads(man.read_text())
+    m["models"].append({"key": "earlier_model", "chat_template_sha256": "abc"})  # as if run by a previous call
+    man.write_text(json.dumps(m))
+    run(cfg, ["fake"], out_root=tmp_path)
+    m2 = json.loads(man.read_text())
+    assert m2["model_history"]["earlier_model"]["chat_template_sha256"] == "abc" and "fake" in m2["model_history"]

@@ -189,7 +189,9 @@ def run(
     prev_models: dict[str, dict] = {}
     if old_manifest.exists():
         prev = json.loads(old_manifest.read_text(encoding="utf-8"))
-        prev_models = {m["key"]: m for m in prev.get("models", []) if "key" in m}
+        # model_history accumulates every model description ever recorded for this run directory, so
+        # per-model calls (one model per process on small GPUs) don't overwrite each other's provenance
+        prev_models = {**prev.get("model_history", {}), **{m["key"]: m for m in prev.get("models", []) if "key" in m}}
         if prev.get("dataset", {}).get("sha256") != ds["sha256"] or prev.get("config_sha256") != config_sha:
             raise RunConfigError(f"run {run_id} already exists with a different dataset or config; resuming would mix generations. Use a new run_id.")
     max_attempts = int(config.get("max_attempts", 3))
@@ -295,6 +297,7 @@ def run(
         # chat-template hash and tokenizer recorded when the model actually ran: keep those.
         manifest["models"].append({**prev_models.get(spec["key"], {}), **{k: v for k, v in entry.items() if v is not None}})
 
+    manifest["model_history"] = {**prev_models, **{m["key"]: m for m in manifest["models"]}}
     manifest["n_planned"] = planned
     manifest["n_succeeded"] = planned - failed_final
     manifest["n_failed_after_retries"] = failed_final
