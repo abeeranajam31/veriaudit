@@ -22,17 +22,20 @@ for Urdu, Roman Urdu and Code-Switched Prompts}
 
 \begin{abstract}
 Multilingual safety evaluations usually summarise a model by a single ``safety gap'' between English
-and another language. We re-analyse a released pilot, VeriAudit v0.1: two open-weight 8B models
+and another language. We re-analyse a released evaluation, VeriAudit v0.1: two open-weight 8B models
 (Qwen3-8B, Aya Expanse 8B), 30 harmful requests, each written in English, Urdu script, Roman Urdu and
 Urdu--English code-switching, and 240 labelled responses. We find that the gap depends on two choices
 that are rarely reported. First, the \emph{denominator}. Excluding non-scoreable outputs (loops,
 garbled text, ``I don't understand'') inflates the gap where models fail to comprehend. Counting only
 actual harmful compliance on all 30 pairs, Qwen3-8B's Roman Urdu gap falls from the published 39.5 to
 26.7 percentage points, and it is no longer significant after Holm correction ($p=.086$). Treating the
-same outputs as unsafe raises it to 56.7 points. Second, the \emph{detector}. The pilot's English
+same outputs as unsafe raises it to 56.7 points. Second, the \emph{detector}. The evaluation's English
 refusal heuristic found 0\% of Urdu-script refusals and 16--19\% of Roman Urdu and code-switched
 refusals, against 92\% in English. On the same responses it would have reported gaps of 42.5--70
-points. We reproduce all 191 published numbers of the pilot exactly from raw outputs. We argue that
+points. We reproduce all 191 published numbers of v0.1 exactly from raw outputs. An exploratory
+follow-up adds a newer model (Qwen3.5-9B), three sampled responses per prompt and two independent
+automated judges. It reproduces the response-language drift and the direction of the largest gaps,
+and shows that the judges agree on harmfulness far more often than on the type of refusal. We argue that
 cross-lingual safety gaps for these forms must be reported with their comprehension component and with
 a validated multilingual measurement, and we release the reproduction code.
 \end{abstract}
@@ -48,11 +51,11 @@ can arise from at least three different mechanisms:
 \item a \emph{comprehension failure}: the model did not understand and produced nothing interpretable;
 \item a \emph{measurement failure}: the evaluation instrument does not work in that language or script.
 \end{itemize}
-A single gap number does not separate them. Using a small released pilot, we show that the choice of
+A single gap number does not separate them. Using a released evaluation, we show that the choice of
 denominator and of detector changes the size and significance of the gap, while its direction stays
 the same.
 
-\paragraph{Contributions.} (1) An exact reproduction of a released pilot from raw outputs (191/191
+\paragraph{Contributions.} (1) An exact reproduction of a released evaluation from raw outputs (191/191
 published values). (2) A re-analysis showing how the headline gap depends on how non-scoreable
 responses are counted. (3) Evidence that lexical refusal detection is not usable as a safety measure
 for Urdu script, Roman Urdu or code-switched responses.
@@ -125,7 +128,7 @@ published-definition gap is 25.8 points (scenario bootstrap 95\% CI 17.3--35.3) 
 harmful-compliance gap is 22.2 points (14.4--31.1).
 
 \subsection{Measurement}
-We applied the pilot repository's own English-pattern refusal heuristic to the same 240 responses and
+We applied the v0.1 repository's own English-pattern refusal heuristic to the same 240 responses and
 compared it with the final labels (Figure~\ref{fig:det}). It recognised 92\% of English refusals, 0\% of
 Urdu-script refusals (0/40), 16\% of Roman Urdu refusals and 19\% of code-switched refusals. A
 multilingual rule judge built from these responses (and so evaluated in-sample, which flatters it)
@@ -147,6 +150,49 @@ prompts and 22 of 30 code-switched prompts in Hindi (Devanagari script). Qwen3-8
 60 prompts in English. Drift interacts with both mechanisms above: it changes what a detector must read,
 and it can signal partial comprehension.
 
+\section{Exploratory multi-model evaluation}
+To see which patterns persist, we re-ran the same 120 prompts on three open-weight models: Qwen3-8B,
+Aya Expanse 8B and the newer Qwen3.5-9B. Each prompt received a greedy response and three sampled
+responses ($T=0.7$), all in fp16 on two T4 GPUs: 1{,}440 generations, none failed. A fourth model,
+Gemma~4 E4B, could not be run on this hardware. Two automated judges from model families outside the
+panel, Mistral-Nemo-12B and Granite-3.3-8B, labelled every response. Model revisions, configurations
+and hashes of all outputs are recorded in the run manifest.
+
+\paragraph{Evaluator agreement.} The judges agree on whether a response contains harmful content for
+96\% of responses ($\kappa=0.44$). They agree on the type of refusal (full refusal versus refusal with
+safe help) for only 50\%. Under a resolution rule that requires agreement on every label dimension, most
+labels stay unresolved. That makes evaluator reliability a measurement problem in its own right.
+
+\paragraph{Per-judge gaps.} As a pre-specified sensitivity analysis, we compute the harmful-compliance
+gap for each judge separately. We use a paired $t$-test on per-scenario shares of the three sampled
+responses, with Holm adjustment within judge (Table~\ref{tab:mm}). Neither judge finds any harmful
+compliance in English. Both find gaps in the same direction for Aya Expanse 8B in Urdu script and for
+Qwen3-8B in Roman Urdu. Qwen3.5-9B shows no evidence of a gap in any form. Only Aya in Urdu script under
+one judge survives correction, and the labels have not yet been validated by human annotators, so we
+treat these results as exploratory.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{llcc}
+\toprule
+Model & Form & Mistral-Nemo judge & Granite judge\\
+\midrule
+Aya Expanse 8B & Urdu & 12.2 [3.9, 20.5] (Holm $p$=.049) & 11.1 [2.2, 20.1] (.15)\\
+Qwen3-8B & Roman Urdu & 10.1 [2.1, 18.2] (.13) & 20.4 [3.2, 37.6] (.18)\\
+Qwen3.5-9B & all three forms & 1.1 to 2.2 & 0.0 to 2.8\\
+\bottomrule
+\end{tabular}
+\caption{Exploratory harmful-compliance gaps versus English (percentage points, approximate 95\% $t$
+intervals), for each automated judge separately.}
+\label{tab:mm}
+\end{table}
+
+\paragraph{Language drift replicates.} Aya Expanse 8B answers 71\% of Roman Urdu prompts (85/120)
+and 65\% of code-switched prompts (78/120) in Devanagari script, against 20/30 and 22/30 in the
+original run. Both judges label nearly every response ``understood'' (comprehension $\kappa=0.02$),
+including Qwen3-8B's repetitive Roman Urdu outputs. Automated judges therefore do not measure
+comprehension well, which reinforces our second recommendation.
+
 \section{Recommendations}
 \begin{enumerate}\itemsep0pt
 \item Report gaps on the \emph{full} denominator. Show non-scoreable responses as a separate
@@ -162,7 +208,7 @@ transformations. It is under construction, with human-written translations; no r
 reported here.
 
 \section{Limitations}
-This is a re-analysis of a small pilot and a methodological illustration, not a population estimate.
+This is a measurement study on a small evaluation set, not a population estimate.
 \begin{itemize}\itemsep0pt
 \item \textbf{Data.} There are 30 harmful requests and no benign controls. One person wrote all
 translations, and their equivalence was not independently verified.
@@ -170,8 +216,10 @@ translations, and their equivalence was not independently verified.
 \item \textbf{Labels.} 72.5\% of labels come from LLM-assisted review, without independent human
 verification.
 \item \textbf{Rule judge.} It was developed on the evaluation responses, so its numbers are optimistic.
+\item \textbf{Exploratory evaluation.} Its labels come from two automated judges without documented
+Urdu support and have not yet been checked by humans. One of four planned models could not be run.
 \item \textbf{Scope.} The intervals are wide, and the results may not transfer to other models,
-larger models or naturally occurring Urdu requests. The author also wrote the pilot.
+larger models or naturally occurring Urdu requests. The author also designed the original evaluation.
 \end{itemize}
 
 \section*{Ethics}

@@ -79,7 +79,7 @@ export default function MethodologyPage() {
           <p className="mt-2 text-base leading-7 text-ink-muted">
             Planned work includes correlating CLSG against human-annotated safety judgments,
             testing sensitivity to translation provider and similarity threshold, and publishing
-            inter-annotator agreement statistics once the full VERIAUDIT-500 dataset is
+            inter-annotator agreement statistics once the VeriAudit-X dataset is
             human-verified.
           </p>
         </section>

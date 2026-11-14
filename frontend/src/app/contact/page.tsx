@@ -4,14 +4,14 @@ import { Eyebrow } from "@/components/ui/SectionHeading";
 import { ContactForm } from "@/components/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Request an Audit",
+  title: "Contact",
   description: "Request a VERIAUDIT cross-lingual AI safety audit, or get in touch about collaboration.",
 };
 
 export default function ContactPage() {
   return (
     <Container className="py-16 sm:py-24">
-      <Eyebrow>Request an Audit</Eyebrow>
+      <Eyebrow>Contact</Eyebrow>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">
         Build safer AI across languages.
       </h1>

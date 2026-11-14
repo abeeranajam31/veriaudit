@@ -1,16 +1,14 @@
 import type { MetadataRoute } from "next";
 
-const siteUrl = "https://veriaudit.vercel.app";
+const siteUrl = "https://veriiaudit.vercel.app";
 
 const routes = [
   "",
-  "/platform",
+  "/results",
   "/research",
   "/methodology",
   "/benchmark",
-  "/leaderboard",
   "/open-source",
-  "/pricing",
   "/about",
   "/contact",
 ];

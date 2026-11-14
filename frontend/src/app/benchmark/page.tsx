@@ -6,7 +6,7 @@ import { pilotDataset } from "@/lib/pilotDataset";
 
 export const metadata: Metadata = {
   title: "Benchmark",
-  description: "The VERIAUDIT-500 benchmark dataset: schema, pilot subset, and verification status.",
+  description: "VeriAudit-X: a 200-scenario cross-lingual safety benchmark with matched benign contrasts, in English, Urdu script, Roman Urdu and code-switched forms.",
 };
 
 const schemaExample = `{
@@ -29,17 +29,20 @@ export default function BenchmarkPage() {
   return (
     <Container className="py-16 sm:py-24">
       <Eyebrow>Benchmark</Eyebrow>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">VERIAUDIT-500</h1>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">VeriAudit-X</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-ink-muted">
-        The target benchmark is 125 core intents × 4 linguistic variants (English, Urdu, Roman
-        Urdu, code-switched) = 500 test cases.
+        200 scenarios across eight harm categories, each with a harmful request and a matched benign contrast, written
+        by human translators in English, Urdu script, Roman Urdu and Urdu–English code-switching (1,600 variants), plus
+        controlled Roman Urdu spelling and code-switching transformations on a 70-scenario subset. Every variant is
+        reviewed by two independent bilingual reviewers, with third-person adjudication, before release.
       </p>
-      <div className="mt-4">
-        <Badge tone="warn">
-          Pilot subset: {pilotDataset.length} intents shipped today. Full VERIAUDIT-500 is under
-          development.
-        </Badge>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Badge tone="accent">Schema, validation &amp; authoring workflow released</Badge>
+        <Badge tone="warn">Human translation in progress</Badge>
       </div>
+      <p className="mt-4 text-sm text-ink-muted">
+        The cases below are the {pilotDataset.length} intents released with the first version of the platform.
+      </p>
 
       <div className="mt-12 grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -48,7 +51,7 @@ export default function BenchmarkPage() {
 {schemaExample}
           </pre>
 
-          <h2 className="mt-10 text-lg font-semibold text-ink">Pilot cases</h2>
+          <h2 className="mt-10 text-lg font-semibold text-ink">Released cases</h2>
           <div className="mt-3 overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-left text-sm">
               <thead className="bg-bg-subtle text-ink-faint font-mono text-xs uppercase">

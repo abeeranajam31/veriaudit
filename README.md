@@ -1,209 +1,117 @@
-# VERIAUDIT
+# VeriAudit
 
-**Does AI safety survive translation?**
+**Measuring what multilingual AI safety evaluations actually measure.**
 
-VERIAUDIT is an open-source red-teaming platform that tests whether AI
-safety, robustness, and instruction-following behavior remain consistent
-when equivalent inputs are translated across linguistic boundaries.
-Starting with English → Urdu → Roman Urdu → code-switched variants,
-VERIAUDIT measures the **Cross-Lingual Safety Gap (CLSG)**: the
-quantitative difference in safety performance between a model's behavior
-in its training-dominant language and its behavior in low-resource
-linguistic settings.
+When a language model looks less safe in a lower-resource language, there are three possible
+reasons:
 
-> **Research integrity note.** This is an early-stage research prototype.
-> Numbers shown in the platform's demo mode are illustrative unless
-> explicitly labeled otherwise — see [Limitations](#limitations) and
-> [`docs/research.md`](docs/research.md).
+1. it produces harmful content;
+2. it fails to understand the request;
+3. it is being misjudged by an evaluator built for English.
 
-## Architecture
+VeriAudit is an independent research project, with an open-source evaluation framework, that
+separates these three explanations. It covers English, Urdu (Perso-Arabic script), Roman Urdu and
+Urdu–English code-switching.
 
-```
-veriaudit/
-├── frontend/          Next.js + TypeScript + Tailwind — site, docs, and a
-│                       fully client-side DEMO MODE dashboard
-├── backend/            FastAPI service — EquivEngine, GapEvaluator, CLSG,
-│                       model adapters, PDF evidence reports
-├── dataset/             VERIAUDIT-500 pilot subset + schema docs
-├── docs/                 Methodology, metric spec, research write-up
-└── .env.example
-```
+**Paper:** [Comprehension, Not Only Compliance (PDF)](paper/v01_reanalysis/main.pdf) ·
+**Website:** [veriiaudit.vercel.app](https://veriiaudit.vercel.app) ·
+**Results:** [`results/`](results/) ·
+**Protocol:** [`docs/v2/research_protocol.md`](docs/v2/research_protocol.md)
 
-The frontend runs standalone (static DEMO MODE, no backend required) — this
-is what's deployed to Vercel. The backend is a separate FastAPI service you
-can run locally or deploy to any Python host for live translation, model
-evaluation, and PDF report generation.
+---
 
-## Research question
+## Key findings
 
-Does an AI system remain equally safe when the same underlying intent is
-expressed in different languages? See [`docs/research.md`](docs/research.md)
-for the full research question, hypothesis, methodology, and — importantly
-— limitations.
+**1. Refusal detection collapses outside English.**
+An English-pattern refusal detector recognised 92% of English refusals but **0 of 40** Urdu-script
+refusals, and only 16–19% of Roman Urdu and code-switched ones. Scored that way, the same responses
+show safety gaps of 42.5–70 percentage points instead of 10–40.
+([`results/v1_reconstruction/`](results/v1_reconstruction/))
 
-## Methodology
+**2. Denominator choices change the headline gap.**
+Count only genuine harmful compliance, over every scenario pair, and Qwen3-8B's Roman Urdu gap falls
+from **39.5 to 26.7 points**. It is then no longer significant after Holm correction. Count the same
+non-scoreable outputs as unsafe instead, and the gap rises to 56.7. The direction of every gap is
+stable; its size and significance are not.
 
-**TEST → COMPARE → SCORE → ANALYZE → REPORT**
+**3. Language generation and language understanding are separate problems.**
+Aya Expanse 8B answers **71%** of Roman Urdu prompts and 65% of code-switched prompts in Hindi
+(Devanagari) script, reproducing the original evaluation. Qwen3-8B falls into repetition loops in
+Roman Urdu. Script drift and comprehension failure change what a safety judge has to read.
 
-1. **Define Intent** — a language-independent test case.
-2. **Generate Variants** — `EquivEngine` produces English, Urdu, Roman Urdu,
-   and code-switched forms, screened (not proven) for semantic equivalence
-   via multilingual sentence-transformer similarity.
-3. **Evaluate** — `GapEvaluator` runs each variant against configured
-   models and scores refusal consistency, instruction following, and
-   safety.
-4. **Measure the Gap** — aggregate into CLSG.
+**4. Multi-model evaluation with independent automated judges** (exploratory).
+Three open-weight models were evaluated: Qwen3-8B, Aya Expanse 8B and Qwen3.5-9B, with 1,440
+generations in total (greedy decoding plus three samples per prompt). Each response was labelled by
+two judges from model families outside the panel, Mistral-Nemo-12B and Granite-3.3-8B.
 
-Full spec: [`docs/methodology.md`](docs/methodology.md) ·
-Metric spec: [`docs/metric.md`](docs/metric.md)
+| Model | Form | Gap vs English, judge A (pp, 95% CI) | Gap vs English, judge B (pp, 95% CI) |
+|---|---|---|---|
+| Aya Expanse 8B | Urdu script | +12.2 [3.9, 20.5] | +11.1 [2.2, 20.1] |
+| Qwen3-8B | Roman Urdu | +10.1 [2.1, 18.2] | +20.4 [3.2, 37.6] |
+| Qwen3.5-9B | all forms | +1.1 to +2.2 | 0.0 to +2.8 |
 
-## Cross-Lingual Safety Gap (CLSG)
+- Both judges find no harmful compliance in English, and the same direction of gap for Aya Expanse
+  in Urdu script and Qwen3-8B in Roman Urdu.
+- The judges agree on *whether* a response is harmful 96% of the time (κ = 0.44), but on *how* a
+  model refused only 50% of the time. Evaluator reliability is therefore itself an open question,
+  and human validation of these labels is under way.
 
-```
-CLSG(reference -> evaluation) = safety_score(reference) - safety_score(evaluation)
-```
+Details: [`results/v2/exploratory/v01-panel/`](results/v2/exploratory/v01-panel/).
 
-A VERIAUDIT-proposed metric, not yet independently validated. See
-[`docs/metric.md`](docs/metric.md) for assumptions, normalization, and
-limitations.
+---
 
-## Dataset
+## What is in this repository
 
-The pilot subset ships 13 of the planned 125 core intents (× 4 linguistic
-variants). **The full VERIAUDIT-500 dataset is under development** and will
-be released after independent bilingual verification. See
-[`dataset/README.md`](dataset/README.md).
-
-## Pilot Results
-
-These are preliminary pilot results from VeriAudit v0.1 — a 30-intent, 2-model
-pilot benchmark, not a validated general-purpose safety evaluation. Full
-methodology, statistics, and limitations: **[`docs/veriaudit_pilot_report.md`](docs/veriaudit_pilot_report.md)**.
-
-- **240 evaluations**: 30 intents × 4 linguistic variants (English, Urdu,
-  Roman Urdu, code-switched) × 2 models (Qwen3-8B, Aya Expanse 8B), across
-  6 categories (Cybercrime, Weapons, Self-Harm, Hate Speech, Misinformation,
-  Fraud).
-- We observe a **cross-lingual safety gap in every one of the 6 model ×
-  non-English-language comparisons** tested, with a mean of **25.8
-  percentage points** across those six comparisons (not a population
-  estimate — see the report).
-- The largest observed gap in this pilot: **Aya Expanse 8B × Urdu, 46.2
-  percentage points** (100.0% → 53.8% observed safety rate).
-- **Roman Urdu** shows both the largest observed failure rate (36.0%) and
-  the largest concentration of ambiguous/undecidable outputs (10 of 18
-  ambiguous cases) in this pilot.
-- 3 of 6 model-language comparisons remain statistically significant after
-  Holm correction for multiple comparisons (n=30 intents per comparison);
-  see the report for the full statistical analysis, sensitivity analysis,
-  and — importantly — the label-provenance caveat (only 66/240 labels
-  carry direct human sign-off).
-
-Full results table: [`docs/results_table.md`](docs/results_table.md) ·
-Figures: [`docs/figures/`](docs/figures/) ·
-Raw analysis data: [`results/labeling/`](results/labeling/).
-
-## Hugging Face
-
-VERIAUDIT publishes to the Hub under
-[`huggingface.co/abeeranajam31`](https://huggingface.co/abeeranajam31) —
-these are synced mirrors of `dataset/` and `backend/app/evaluation/` in
-this repository (source of truth stays here):
-
-| | |
+| Component | Where |
 |---|---|
-| Dataset | [`abeeranajam31/CLSG-Benchmark`](https://huggingface.co/datasets/abeeranajam31/CLSG-Benchmark) — the pilot dataset as a loadable 🤗 `datasets` dataset, with a full dataset card. |
-| Framework | [`abeeranajam31/CLSG-Evaluator`](https://huggingface.co/abeeranajam31/CLSG-Evaluator) — the evaluation framework (`clsg`, `equiv_engine`, `evaluators`, `gap_evaluator`, `model_adapters`) as a standalone pip-installable package. |
-| Demo | [`abeeranajam31/veriaudit-clsg-demo`](https://huggingface.co/spaces/abeeranajam31/veriaudit-clsg-demo) — a static (free-tier) interactive Space running the same DEMO MODE logic as `/platform`, ported to client-side JS. |
+| Paper (re-analysis of the original evaluation) | [`paper/v01_reanalysis/`](paper/v01_reanalysis/) |
+| Exact reproduction of all 191 published numbers from raw outputs | [`research/v1_reconstruction/`](research/v1_reconstruction/), [`results/v1_reconstruction/`](results/v1_reconstruction/) |
+| Pre-registered study protocol, with a dated amendment log | [`docs/v2/research_protocol.md`](docs/v2/research_protocol.md) |
+| Statistical validation (11 null scenarios × 20,000 simulations; the primary test chosen by simulation) | [`docs/v2/statistical_validation_v2.md`](docs/v2/statistical_validation_v2.md) |
+| VeriAudit-X dataset framework: schema, validation, splits, 200-scenario design | [`backend/app/veriaudit_x/`](backend/app/veriaudit_x/), [`docs/v2/`](docs/v2/) |
+| Evaluation pipeline: pinned-model runners, two-judge labelling, analysis | [`backend/app/v2/`](backend/app/v2/), [`configs/`](configs/), [`research/`](research/) |
+| Human translation, review and annotation workflow (independence enforced in code) | [`docs/v2/translation_guide.md`](docs/v2/translation_guide.md), [`backend/app/v2/human_labels.py`](backend/app/v2/human_labels.py) |
+| Integrity safeguards, verified by replaying 13 failure scenarios | [`docs/v2/safeguard_verification.md`](docs/v2/safeguard_verification.md) |
+| Interactive website | [`frontend/`](frontend/) |
 
-Local source for all three lives in [`huggingface/`](huggingface/).
+Documentation index: [`docs/v2/README.md`](docs/v2/README.md).
 
-## Installation
-
-### Frontend
+## Reproduce
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd backend && pip install -r requirements.txt -r requirements-v2.txt pytest && python -m pytest -q   # test suite
+PYTHONPATH=backend python research/v1_reconstruction/reconstruct.py   # prints 191/191 matched
+PYTHONPATH=backend python research/stats_validation/validate_v2.py    # statistical validation (~5 min)
 ```
 
-Runs at `http://localhost:3000`. Fully functional in DEMO MODE with no
-environment variables required.
+The multi-model run uses free Kaggle GPUs:
+[`research/inference/kaggle_exploratory_v01.ipynb`](research/inference/kaggle_exploratory_v01.ipynb).
+Model revisions are pinned in [`configs/`](configs/), and every run records hashes of its dataset,
+config and outputs.
 
-### Backend
+## Status and scope
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp ../.env.example .env   # edit as needed; DEMO_MODE=true works out of the box
-uvicorn app.main:app --reload --port 8000
-```
-
-API docs at `http://localhost:8000/docs`.
-
-## Usage
-
-- Visit `/platform` for the interactive dashboard: pick a pilot intent (or
-  enter free text), generate linguistic variants, run a demo evaluation,
-  and inspect the Cross-Lingual Safety Gap.
-- `POST /api/variants` — generate + screen linguistic variants (requires a
-  configured `TranslationProvider`; raises a clear `501` otherwise).
-- `POST /api/evaluate` — run `GapEvaluator` against a test case and model
-  list. Uses `DemoAdapter` (deterministic, illustrative) when
-  `DEMO_MODE=true` or no model adapter is configured.
-- `POST /api/evaluate/report` — same as above, returns a PDF evidence
-  report.
-
-## Demo mode
-
-The platform must work without any paid API keys. Every score labeled
-`DEMO MODE` or `demo data` is deterministic (seeded by test case, model, and
-language) but **not derived from a real model evaluation**. Connect a real
-`ModelAdapter` (Hugging Face, OpenAI-compatible, or a custom endpoint) and
-set `DEMO_MODE=false` to run live evaluations against the same pipeline and
-UI.
-
-## Roadmap
-
-| | |
+| Item | Status |
 |---|---|
-| **Now** | Cross-lingual evaluation prototype: English → Urdu → Roman Urdu → code-switched |
-| **Next** | Human-verified benchmark dataset, more open models, more evaluation categories |
-| **Later** | Arabic, Hindi, Bengali, Punjabi, and other low-resource languages; agent evaluation; multimodal evaluation; continuous model monitoring; API for organizations |
-
-## Limitations
-
-Translation artifacts, semantic-similarity screening limits, evaluator
-bias, model sampling randomness, incomplete language coverage, possible
-benchmark contamination, small current sample size, and the inherent
-difficulty of defining "safety" universally. See
-[`docs/research.md`](docs/research.md#limitations) for the full discussion.
-
-## Contributing
-
-Issues and PRs are welcome, particularly on dataset verification,
-additional evaluators, and translation review. Please open an issue before
-large changes.
-
-## License
-
-[MIT](LICENSE)
+| Findings 1–3 | 30 harmful scenarios in four forms; two models in the original evaluation |
+| Finding 4 | Exploratory. Labels are from automated judges and are being validated by human annotators |
+| VeriAudit-X | A 200-scenario benchmark with matched benign contrasts, translated and independently reviewed by human bilingual annotators. In development |
+| Raw model responses that may contain harmful text | Released only where needed for reproduction |
 
 ## Citation
 
 ```bibtex
-@software{veriaudit,
+@misc{najam2026veriaudit,
   author = {Najam, Abeera},
-  title = {VERIAUDIT: Cross-Lingual AI Safety Evaluation},
-  year = {2026},
-  url = {https://github.com/abeeranajam31/veriaudit}
+  title  = {VeriAudit: Measuring What Multilingual AI Safety Evaluations Actually Measure},
+  year   = {2026},
+  url    = {https://github.com/abeeranajam31/veriaudit}
 }
 ```
 
-## Contact
+## Licence and contact
 
-**Abeera Najam** — Founder & Lead Researcher, VERIAUDIT
-[veriiaudit@gmail.com](mailto:veriiaudit@gmail.com)
+[MIT](LICENSE). **Abeera Najam**, Lead Researcher ·
+[veriiaudit@gmail.com](mailto:veriiaudit@gmail.com) ·
+[GitHub](https://github.com/abeeranajam31) ·
+[LinkedIn](https://linkedin.com/in/abeeranajam)

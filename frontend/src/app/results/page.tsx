@@ -7,7 +7,7 @@ import data from "@/data/v2/dashboard.json";
 export const metadata: Metadata = {
   title: "Results (real data)",
   description:
-    "VeriAudit research results computed from real model outputs: the reproduced v0.1 pilot, corrected analyses, and the v2 study status.",
+    "VeriAudit research results computed from real model outputs: the reproduced v0.1 evaluation, corrected analyses, multi-model evaluation and the v2 study status.",
 };
 
 const LANG: Record<string, string> = {
@@ -109,7 +109,7 @@ export default function ResultsPage() {
       </Section>
 
       <Section
-        eyebrow="v0.1 pilot · reproduced"
+        eyebrow="v0.1 evaluation · reproduced"
         title={`Cross-lingual gaps, three ways (${v1.verification.matched}/${v1.verification.checks} published numbers reproduced)`}
         provenance={v1.provenance}
       >

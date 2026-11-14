@@ -64,7 +64,7 @@ export function ContactForm() {
 
       <div className="flex items-center gap-3">
         <Button type="submit" variant="primary">
-          Request an Audit
+          Send message
         </Button>
         {submitted && (
           <span className="text-xs text-ink-muted">
